@@ -127,16 +127,10 @@ views:
                     <stop offset="0%" stop-color="#1a2535"/>
                     <stop offset="100%" stop-color="#0d1822"/>
                   </linearGradient>
-                  <pattern id="woodLeft" x="0" y="0" width="20" height="1" patternUnits="userSpaceOnUse">
-                    <rect x="0" y="0" width="17" height="1" fill="#7C6A52"/>
-                    <rect x="17" y="0" width="3" height="1" fill="#2e1e0f"/>
-                    <rect x="4" y="0" width="1" height="1" fill="#8A7860" opacity="0.5"/>
-                    <rect x="11" y="0" width="1" height="1" fill="#6A5840" opacity="0.4"/>
-                  </pattern>
                   <linearGradient id="wlShade" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%"   stop-color="rgba(0,0,0,0.4)"/>
-                    <stop offset="50%"  stop-color="rgba(0,0,0,0)"/>
-                    <stop offset="100%" stop-color="rgba(0,0,0,0.1)"/>
+                    <stop offset="55%"  stop-color="rgba(0,0,0,0)"/>
+                    <stop offset="100%" stop-color="rgba(0,0,0,0.08)"/>
                   </linearGradient>
                   <pattern id="woodBot" x="0" y="0" width="1" height="20" patternUnits="userSpaceOnUse">
                     <rect x="0" y="0" width="1" height="17" fill="#7C6A52"/>
@@ -214,8 +208,8 @@ views:
                 <!-- Background -->
                 <rect width="1600" height="900" fill="url(#bgGrad)"/>
 
-                <!-- Left wood deck -->
-                <rect x="0" y="0" width="188" height="900" fill="url(#woodLeft)" filter="url(#woodShadow)"/>
+                <!-- Left wood deck (horizontal wie unten) -->
+                <rect x="0" y="0" width="188" height="900" fill="url(#woodBot)" filter="url(#woodShadow)"/>
                 <rect x="0" y="0" width="188" height="900" fill="url(#wlShade)"/>
                 <rect x="185" y="0" width="3" height="900" fill="rgba(255,255,255,0.05)"/>
 
@@ -246,17 +240,20 @@ views:
                 <!-- Water highlight -->
                 <ellipse cx="780" cy="300" rx="380" ry="120" fill="url(#waterHL)"/>
 
-                <!-- Staircase: bottom-left, 3 steps -->
-                <rect x="242" y="714" width="220" height="72" fill="url(#step3G)"
-                      stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
-                <rect x="242" y="714" width="220" height="4" fill="rgba(255,255,255,0.28)"/>
-                <rect x="242" y="658" width="155" height="56" fill="url(#step2G)"
-                      stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
-                <rect x="242" y="658" width="155" height="4" fill="rgba(255,255,255,0.2)"/>
-                <rect x="242" y="610" width="95"  height="48" fill="rgba(13,71,161,0.45)"
-                      stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
-                <rect x="242" y="610" width="95"  height="4" fill="rgba(255,255,255,0.14)"/>
-                <text x="352" y="760" text-anchor="middle"
+                <!-- Staircase: bottom-left, 3 runde Stufen (Viertelkreise) -->
+                <path d="M 242,786 L 242,581 A 205,205 0 0 1 447,786 Z"
+                      fill="rgba(100,181,246,0.48)" stroke="rgba(255,255,255,0.28)" stroke-width="2"/>
+                <path d="M 242,786 L 242,648 A 138,138 0 0 1 380,786 Z"
+                      fill="rgba(33,150,243,0.42)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                <path d="M 242,786 L 242,711 A 75,75 0 0 1 317,786 Z"
+                      fill="rgba(13,71,161,0.45)" stroke="rgba(255,255,255,0.14)" stroke-width="2"/>
+                <path d="M 242,581 A 205,205 0 0 1 447,786" fill="none"
+                      stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+                <path d="M 242,648 A 138,138 0 0 1 380,786" fill="none"
+                      stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
+                <path d="M 242,711 A 75,75 0 0 1 317,786" fill="none"
+                      stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+                <text x="360" y="762" text-anchor="middle"
                       font-family="Arial" font-size="12" fill="rgba(255,255,255,0.28)" letter-spacing="1">TREPPE</text>
 
                 <!-- Temperature -->
@@ -268,22 +265,13 @@ views:
                       font-family="'Helvetica Neue',Arial,sans-serif"
                       font-size="13" fill="rgba(255,255,255,0.38)" letter-spacing="5">WASSERTEMPERATUR</text>
 
-                <!-- Lights (5x top edge) -->
-                <circle cx="390"  cy="82" r="38" fill="url(#lightGlowR)" opacity="0.32" style="${lightAnim(0)}"/>
-                <circle cx="640"  cy="82" r="38" fill="url(#lightGlowR)" opacity="0.32" style="${lightAnim(0.3)}"/>
-                <circle cx="880"  cy="82" r="38" fill="url(#lightGlowR)" opacity="0.32" style="${lightAnim(0.6)}"/>
-                <circle cx="1120" cy="82" r="38" fill="url(#lightGlowR)" opacity="0.32" style="${lightAnim(0.9)}"/>
-                <circle cx="1370" cy="82" r="38" fill="url(#lightGlowR)" opacity="0.32" style="${lightAnim(1.2)}"/>
-                <circle cx="390"  cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${lightAnim(0)}"/>
-                <circle cx="640"  cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${lightAnim(0.3)}"/>
-                <circle cx="880"  cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${lightAnim(0.6)}"/>
-                <circle cx="1120" cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${lightAnim(0.9)}"/>
-                <circle cx="1370" cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${lightAnim(1.2)}"/>
-                <circle cx="390"  cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
-                <circle cx="640"  cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
-                <circle cx="880"  cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
-                <circle cx="1120" cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
-                <circle cx="1370" cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
+                <!-- Lights (2x top edge) -->
+                <circle cx="540"  cy="82" r="46" fill="url(#lightGlowR)" opacity="0.30" style="${lightAnim(0)}"/>
+                <circle cx="1220" cy="82" r="46" fill="url(#lightGlowR)" opacity="0.30" style="${lightAnim(0.6)}"/>
+                <circle cx="540"  cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${lightAnim(0)}"/>
+                <circle cx="1220" cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${lightAnim(0.6)}"/>
+                <circle cx="540"  cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
+                <circle cx="1220" cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
                 <text x="880" y="48" text-anchor="middle"
                       font-family="Arial" font-size="11" fill="${lightLabelC}" letter-spacing="2">POOLBELEUCHTUNG</text>
 
