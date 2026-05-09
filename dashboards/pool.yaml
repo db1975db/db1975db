@@ -7,13 +7,12 @@
 #    • mushroom-cards     (piitaya/lovelace-mushroom)
 #    • apexcharts-card    (RomRider/lovelace-apexcharts-card)
 #
-#  Entity-IDs anpassen — Suche nach "ANPASSEN" im Dokument:
-#    switch.pool_pump             → Filterpumpe
-#    switch.pool_heater           → Heizung / Wärmepumpe
-#    light.pool_light             → LED-Beleuchtung
-#    switch.pool_countercurrent   → Gegenstromanlage
-#    sensor.pool_water_temperature → Wassertemperatur-Sensor
-#    sensor.pool_heater_setpoint   → Zieltemperatur (optional)
+#  Entity-Mapping:
+#    climate.warmepumpe_pool_warmepumpe  → Wärmepumpe
+#    switch.shelly_plug_m_gen3_2         → Poolpumpe
+#    switch.shelly_plug_m_gen3_3         → Elektrolyse
+#    switch.shelly_plug_m_gen3_4         → Poollicht
+#    sensor.pooltemperatur               → Wassertemperatur
 # ════════════════════════════════════════════════════════════════
 
 title: Pool
@@ -24,15 +23,10 @@ views:
     cards:
 
       # ══════════════════════════════════════════════════════════
-      # ZONE 1 — Interaktive Pool-Visualisierung (button-card)
-      # Zeigt den Pool von oben mit animierten Effekten:
-      #   • Wellen  → animiert wenn Pumpe EIN
-      #   • Lichter → leuchten/pulsieren wenn Licht EIN
-      #   • Heizung → glüht orange wenn aktiv
-      #   • Gegenstrom → Pfeil-Animation wenn aktiv
+      # ZONE 1 — Interaktive Pool-Visualisierung
       # ══════════════════════════════════════════════════════════
       - type: custom:button-card
-        entity: switch.pool_pump   # ANPASSEN
+        entity: switch.shelly_plug_m_gen3_2
         show_name: false
         show_icon: false
         show_state: false
@@ -57,16 +51,16 @@ views:
         custom_fields:
           pool_vis: |
             [[[
-              var pump   = states['switch.pool_pump'];
-              var heater = states['switch.pool_heater'];
-              var light  = states['light.pool_light'];
-              var cc     = states['switch.pool_countercurrent'];
-              var tempS  = states['sensor.pool_water_temperature'];
+              var pump   = states['switch.shelly_plug_m_gen3_2'];
+              var heater = states['climate.warmepumpe_pool_warmepumpe'];
+              var light  = states['switch.shelly_plug_m_gen3_4'];
+              var elek   = states['switch.shelly_plug_m_gen3_3'];
+              var tempS  = states['sensor.pooltemperatur'];
 
               var pumpOn   = pump   && pump.state   === 'on';
-              var heaterOn = heater && heater.state === 'on';
+              var heaterOn = heater && heater.state !== 'off' && heater.state !== 'unavailable';
               var lightOn  = light  && light.state  === 'on';
-              var ccOn     = cc     && cc.state     === 'on';
+              var elekOn   = elek   && elek.state   === 'on';
               var temp     = tempS  ? parseFloat(tempS.state).toFixed(1) : '--';
 
               var waterTop    = lightOn ? '#2196f3' : '#1565a0';
@@ -75,7 +69,7 @@ views:
               var pumpLabel   = pumpOn   ? 'EIN'     : 'AUS';
               var pumpLabelC  = pumpOn   ? '#4caf50' : '#ef5350';
               var heaterCol   = heaterOn ? '#ff6b35' : '#546e7a';
-              var heaterIcon  = heaterOn ? '♨'  : '○';
+              var heaterIcon  = heaterOn ? '♨'       : '○';
               var heaterLabel = heaterOn ? 'EIN'     : 'AUS';
               var heaterFilt  = heaterOn ? 'url(#heaterGlow)' : 'none';
               var lightCol    = lightOn  ? '#ffe082' : '#455a64';
@@ -83,19 +77,20 @@ views:
               var glowFilt    = lightOn  ? 'url(#glow)' : 'none';
               var lightLabel  = lightOn  ? 'EIN'     : 'AUS';
               var lightLabelC = lightOn  ? '#ffe082' : '#78909c';
-              var ccFill      = ccOn     ? '#1565a0' : '#253445';
-              var ccStroke    = ccOn     ? '#2196f3' : '#3d5060';
+              var elekFill    = elekOn   ? '#1a3a20' : '#253445';
+              var elekStroke  = elekOn   ? '#4caf50' : '#3d5060';
+              var elekLabelC  = elekOn   ? '#4caf50' : '#78909c';
 
-              var waveAnim   = pumpOn  ? 'animation:poolWave 4s linear infinite'           : '';
-              var lightAnim1 = lightOn ? 'animation:lightPulse 2s ease-in-out infinite'     : '';
-              var lightAnim2 = lightOn ? 'animation:lightPulse 2s ease-in-out infinite 0.7s': '';
-              var heatAnim   = heaterOn? 'animation:heaterFlicker 3s ease-in-out infinite'  : '';
+              var waveAnim   = pumpOn  ? 'animation:poolWave 4s linear infinite'            : '';
+              var lightAnim1 = lightOn ? 'animation:lightPulse 2s ease-in-out infinite'      : '';
+              var lightAnim2 = lightOn ? 'animation:lightPulse 2s ease-in-out infinite 0.7s' : '';
+              var heatAnim   = heaterOn? 'animation:heaterFlicker 3s ease-in-out infinite'   : '';
 
-              var ccArrows = ccOn
-                ? '<text x="89" y="252" font-family="Arial" font-size="14" fill="#64b5f6">›</text>'
-                  + '<text x="99" y="252" font-family="Arial" font-size="14" fill="#42a5f5" opacity="0.7">›</text>'
-                  + '<text x="109" y="252" font-family="Arial" font-size="14" fill="#2196f3" opacity="0.4">›</text>'
-                : '<text x="93" y="252" text-anchor="middle" font-family="Arial" font-size="12" fill="#546e7a">–</text>';
+              var elekBubbles = elekOn
+                ? '<circle cx="86" cy="248" r="2" fill="#a5d6a7" opacity="0.9" style="animation:lightPulse 1s ease-in-out infinite"/>'
+                  + '<circle cx="93" cy="243" r="1.5" fill="#a5d6a7" opacity="0.7" style="animation:lightPulse 1.3s ease-in-out infinite 0.2s"/>'
+                  + '<circle cx="100" cy="248" r="2" fill="#a5d6a7" opacity="0.8" style="animation:lightPulse 0.9s ease-in-out infinite 0.4s"/>'
+                : '';
 
               var lightHalo1 = lightOn
                 ? '<circle cx="672" cy="90" r="30" fill="#ffe082" opacity="0.18" style="' + lightAnim1 + '"/>'
@@ -104,10 +99,10 @@ views:
                 ? '<circle cx="672" cy="360" r="30" fill="#ffe082" opacity="0.18" style="' + lightAnim2 + '"/>'
                 : '';
 
-              var statusText = 'Pumpe ' + (pumpOn ? '● EIN' : '○ AUS')
-                + ' Heizung ' + (heaterOn ? '● EIN' : '○ AUS')
-                + ' Licht '   + (lightOn  ? '● EIN' : '○ AUS')
-                + ' Gegenstrom ' + (ccOn   ? '● EIN' : '○ AUS');
+              var statusText = 'Pumpe ' + (pumpOn ? '● EIN' : '○ AUS')
+                + '   Heizung ' + (heaterOn ? '● EIN' : '○ AUS')
+                + '   Licht '   + (lightOn  ? '● EIN' : '○ AUS')
+                + '   Elektrolyse ' + (elekOn ? '● EIN' : '○ AUS');
 
               return `<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg"
                           style="display:block;width:100%;border-radius:16px">
@@ -158,8 +153,7 @@ views:
                     <feGaussianBlur stdDeviation="3" result="blur"/>
                     <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
                   </filter>
-                  <pattern id="waves" x="0" y="0" width="200" height="40"
-                           patternUnits="userSpaceOnUse">
+                  <pattern id="waves" x="0" y="0" width="200" height="40" patternUnits="userSpaceOnUse">
                     <path d="M0 20 Q50 5 100 20 Q150 35 200 20"
                           fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="1.5"/>
                     <path d="M0 32 Q50 17 100 32 Q150 47 200 32"
@@ -170,30 +164,28 @@ views:
                   </clipPath>
                 </defs>
 
-                <!-- Deck background -->
+                <!-- Deck -->
                 <rect width="800" height="450" fill="url(#deckGrad)"/>
 
-                <!-- Pool coping (stone border) -->
+                <!-- Coping -->
                 <rect x="78"  y="54"  width="644" height="342" rx="22" fill="url(#copingGrad)"/>
                 <rect x="78"  y="54"  width="644" height="14"  rx="12" fill="rgba(255,255,255,0.07)"/>
                 <line x1="78" y1="74" x2="722" y2="74" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>
 
                 <!-- Water -->
                 <rect x="108" y="78"  width="584" height="294" rx="12" fill="url(#waterGrad)"/>
+                <rect x="108" y="78"  width="584" height="8"   rx="6"  fill="rgba(100,180,255,0.2)"/>
+                <rect x="108" y="364" width="584" height="8"   rx="6"  fill="rgba(100,180,255,0.12)"/>
+                <rect x="108" y="78"  width="8"   height="294" rx="4"  fill="rgba(100,180,255,0.12)"/>
+                <rect x="684" y="78"  width="8"   height="294" rx="4"  fill="rgba(100,180,255,0.12)"/>
 
-                <!-- Pool tile border (water edge) -->
-                <rect x="108" y="78"  width="584" height="8"   rx="6" fill="rgba(100,180,255,0.2)"/>
-                <rect x="108" y="364" width="584" height="8"   rx="6" fill="rgba(100,180,255,0.12)"/>
-                <rect x="108" y="78"  width="8"   height="294" rx="4" fill="rgba(100,180,255,0.12)"/>
-                <rect x="684" y="78"  width="8"   height="294" rx="4" fill="rgba(100,180,255,0.12)"/>
-
-                <!-- Animated waves (clipped) -->
+                <!-- Waves -->
                 <g clip-path="url(#waterClip)">
                   <rect x="-200" y="78" width="1200" height="294"
                         fill="url(#waves)" style="${waveAnim}"/>
                 </g>
 
-                <!-- Water highlight -->
+                <!-- Highlight -->
                 <ellipse cx="320" cy="170" rx="210" ry="72" fill="url(#waterHL)"/>
 
                 <!-- Temperature -->
@@ -211,7 +203,7 @@ views:
                 <text x="174" y="55" text-anchor="middle"
                       font-family="Arial" font-size="9" fill="#78909c" letter-spacing="1">SKIMMER</text>
 
-                <!-- Pump -->
+                <!-- Pumpe -->
                 <circle cx="90" cy="148" r="16" fill="${pumpCol}" filter="url(#softGlow)" opacity="0.9"/>
                 <circle cx="90" cy="148" r="7"  fill="white" opacity="0.85"/>
                 <text x="90" y="174" text-anchor="middle"
@@ -219,31 +211,29 @@ views:
                 <text x="90" y="185" text-anchor="middle"
                       font-family="Arial" font-size="8" fill="${pumpLabelC}">${pumpLabel}</text>
 
-                <!-- Heizung -->
+                <!-- Wärmepumpe -->
                 <circle cx="705" cy="68" r="18" fill="${heaterCol}" filter="${heaterFilt}"
                         style="${heatAnim}"/>
                 <text x="705" y="74" text-anchor="middle"
                       font-family="Arial" font-size="16" fill="white">${heaterIcon}</text>
                 <text x="705" y="50" text-anchor="middle"
-                      font-family="Arial" font-size="9" fill="#90a4ae" letter-spacing="1">HEIZUNG</text>
+                      font-family="Arial" font-size="9" fill="#90a4ae" letter-spacing="1">WÄRMEP.</text>
                 <text x="705" y="96" text-anchor="middle"
                       font-family="Arial" font-size="8" fill="${heaterCol}">${heaterLabel}</text>
 
-                <!-- Light halos -->
+                <!-- Light halos + fixtures -->
                 ${lightHalo1}
                 ${lightHalo2}
-
-                <!-- Underwater lights -->
                 <circle cx="672" cy="90"  r="${lightR}" fill="${lightCol}"
                         filter="${glowFilt}" style="${lightAnim1}"/>
                 <circle cx="672" cy="360" r="${lightR}" fill="${lightCol}"
                         filter="${glowFilt}" style="${lightAnim2}"/>
-                <text x="672" y="44" text-anchor="middle"
+                <text x="672" y="44"  text-anchor="middle"
                       font-family="Arial" font-size="9" fill="#90a4ae" letter-spacing="1">LICHT</text>
                 <text x="672" y="388" text-anchor="middle"
                       font-family="Arial" font-size="8" fill="${lightLabelC}">${lightLabel}</text>
 
-                <!-- Inlet nozzles -->
+                <!-- Einlaufdüsen -->
                 <circle cx="697" cy="160" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
                 <circle cx="697" cy="196" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
                 <circle cx="697" cy="304" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
@@ -252,14 +242,16 @@ views:
                       font-family="Arial" font-size="8" fill="#546e7a"
                       transform="rotate(90 732 250)" letter-spacing="1">EINLAUF</text>
 
-                <!-- Gegenstrom -->
-                <rect x="78" y="238" width="30" height="22" rx="4"
-                      fill="${ccFill}" stroke="${ccStroke}" stroke-width="1.5"/>
-                ${ccArrows}
-                <text x="93" y="276" text-anchor="middle"
-                      font-family="Arial" font-size="8" fill="#78909c">GEG.</text>
+                <!-- Elektrolyse -->
+                <rect x="78" y="232" width="30" height="34" rx="4"
+                      fill="${elekFill}" stroke="${elekStroke}" stroke-width="1.5"/>
+                <text x="93" y="247" text-anchor="middle"
+                      font-family="Arial" font-size="8" fill="${elekLabelC}" letter-spacing="0.5">Cl₂</text>
+                ${elekBubbles}
+                <text x="93" y="283" text-anchor="middle"
+                      font-family="Arial" font-size="8" fill="#78909c">ELEK.</text>
 
-                <!-- Ladder -->
+                <!-- Leiter -->
                 <rect x="680" y="348" width="3" height="30" rx="1.5" fill="#3d5060"/>
                 <rect x="691" y="348" width="3" height="30" rx="1.5" fill="#3d5060"/>
                 <rect x="680" y="355" width="14" height="2"  rx="1"   fill="#3d5060"/>
@@ -268,47 +260,52 @@ views:
                 <!-- Status bar -->
                 <rect x="78" y="400" width="644" height="36" rx="10" fill="rgba(0,0,0,0.28)"/>
                 <text x="400" y="421" text-anchor="middle"
-                      font-family="Arial" font-size="11"
+                      font-family="Arial" font-size="10"
                       fill="rgba(255,255,255,0.45)" letter-spacing="0.5">${statusText}</text>
               </svg>`;
             ]]]
 
       # ══════════════════════════════════════════════════════════
-      # ZONE 2 — Status Chips (Mushroom)
+      # ZONE 2 — Status Chips
       # ══════════════════════════════════════════════════════════
       - type: custom:mushroom-chips-card
         alignment: center
         chips:
           - type: template
             icon: mdi:thermometer-water
-            content: "{{ states('sensor.pool_water_temperature') | float(0) | round(1) }}°C"
+            content: "{{ states('sensor.pooltemperatur') | float(0) | round(1) }}°C"
             icon_color: blue
             tap_action:
               action: more-info
-              entity: sensor.pool_water_temperature   # ANPASSEN
+              entity: sensor.pooltemperatur
 
           - type: entity
-            entity: switch.pool_pump                  # ANPASSEN
+            entity: switch.shelly_plug_m_gen3_2
+            icon: mdi:pump
             icon_color_on: green
             icon_color_off: red
             tap_action:
               action: toggle
 
           - type: entity
-            entity: switch.pool_heater                # ANPASSEN
+            entity: climate.warmepumpe_pool_warmepumpe
+            icon: mdi:heat-pump
             icon_color_on: orange
+            tap_action:
+              action: more-info
+
+          - type: entity
+            entity: switch.shelly_plug_m_gen3_4
+            icon: mdi:lightbulb-multiple
+            icon_color_on: yellow
             icon_color_off: grey
             tap_action:
               action: toggle
 
           - type: entity
-            entity: light.pool_light                  # ANPASSEN
-            tap_action:
-              action: toggle
-
-          - type: entity
-            entity: switch.pool_countercurrent        # ANPASSEN
-            icon_color_on: blue
+            entity: switch.shelly_plug_m_gen3_3
+            icon: mdi:water-percent
+            icon_color_on: green
             icon_color_off: grey
             tap_action:
               action: toggle
@@ -319,7 +316,7 @@ views:
       - type: horizontal-stack
         cards:
 
-          # ── Temperaturgraph (ApexCharts) ──
+          # ── Temperaturgraph ──
           - type: custom:apexcharts-card
             header:
               show: true
@@ -351,10 +348,11 @@ views:
                 x:
                   format: "HH:mm"
             series:
-              - entity: sensor.pool_water_temperature   # ANPASSEN
+              - entity: sensor.pooltemperatur
                 name: Wasser
                 color: "#42a5f5"
-              - entity: sensor.pool_heater_setpoint     # ANPASSEN (oder entfernen)
+              - entity: climate.warmepumpe_pool_warmepumpe
+                attribute: temperature
                 name: Ziel
                 color: "#ff6b35"
                 type: line
@@ -367,7 +365,7 @@ views:
             cards:
 
               - type: custom:button-card
-                entity: switch.pool_pump               # ANPASSEN
+                entity: switch.shelly_plug_m_gen3_2
                 name: Pumpe
                 icon: mdi:pump
                 tap_action:
@@ -391,16 +389,16 @@ views:
                     - width: "36px"
 
               - type: custom:button-card
-                entity: switch.pool_heater             # ANPASSEN
-                name: Heizung
-                icon: mdi:water-thermometer
+                entity: climate.warmepumpe_pool_warmepumpe
+                name: Wärmepumpe
+                icon: mdi:heat-pump
                 tap_action:
-                  action: toggle
+                  action: more-info
                 state:
-                  - value: "on"
-                    color: "#ff6b35"
                   - value: "off"
                     color: "#546e7a"
+                  - operator: "default"
+                    color: "#ff6b35"
                 styles:
                   card:
                     - background: "linear-gradient(135deg, #0d1b2a, #1a2f45)"
@@ -408,12 +406,12 @@ views:
                     - border: "1px solid rgba(255,255,255,0.08)"
                   name:
                     - color: "rgba(255,255,255,0.75)"
-                    - font-size: "13px"
+                    - font-size: "11px"
                   icon:
                     - width: "36px"
 
               - type: custom:button-card
-                entity: light.pool_light               # ANPASSEN
+                entity: switch.shelly_plug_m_gen3_4
                 name: Licht
                 icon: mdi:lightbulb-multiple
                 tap_action:
@@ -435,14 +433,14 @@ views:
                     - width: "36px"
 
               - type: custom:button-card
-                entity: switch.pool_countercurrent     # ANPASSEN
-                name: Gegenstrom
-                icon: mdi:waves
+                entity: switch.shelly_plug_m_gen3_3
+                name: Elektrolyse
+                icon: mdi:water-percent
                 tap_action:
                   action: toggle
                 state:
                   - value: "on"
-                    color: "#2196f3"
+                    color: "#4caf50"
                   - value: "off"
                     color: "#546e7a"
                 styles:
