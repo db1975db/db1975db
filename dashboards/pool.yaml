@@ -1,531 +1,312 @@
-# ════════════════════════════════════════════════════════════════
-#  Pool Dashboard — Home Assistant Lovelace (Raw YAML Mode)
-# ════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════
+#  Pool-Karte — direkt in ein bestehendes Dashboard
+#  einfügen (Lovelace → Karte hinzufügen → Manuell)
 #
-#  Benötigte HACS-Karten:
-#    • button-card        (thomasloven/lovelace-button-card)
-#    • mushroom-cards     (piitaya/lovelace-mushroom)
-#    • apexcharts-card    (RomRider/lovelace-apexcharts-card)
+#  GRÖSSE ANPASSEN:
+#    height weiter unten ändern, z.B.:
+#    40vh = klein / 60vh = mittel / 85vh = groß
 #
-#  Entity-Mapping:
-#    climate.warmepumpe_pool_warmepumpe  → Wärmepumpe
-#    switch.shelly_plug_m_gen3_2         → Poolpumpe
-#    switch.shelly_plug_m_gen3_3         → Elektrolyse
-#    switch.shelly_plug_m_gen3_4         → Poollicht
-#    sensor.pooltemperatur               → Wassertemperatur
-#    sensor.pool_ph                      → pH-Wert        (ANPASSEN oder entfernen)
-#    sensor.pool_redox                   → Redox-Wert     (ANPASSEN oder entfernen)
-# ════════════════════════════════════════════════════════════════
+#  Entity-IDs anpassen falls nötig (Suche: ANPASSEN)
+# ══════════════════════════════════════════════════════
 
-title: Pool
-views:
-  - title: Pool
-    path: pool
-    icon: mdi:pool
-    cards:
+type: custom:button-card
+entity: switch.shelly_plug_m_gen3_2   # ANPASSEN: Poolpumpe
+show_name: false
+show_icon: false
+show_state: false
+tap_action:
+  action: none
+hold_action:
+  action: none
+double_tap_action:
+  action: none
+styles:
+  card:
+    - background: "linear-gradient(160deg, #0a1828 0%, #0d2035 100%)"
+    - border-radius: "16px"
+    - padding: "0"
+    - overflow: "hidden"
+    - box-shadow: "0 10px 40px rgba(0,0,0,0.7)"
+    - height: "60vh"    # ◄── GRÖSSE: hier anpassen (z.B. 40vh / 60vh / 85vh)
+  custom_fields:
+    pool_vis:
+      - width: "100%"
+      - height: "100%"
+      - display: "block"
+      - padding: "0"
+custom_fields:
+  pool_vis: |
+    [[[
+      var pump   = states['switch.shelly_plug_m_gen3_2'];
+      var heater = states['climate.warmepumpe_pool_warmepumpe'];
+      var light  = states['switch.shelly_plug_m_gen3_4'];
+      var elek   = states['switch.shelly_plug_m_gen3_3'];
+      var tempS  = states['sensor.pooltemperatur'];
+      var phS    = states['sensor.pool_ph'];
+      var redoxS = states['sensor.pool_redox'];
 
-      # ══════════════════════════════════════════════════════════
-      # ZONE 1 — Interaktive Pool-Visualisierung (1600×900)
-      # ══════════════════════════════════════════════════════════
-      - type: custom:button-card
-        entity: switch.shelly_plug_m_gen3_2
-        show_name: false
-        show_icon: false
-        show_state: false
-        tap_action:
-          action: none
-        hold_action:
-          action: none
-        double_tap_action:
-          action: none
-        styles:
-          card:
-            - background: "linear-gradient(160deg, #0a1828 0%, #0d2035 100%)"
-            - border-radius: "16px"
-            - padding: "0"
-            - overflow: "hidden"
-            - box-shadow: "0 10px 40px rgba(0,0,0,0.7)"
-          custom_fields:
-            pool_vis:
-              - width: "100%"
-              - display: "block"
-              - padding: "0"
-        custom_fields:
-          pool_vis: |
-            [[[
-              var pump   = states['switch.shelly_plug_m_gen3_2'];
-              var heater = states['climate.warmepumpe_pool_warmepumpe'];
-              var light  = states['switch.shelly_plug_m_gen3_4'];
-              var elek   = states['switch.shelly_plug_m_gen3_3'];
-              var tempS  = states['sensor.pooltemperatur'];
-              var phS    = states['sensor.pool_ph'];
-              var redoxS = states['sensor.pool_redox'];
+      var pumpOn   = pump   && pump.state   === 'on';
+      var heaterOn = heater && heater.state !== 'off' && heater.state !== 'unavailable';
+      var lightOn  = light  && light.state  === 'on';
+      var elekOn   = elek   && elek.state   === 'on';
+      var temp     = tempS  ? parseFloat(tempS.state).toFixed(1) : '--';
+      var phVal    = phS    ? parseFloat(phS.state).toFixed(1)   : '7.2';
+      var redoxVal = redoxS ? Math.round(redoxS.state)           : '745';
 
-              var pumpOn   = pump   && pump.state   === 'on';
-              var heaterOn = heater && heater.state !== 'off' && heater.state !== 'unavailable';
-              var lightOn  = light  && light.state  === 'on';
-              var elekOn   = elek   && elek.state   === 'on';
-              var temp     = tempS  ? parseFloat(tempS.state).toFixed(1) : '--';
-              var phVal    = phS    ? parseFloat(phS.state).toFixed(1)   : '7.2';
-              var redoxVal = redoxS ? Math.round(redoxS.state)           : '745';
+      var waterTop   = lightOn ? '#2196f3' : '#1565a0';
+      var waterBot   = lightOn ? '#0d47a1' : '#082d6a';
+      var pumpCol    = pumpOn   ? '#4caf50' : '#ef5350';
+      var pumpLabelC = pumpOn   ? '#4caf50' : '#ef5350';
+      var heaterCol  = heaterOn ? '#ff6b35' : '#546e7a';
+      var heaterIcon = heaterOn ? '♨' : '○';
+      var heaterFilt = heaterOn ? 'url(#heatGlow)' : 'none';
+      var heatAnim   = heaterOn ? 'animation:heaterFlicker 3s ease-in-out infinite' : '';
+      var lightCol   = lightOn  ? '#ffe082' : '#37474f';
+      var lightR     = lightOn  ? 15 : 8;
+      var glowFilt   = lightOn  ? 'url(#glow)' : 'none';
+      var lightLabelC = lightOn ? '#ffe082' : '#78909c';
+      var elekFill   = elekOn   ? '#1a3a20' : '#1e2d3d';
+      var elekStroke = elekOn   ? '#4caf50' : '#37474f';
+      var elekLabelC = elekOn   ? '#4caf50' : '#78909c';
 
-              var waterTop    = lightOn ? '#2196f3' : '#1565a0';
-              var waterBot    = lightOn ? '#0d47a1' : '#082d6a';
-              var pumpCol     = pumpOn   ? '#4caf50' : '#ef5350';
-              var pumpLabel   = pumpOn   ? 'EIN'     : 'AUS';
-              var pumpLabelC  = pumpOn   ? '#4caf50' : '#ef5350';
-              var heaterCol   = heaterOn ? '#ff6b35' : '#546e7a';
-              var heaterIcon  = heaterOn ? '♨'  : '○';
-              var heaterLabel = heaterOn ? 'EIN'     : 'AUS';
-              var heaterFilt  = heaterOn ? 'url(#heatGlow)' : 'none';
-              var heatAnim    = heaterOn ? 'animation:heaterFlicker 3s ease-in-out infinite' : '';
-              var lightCol    = lightOn  ? '#ffe082' : '#37474f';
-              var lightR      = lightOn  ? 15        : 8;
-              var glowFilt    = lightOn  ? 'url(#glow)' : 'none';
-              var lightLabel  = lightOn  ? 'EIN'     : 'AUS';
-              var lightLabelC = lightOn  ? '#ffe082' : '#78909c';
-              var elekFill    = elekOn   ? '#1a3a20' : '#1e2d3d';
-              var elekStroke  = elekOn   ? '#4caf50' : '#37474f';
-              var elekLabelC  = elekOn   ? '#4caf50' : '#78909c';
-              var elekStatus  = elekOn   ? '● EIN' : '○ AUS';
+      var waveAnim  = pumpOn ? 'animation:wave1 3.5s linear infinite' : '';
+      var wave2Anim = pumpOn ? 'animation:wave2 6s linear infinite'   : '';
+      var wave3Anim = pumpOn ? 'animation:wave3 2s linear infinite'   : '';
 
-              var waveAnim  = pumpOn  ? 'animation:wave1 3.5s linear infinite' : '';
-              var wave2Anim = pumpOn  ? 'animation:wave2 6s linear infinite'   : '';
-              var wave3Anim = pumpOn  ? 'animation:wave3 2s linear infinite'   : '';
+      var la = function(d) {
+        return lightOn ? 'animation:lightPulse 2s ease-in-out infinite ' + d + 's' : '';
+      };
 
-              var lightAnim = function(delay) {
-                return lightOn ? 'animation:lightPulse 2s ease-in-out infinite ' + delay + 's' : '';
-              };
+      var elekBubbles = elekOn
+        ? '<circle cx="75" cy="628" r="3.5" fill="#a5d6a7" opacity="0.8" style="animation:lightPulse 1.1s ease-in-out infinite"/>'
+          + '<circle cx="94" cy="620" r="2.5" fill="#a5d6a7" opacity="0.6" style="animation:lightPulse 0.9s ease-in-out infinite 0.3s"/>'
+          + '<circle cx="113" cy="626" r="3" fill="#a5d6a7" opacity="0.7" style="animation:lightPulse 1.3s ease-in-out infinite 0.6s"/>'
+        : '';
 
-              var elekBubbles = elekOn
-                ? '<circle cx="75" cy="628" r="3.5" fill="#a5d6a7" opacity="0.8" style="animation:lightPulse 1.1s ease-in-out infinite"/>'
-                  + '<circle cx="94" cy="620" r="2.5" fill="#a5d6a7" opacity="0.6" style="animation:lightPulse 0.9s ease-in-out infinite 0.3s"/>'
-                  + '<circle cx="113" cy="626" r="3" fill="#a5d6a7" opacity="0.7" style="animation:lightPulse 1.3s ease-in-out infinite 0.6s"/>'
-                : '';
+      var ripple1 = pumpOn ? 'animation:ripple 2s ease-out infinite'      : '';
+      var ripple2 = pumpOn ? 'animation:ripple 2s ease-out infinite 0.8s' : '';
 
-              var rippleAnim1 = pumpOn ? 'animation:ripple 2s ease-out infinite'      : '';
-              var rippleAnim2 = pumpOn ? 'animation:ripple 2s ease-out infinite 0.8s' : '';
+      var statusText = 'Pumpe ' + (pumpOn ? '● EIN' : '○ AUS')
+        + '   Wärmepumpe ' + (heaterOn ? '● EIN' : '○ AUS')
+        + '   Licht ' + (lightOn ? '● EIN' : '○ AUS')
+        + '   Elektrolyse ' + (elekOn ? '● EIN' : '○ AUS')
+        + '   pH ' + phVal + '   Redox ' + redoxVal;
 
-              var statusText = 'Pumpe ' + (pumpOn ? '● EIN' : '○ AUS')
-                + '   Wärmepumpe ' + (heaterOn ? '● EIN' : '○ AUS')
-                + '   Licht ' + (lightOn ? '● EIN' : '○ AUS')
-                + '   Elektrolyse ' + (elekOn ? '● EIN' : '○ AUS')
-                + '   pH ' + phVal + '   Redox ' + redoxVal;
+      return `<svg viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg"
+                   style="display:block;width:100%;height:100%">
+        <defs>
+          <style>
+            @keyframes wave1 { 0%{transform:translateX(0)} 100%{transform:translateX(-250px)} }
+            @keyframes wave2 { 0%{transform:translateX(-200px)} 100%{transform:translateX(0)} }
+            @keyframes wave3 { 0%{transform:translateX(0)} 100%{transform:translateX(-400px)} }
+            @keyframes lightPulse    { 0%,100%{opacity:.6} 50%{opacity:1} }
+            @keyframes heaterFlicker { 0%,100%{opacity:1} 50%{opacity:.72} }
+            @keyframes ripple        { 0%{r:9;opacity:.8} 100%{r:26;opacity:0} }
+          </style>
+          <linearGradient id="bgG" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#1a2535"/>
+            <stop offset="100%" stop-color="#0d1822"/>
+          </linearGradient>
+          <pattern id="woodH" x="0" y="0" width="1" height="20" patternUnits="userSpaceOnUse">
+            <rect x="0" y="0"  width="1" height="17" fill="#7C6A52"/>
+            <rect x="0" y="17" width="1" height="3"  fill="#2e1e0f"/>
+            <rect x="0" y="4"  width="1" height="1"  fill="#8A7860" opacity="0.5"/>
+            <rect x="0" y="11" width="1" height="1"  fill="#6A5840" opacity="0.4"/>
+          </pattern>
+          <linearGradient id="wlSh" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"  stop-color="rgba(0,0,0,0.4)"/>
+            <stop offset="55%" stop-color="rgba(0,0,0,0)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0.08)"/>
+          </linearGradient>
+          <linearGradient id="wbSh" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="rgba(0,0,0,0.3)"/>
+            <stop offset="60%" stop-color="rgba(0,0,0,0)"/>
+            <stop offset="100%" stop-color="rgba(0,0,0,0.2)"/>
+          </linearGradient>
+          <linearGradient id="copG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#5e6e7e"/>
+            <stop offset="100%" stop-color="#3d4d5c"/>
+          </linearGradient>
+          <linearGradient id="watG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="${waterTop}"/>
+            <stop offset="100%" stop-color="${waterBot}"/>
+          </linearGradient>
+          <radialGradient id="watHL" cx="35%" cy="25%">
+            <stop offset="0%"   stop-color="rgba(255,255,255,0.15)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+          </radialGradient>
+          <radialGradient id="lgR" cx="50%" cy="50%">
+            <stop offset="0%"   stop-color="#ffe082" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#ffe082" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="8" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="sGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="heatGlow" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="tGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="wSh">
+            <feDropShadow dx="4" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,0.55)"/>
+          </filter>
+          <pattern id="wA" x="0" y="0" width="250" height="60" patternUnits="userSpaceOnUse">
+            <path d="M0 30 Q30 12 62 30 Q94 48 125 30 Q156 12 187 30 Q219 48 250 30"
+                  fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="2"/>
+            <path d="M0 48 Q30 30 62 48 Q94 66 125 48 Q156 30 187 48 Q219 66 250 48"
+                  fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+          </pattern>
+          <pattern id="wB" x="0" y="0" width="380" height="80" patternUnits="userSpaceOnUse">
+            <path d="M0 40 Q48 10 95 40 Q143 70 190 40 Q238 10 285 40 Q333 70 380 40"
+                  fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="2.5"/>
+          </pattern>
+          <pattern id="wC" x="0" y="0" width="160" height="40" patternUnits="userSpaceOnUse">
+            <path d="M0 20 Q20 8 40 20 Q60 32 80 20 Q100 8 120 20 Q140 32 160 20"
+                  fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+          </pattern>
+          <clipPath id="wClip">
+            <rect x="242" y="72" width="1278" height="714" rx="14"/>
+          </clipPath>
+        </defs>
 
-              return `<svg viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg"
-                          style="display:block;width:100%;border-radius:16px">
-                <defs>
-                  <style>
-                    @keyframes wave1 { 0%{transform:translateX(0)} 100%{transform:translateX(-250px)} }
-                    @keyframes wave2 { 0%{transform:translateX(-200px)} 100%{transform:translateX(0)} }
-                    @keyframes wave3 { 0%{transform:translateX(0)} 100%{transform:translateX(-400px)} }
-                    @keyframes lightPulse  { 0%,100%{opacity:.6} 50%{opacity:1} }
-                    @keyframes heaterFlicker { 0%,100%{opacity:1} 50%{opacity:.72} }
-                    @keyframes ripple { 0%{r:9;opacity:.8} 100%{r:26;opacity:0} }
-                  </style>
-                  <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#1a2535"/>
-                    <stop offset="100%" stop-color="#0d1822"/>
-                  </linearGradient>
-                  <linearGradient id="wlShade" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%"   stop-color="rgba(0,0,0,0.4)"/>
-                    <stop offset="55%"  stop-color="rgba(0,0,0,0)"/>
-                    <stop offset="100%" stop-color="rgba(0,0,0,0.08)"/>
-                  </linearGradient>
-                  <pattern id="woodBot" x="0" y="0" width="1" height="20" patternUnits="userSpaceOnUse">
-                    <rect x="0" y="0" width="1" height="17" fill="#7C6A52"/>
-                    <rect x="0" y="17" width="1" height="3" fill="#2e1e0f"/>
-                    <rect x="0" y="4" width="1" height="1" fill="#8A7860" opacity="0.5"/>
-                    <rect x="0" y="11" width="1" height="1" fill="#6A5840" opacity="0.4"/>
-                  </pattern>
-                  <linearGradient id="wbShade" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stop-color="rgba(0,0,0,0.3)"/>
-                    <stop offset="60%"  stop-color="rgba(0,0,0,0)"/>
-                    <stop offset="100%" stop-color="rgba(0,0,0,0.2)"/>
-                  </linearGradient>
-                  <linearGradient id="copingGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stop-color="#5e6e7e"/>
-                    <stop offset="100%" stop-color="#3d4d5c"/>
-                  </linearGradient>
-                  <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stop-color="${waterTop}"/>
-                    <stop offset="100%" stop-color="${waterBot}"/>
-                  </linearGradient>
-                  <radialGradient id="waterHL" cx="35%" cy="25%">
-                    <stop offset="0%"   stop-color="rgba(255,255,255,0.15)"/>
-                    <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-                  </radialGradient>
-                  <linearGradient id="step3G" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#64b5f6" stop-opacity="0.55"/>
-                    <stop offset="100%" stop-color="#42a5f5" stop-opacity="0.4"/>
-                  </linearGradient>
-                  <linearGradient id="step2G" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#2196f3" stop-opacity="0.45"/>
-                    <stop offset="100%" stop-color="#1976d2" stop-opacity="0.35"/>
-                  </linearGradient>
-                  <radialGradient id="lightGlowR" cx="50%" cy="50%">
-                    <stop offset="0%"   stop-color="#ffe082" stop-opacity="1"/>
-                    <stop offset="100%" stop-color="#ffe082" stop-opacity="0"/>
-                  </radialGradient>
-                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="8" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
-                  <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
-                    <feGaussianBlur stdDeviation="5" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
-                  <filter id="heatGlow" x="-40%" y="-40%" width="180%" height="180%">
-                    <feGaussianBlur stdDeviation="6" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
-                  <filter id="textGlow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="6" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                  </filter>
-                  <filter id="woodShadow">
-                    <feDropShadow dx="4" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,0.55)"/>
-                  </filter>
-                  <pattern id="waveA" x="0" y="0" width="250" height="60" patternUnits="userSpaceOnUse">
-                    <path d="M0 30 Q30 12 62 30 Q94 48 125 30 Q156 12 187 30 Q219 48 250 30"
-                          fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="2"/>
-                    <path d="M0 48 Q30 30 62 48 Q94 66 125 48 Q156 30 187 48 Q219 66 250 48"
-                          fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
-                  </pattern>
-                  <pattern id="waveB" x="0" y="0" width="380" height="80" patternUnits="userSpaceOnUse">
-                    <path d="M0 40 Q48 10 95 40 Q143 70 190 40 Q238 10 285 40 Q333 70 380 40"
-                          fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="2.5"/>
-                  </pattern>
-                  <pattern id="waveC" x="0" y="0" width="160" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M0 20 Q20 8 40 20 Q60 32 80 20 Q100 8 120 20 Q140 32 160 20"
-                          fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
-                  </pattern>
-                  <clipPath id="waterClip">
-                    <rect x="242" y="72" width="1278" height="714" rx="14"/>
-                  </clipPath>
-                </defs>
+        <!-- Hintergrund -->
+        <rect width="1600" height="900" fill="url(#bgG)"/>
 
-                <!-- Background -->
-                <rect width="1600" height="900" fill="url(#bgGrad)"/>
+        <!-- Holzdeck links (horizontal) -->
+        <rect x="0" y="0" width="188" height="900" fill="url(#woodH)" filter="url(#wSh)"/>
+        <rect x="0" y="0" width="188" height="900" fill="url(#wlSh)"/>
+        <rect x="185" y="0" width="3" height="900" fill="rgba(255,255,255,0.05)"/>
 
-                <!-- Left wood deck (horizontal wie unten) -->
-                <rect x="0" y="0" width="188" height="900" fill="url(#woodBot)" filter="url(#woodShadow)"/>
-                <rect x="0" y="0" width="188" height="900" fill="url(#wlShade)"/>
-                <rect x="185" y="0" width="3" height="900" fill="rgba(255,255,255,0.05)"/>
+        <!-- Holzdeck unten -->
+        <rect x="0" y="808" width="1600" height="92" fill="url(#woodH)"/>
+        <rect x="0" y="808" width="1600" height="92" fill="url(#wbSh)"/>
+        <rect x="0" y="808" width="1600" height="3"  fill="rgba(255,255,255,0.06)"/>
 
-                <!-- Bottom wood deck -->
-                <rect x="0" y="808" width="1600" height="92" fill="url(#woodBot)"/>
-                <rect x="0" y="808" width="1600" height="92" fill="url(#wbShade)"/>
-                <rect x="0" y="808" width="1600" height="3" fill="rgba(255,255,255,0.06)"/>
+        <!-- Pool-Einfassung -->
+        <rect x="200" y="28" width="1370" height="770" rx="26" fill="url(#copG)"/>
+        <rect x="200" y="28" width="1370" height="16"  rx="14" fill="rgba(255,255,255,0.08)"/>
+        <line x1="200" y1="44" x2="1570" y2="44" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
 
-                <!-- Pool coping -->
-                <rect x="200" y="28" width="1370" height="770" rx="26" fill="url(#copingGrad)"/>
-                <rect x="200" y="28" width="1370" height="16" rx="14" fill="rgba(255,255,255,0.08)"/>
-                <line x1="200" y1="44" x2="1570" y2="44" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
+        <!-- Wasser -->
+        <rect x="242" y="72" width="1278" height="714" rx="14" fill="url(#watG)"/>
+        <rect x="242" y="72"  width="1278" height="10" rx="7" fill="rgba(130,200,255,0.22)"/>
+        <rect x="242" y="776" width="1278" height="10" rx="7" fill="rgba(100,180,255,0.12)"/>
+        <rect x="242" y="72"  width="10" height="714" rx="5"  fill="rgba(100,180,255,0.12)"/>
+        <rect x="1510" y="72" width="10" height="714" rx="5"  fill="rgba(100,180,255,0.12)"/>
 
-                <!-- Water -->
-                <rect x="242" y="72" width="1278" height="714" rx="14" fill="url(#waterGrad)"/>
-                <rect x="242" y="72"  width="1278" height="10" rx="7" fill="rgba(130,200,255,0.22)"/>
-                <rect x="242" y="776" width="1278" height="10" rx="7" fill="rgba(100,180,255,0.12)"/>
-                <rect x="242" y="72"  width="10" height="714" rx="5" fill="rgba(100,180,255,0.12)"/>
-                <rect x="1510" y="72" width="10" height="714" rx="5" fill="rgba(100,180,255,0.12)"/>
+        <!-- Wellen (3 Ebenen) -->
+        <g clip-path="url(#wClip)">
+          <rect x="-250" y="72" width="2100" height="714" fill="url(#wA)" style="${waveAnim}"/>
+          <rect x="-380" y="72" width="2360" height="714" fill="url(#wB)" style="${wave2Anim}"/>
+          <rect x="-160" y="72" width="1960" height="714" fill="url(#wC)" style="${wave3Anim}"/>
+        </g>
 
-                <!-- Waves (3 layers) -->
-                <g clip-path="url(#waterClip)">
-                  <rect x="-250" y="72" width="2100" height="714" fill="url(#waveA)" style="${waveAnim}"/>
-                  <rect x="-380" y="72" width="2360" height="714" fill="url(#waveB)" style="${wave2Anim}"/>
-                  <rect x="-160" y="72" width="1960" height="714" fill="url(#waveC)" style="${wave3Anim}"/>
-                </g>
+        <!-- Lichtreflex -->
+        <ellipse cx="780" cy="300" rx="380" ry="120" fill="url(#watHL)"/>
 
-                <!-- Water highlight -->
-                <ellipse cx="780" cy="300" rx="380" ry="120" fill="url(#waterHL)"/>
+        <!-- Treppe: 3 runde Stufen unten links -->
+        <path d="M 242,786 L 242,581 A 205,205 0 0 1 447,786 Z"
+              fill="rgba(100,181,246,0.48)" stroke="rgba(255,255,255,0.28)" stroke-width="2"/>
+        <path d="M 242,786 L 242,648 A 138,138 0 0 1 380,786 Z"
+              fill="rgba(33,150,243,0.42)" stroke="rgba(255,255,255,0.20)" stroke-width="2"/>
+        <path d="M 242,786 L 242,711 A 75,75 0 0 1 317,786 Z"
+              fill="rgba(13,71,161,0.45)" stroke="rgba(255,255,255,0.14)" stroke-width="2"/>
+        <path d="M 242,581 A 205,205 0 0 1 447,786" fill="none"
+              stroke="rgba(255,255,255,0.30)" stroke-width="1.5"/>
+        <path d="M 242,648 A 138,138 0 0 1 380,786" fill="none"
+              stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
+        <path d="M 242,711 A 75,75 0 0 1 317,786" fill="none"
+              stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+        <text x="360" y="762" text-anchor="middle"
+              font-family="Arial" font-size="12" fill="rgba(255,255,255,0.28)" letter-spacing="1">TREPPE</text>
 
-                <!-- Staircase: bottom-left, 3 runde Stufen (Viertelkreise) -->
-                <path d="M 242,786 L 242,581 A 205,205 0 0 1 447,786 Z"
-                      fill="rgba(100,181,246,0.48)" stroke="rgba(255,255,255,0.28)" stroke-width="2"/>
-                <path d="M 242,786 L 242,648 A 138,138 0 0 1 380,786 Z"
-                      fill="rgba(33,150,243,0.42)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
-                <path d="M 242,786 L 242,711 A 75,75 0 0 1 317,786 Z"
-                      fill="rgba(13,71,161,0.45)" stroke="rgba(255,255,255,0.14)" stroke-width="2"/>
-                <path d="M 242,581 A 205,205 0 0 1 447,786" fill="none"
-                      stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
-                <path d="M 242,648 A 138,138 0 0 1 380,786" fill="none"
-                      stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
-                <path d="M 242,711 A 75,75 0 0 1 317,786" fill="none"
-                      stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
-                <text x="360" y="762" text-anchor="middle"
-                      font-family="Arial" font-size="12" fill="rgba(255,255,255,0.28)" letter-spacing="1">TREPPE</text>
+        <!-- Temperatur -->
+        <text x="880" y="430" text-anchor="middle"
+              font-family="'Helvetica Neue',Arial,sans-serif"
+              font-size="110" font-weight="700"
+              fill="rgba(255,255,255,0.95)" filter="url(#tGlow)">${temp}\xb0</text>
+        <text x="880" y="470" text-anchor="middle"
+              font-family="'Helvetica Neue',Arial,sans-serif"
+              font-size="13" fill="rgba(255,255,255,0.38)" letter-spacing="5">WASSERTEMPERATUR</text>
 
-                <!-- Temperature -->
-                <text x="880" y="430" text-anchor="middle"
-                      font-family="'Helvetica Neue',Arial,sans-serif"
-                      font-size="110" font-weight="700"
-                      fill="rgba(255,255,255,0.95)" filter="url(#textGlow)">${temp}\xb0</text>
-                <text x="880" y="470" text-anchor="middle"
-                      font-family="'Helvetica Neue',Arial,sans-serif"
-                      font-size="13" fill="rgba(255,255,255,0.38)" letter-spacing="5">WASSERTEMPERATUR</text>
+        <!-- Beleuchtung: 2 Fixtures oben -->
+        <circle cx="540"  cy="82" r="46" fill="url(#lgR)" opacity="0.30" style="${la(0)}"/>
+        <circle cx="1220" cy="82" r="46" fill="url(#lgR)" opacity="0.30" style="${la(0.6)}"/>
+        <circle cx="540"  cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${la(0)}"/>
+        <circle cx="1220" cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${la(0.6)}"/>
+        <circle cx="540"  cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
+        <circle cx="1220" cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
+        <text x="880" y="48" text-anchor="middle"
+              font-family="Arial" font-size="11" fill="${lightLabelC}" letter-spacing="2">POOLBELEUCHTUNG</text>
 
-                <!-- Lights (2x top edge) -->
-                <circle cx="540"  cy="82" r="46" fill="url(#lightGlowR)" opacity="0.30" style="${lightAnim(0)}"/>
-                <circle cx="1220" cy="82" r="46" fill="url(#lightGlowR)" opacity="0.30" style="${lightAnim(0.6)}"/>
-                <circle cx="540"  cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${lightAnim(0)}"/>
-                <circle cx="1220" cy="82" r="${lightR}" fill="${lightCol}" filter="${glowFilt}" style="${lightAnim(0.6)}"/>
-                <circle cx="540"  cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
-                <circle cx="1220" cy="82" r="5" fill="white" opacity="${lightOn ? 0.9 : 0}"/>
-                <text x="880" y="48" text-anchor="middle"
-                      font-family="Arial" font-size="11" fill="${lightLabelC}" letter-spacing="2">POOLBELEUCHTUNG</text>
+        <!-- Skimmer: linke Wand -->
+        <rect x="225" y="372" width="28" height="62" rx="5"
+              fill="#2a3d50" stroke="#546e7a" stroke-width="1.5"/>
+        <text x="192" y="405" text-anchor="middle"
+              font-family="Arial" font-size="11" fill="#78909c" letter-spacing="1">SKIMMER</text>
 
-                <!-- Skimmer: left wall -->
-                <rect x="225" y="372" width="28" height="62" rx="5"
-                      fill="#2a3d50" stroke="#546e7a" stroke-width="1.5"/>
-                <rect x="228" y="375" width="22" height="56" rx="3" fill="rgba(255,255,255,0.04)"/>
-                <text x="192" y="405" text-anchor="middle"
-                      font-family="Arial" font-size="11" fill="#78909c" letter-spacing="1">SKIMMER</text>
+        <!-- Einlaufdüsen: rechte Wand (2x) -->
+        <circle cx="1520" cy="320" r="10" fill="#3d5060" stroke="#607d8b" stroke-width="2"/>
+        <circle cx="1520" cy="320" r="4"  fill="#546e7a"/>
+        <circle cx="1520" cy="320" r="10" fill="none" stroke="rgba(100,180,255,0.5)"
+                stroke-width="1.5" style="${ripple1}"/>
+        <circle cx="1520" cy="480" r="10" fill="#3d5060" stroke="#607d8b" stroke-width="2"/>
+        <circle cx="1520" cy="480" r="4"  fill="#546e7a"/>
+        <circle cx="1520" cy="480" r="10" fill="none" stroke="rgba(100,180,255,0.5)"
+                stroke-width="1.5" style="${ripple2}"/>
+        <text x="1558" y="402" text-anchor="middle"
+              font-family="Arial" font-size="10" fill="#546e7a"
+              transform="rotate(90 1558 402)" letter-spacing="1">EINLAUF</text>
 
-                <!-- Inlet nozzles: right wall (2x) -->
-                <circle cx="1520" cy="320" r="10" fill="#3d5060" stroke="#607d8b" stroke-width="2"/>
-                <circle cx="1520" cy="320" r="4"  fill="#546e7a"/>
-                <circle cx="1520" cy="320" r="10" fill="none" stroke="rgba(100,180,255,0.5)"
-                        stroke-width="1.5" style="${rippleAnim1}"/>
-                <circle cx="1520" cy="480" r="10" fill="#3d5060" stroke="#607d8b" stroke-width="2"/>
-                <circle cx="1520" cy="480" r="4"  fill="#546e7a"/>
-                <circle cx="1520" cy="480" r="10" fill="none" stroke="rgba(100,180,255,0.5)"
-                        stroke-width="1.5" style="${rippleAnim2}"/>
-                <text x="1558" y="402" text-anchor="middle"
-                      font-family="Arial" font-size="10" fill="#546e7a"
-                      transform="rotate(90 1558 402)" letter-spacing="1">EINLAUF</text>
+        <!-- Pumpe: linkes Deck -->
+        <circle cx="94" cy="200" r="22" fill="${pumpCol}" filter="url(#sGlow)" opacity="0.9"/>
+        <circle cx="94" cy="200" r="10" fill="white" opacity="0.85"/>
+        <circle cx="94" cy="200" r="4"  fill="${pumpCol}"/>
+        <text x="94" y="232" text-anchor="middle"
+              font-family="Arial" font-size="11" fill="#90a4ae" letter-spacing="1">PUMPE</text>
+        <text x="94" y="247" text-anchor="middle"
+              font-family="Arial" font-size="10" fill="${pumpLabelC}">${pumpOn ? 'EIN' : 'AUS'}</text>
 
-                <!-- Pump: left deck -->
-                <circle cx="94" cy="200" r="22" fill="${pumpCol}" filter="url(#softGlow)" opacity="0.9"/>
-                <circle cx="94" cy="200" r="10" fill="white" opacity="0.85"/>
-                <circle cx="94" cy="200" r="4"  fill="${pumpCol}"/>
-                <text x="94" y="232" text-anchor="middle"
-                      font-family="Arial" font-size="11" fill="#90a4ae" letter-spacing="1">PUMPE</text>
-                <text x="94" y="247" text-anchor="middle"
-                      font-family="Arial" font-size="10" fill="${pumpLabelC}">${pumpLabel}</text>
+        <!-- Wärmepumpe: oben rechts -->
+        <circle cx="1540" cy="52" r="22" fill="${heaterCol}" filter="${heaterFilt}" style="${heatAnim}"/>
+        <text x="1540" y="59" text-anchor="middle" font-family="Arial" font-size="20" fill="white">${heaterIcon}</text>
+        <text x="1540" y="32" text-anchor="middle"
+              font-family="Arial" font-size="10" fill="${heaterCol}" letter-spacing="1">WÄRMEPU.</text>
+        <text x="1540" y="82" text-anchor="middle"
+              font-family="Arial" font-size="10" fill="${heaterCol}">${heaterOn ? 'EIN' : 'AUS'}</text>
 
-                <!-- Wärmepumpe: top-right -->
-                <circle cx="1540" cy="52" r="22" fill="${heaterCol}" filter="${heaterFilt}" style="${heatAnim}"/>
-                <text x="1540" y="59" text-anchor="middle"
-                      font-family="Arial" font-size="20" fill="white">${heaterIcon}</text>
-                <text x="1540" y="32" text-anchor="middle"
-                      font-family="Arial" font-size="10" fill="${heaterCol}" letter-spacing="1">WÄRMEPU.</text>
-                <text x="1540" y="82" text-anchor="middle"
-                      font-family="Arial" font-size="10" fill="${heaterCol}">${heaterLabel}</text>
+        <!-- Elektrolyse: linkes Deck mit pH + Redox -->
+        <rect x="14" y="520" width="160" height="128" rx="10"
+              fill="${elekFill}" stroke="${elekStroke}" stroke-width="1.5"/>
+        <text x="94" y="540" text-anchor="middle"
+              font-family="Arial" font-size="10" fill="${elekLabelC}" letter-spacing="1">ELEKTROLYSE</text>
+        <text x="94" y="558" text-anchor="middle"
+              font-family="Arial" font-size="13" font-weight="bold" fill="#a5d6a7">Cl₂</text>
+        <line x1="94" y1="565" x2="94" y2="628" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+        <text x="46" y="582" text-anchor="middle"
+              font-family="Arial" font-size="9" fill="rgba(255,255,255,0.45)" letter-spacing="1">pH</text>
+        <text x="46" y="606" text-anchor="middle"
+              font-family="'Helvetica Neue',Arial" font-size="22" font-weight="700" fill="#80cbc4">${phVal}</text>
+        <text x="142" y="582" text-anchor="middle"
+              font-family="Arial" font-size="9" fill="rgba(255,255,255,0.45)" letter-spacing="1">REDOX</text>
+        <text x="142" y="606" text-anchor="middle"
+              font-family="'Helvetica Neue',Arial" font-size="22" font-weight="700" fill="#80deea">${redoxVal}</text>
+        ${elekBubbles}
+        <text x="94" y="638" text-anchor="middle"
+              font-family="Arial" font-size="9" fill="${elekLabelC}">${elekOn ? '● EIN' : '○ AUS'}</text>
 
-                <!-- Elektrolyse: left deck with pH + Redox -->
-                <rect x="14" y="520" width="160" height="128" rx="10"
-                      fill="${elekFill}" stroke="${elekStroke}" stroke-width="1.5"/>
-                <text x="94" y="540" text-anchor="middle"
-                      font-family="Arial" font-size="10" fill="${elekLabelC}" letter-spacing="1">ELEKTROLYSE</text>
-                <text x="94" y="558" text-anchor="middle"
-                      font-family="Arial" font-size="13" font-weight="bold" fill="#a5d6a7">Cl₂</text>
-                <line x1="94" y1="565" x2="94" y2="628" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-                <text x="46" y="582" text-anchor="middle"
-                      font-family="Arial" font-size="9" fill="rgba(255,255,255,0.45)" letter-spacing="1">pH</text>
-                <text x="46" y="606" text-anchor="middle"
-                      font-family="'Helvetica Neue',Arial" font-size="22" font-weight="700" fill="#80cbc4">${phVal}</text>
-                <text x="142" y="582" text-anchor="middle"
-                      font-family="Arial" font-size="9" fill="rgba(255,255,255,0.45)" letter-spacing="1">REDOX</text>
-                <text x="142" y="606" text-anchor="middle"
-                      font-family="'Helvetica Neue',Arial" font-size="22" font-weight="700" fill="#80deea">${redoxVal}</text>
-                ${elekBubbles}
-                <text x="94" y="638" text-anchor="middle"
-                      font-family="Arial" font-size="9" fill="${elekLabelC}">${elekStatus}</text>
-
-                <!-- Status bar -->
-                <rect x="200" y="814" width="1370" height="32" rx="8" fill="rgba(0,0,0,0.35)"/>
-                <text x="885" y="834" text-anchor="middle"
-                      font-family="Arial" font-size="11"
-                      fill="rgba(255,255,255,0.38)" letter-spacing="0.5">${statusText}</text>
-              </svg>`;
-            ]]]
-
-      # ══════════════════════════════════════════════════════════
-      # ZONE 2 — Status Chips
-      # ══════════════════════════════════════════════════════════
-      - type: custom:mushroom-chips-card
-        alignment: center
-        chips:
-          - type: template
-            icon: mdi:thermometer-water
-            content: "{{ states('sensor.pooltemperatur') | float(0) | round(1) }}°C"
-            icon_color: blue
-            tap_action:
-              action: more-info
-              entity: sensor.pooltemperatur
-
-          - type: entity
-            entity: switch.shelly_plug_m_gen3_2
-            icon: mdi:pump
-            icon_color_on: green
-            icon_color_off: red
-            tap_action:
-              action: toggle
-
-          - type: entity
-            entity: climate.warmepumpe_pool_warmepumpe
-            icon: mdi:heat-pump
-            icon_color_on: orange
-            tap_action:
-              action: more-info
-
-          - type: entity
-            entity: switch.shelly_plug_m_gen3_4
-            icon: mdi:lightbulb-multiple
-            icon_color_on: yellow
-            icon_color_off: grey
-            tap_action:
-              action: toggle
-
-          - type: template
-            icon: mdi:water-percent
-            content: >
-              pH {{ states('sensor.pool_ph') | float(0) | round(1) }}
-              · {{ states('sensor.pool_redox') | int(0) }} mV
-            icon_color: green
-            tap_action:
-              action: more-info
-              entity: switch.shelly_plug_m_gen3_3
-
-      # ══════════════════════════════════════════════════════════
-      # ZONE 3 — Graph + Schnellsteuerung
-      # ══════════════════════════════════════════════════════════
-      - type: horizontal-stack
-        cards:
-
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: Wassertemperatur
-              show_states: true
-              colorize_states: true
-            graph_span: 24h
-            all_series_config:
-              stroke_width: 2
-              fill_raw: last
-              type: area
-            apex_config:
-              chart:
-                background: "transparent"
-                toolbar:
-                  show: false
-                height: 220
-              theme:
-                mode: dark
-              fill:
-                type: gradient
-                gradient:
-                  shadeIntensity: 0.5
-                  opacityFrom: 0.45
-                  opacityTo: 0
-              grid:
-                borderColor: "rgba(255,255,255,0.06)"
-              tooltip:
-                x:
-                  format: "HH:mm"
-            series:
-              - entity: sensor.pooltemperatur
-                name: Wasser
-                color: "#42a5f5"
-              - entity: climate.warmepumpe_pool_warmepumpe
-                attribute: temperature
-                name: Ziel
-                color: "#ff6b35"
-                type: line
-                stroke_width: 1.5
-
-          - type: grid
-            columns: 2
-            square: true
-            cards:
-
-              - type: custom:button-card
-                entity: switch.shelly_plug_m_gen3_2
-                name: Pumpe
-                icon: mdi:pump
-                tap_action:
-                  action: toggle
-                state:
-                  - value: "on"
-                    color: "#4caf50"
-                    icon: mdi:pump
-                  - value: "off"
-                    color: "#546e7a"
-                    icon: mdi:pump-off
-                styles:
-                  card:
-                    - background: "linear-gradient(135deg, #0d1b2a, #1a2f45)"
-                    - border-radius: "14px"
-                    - border: "1px solid rgba(255,255,255,0.08)"
-                  name:
-                    - color: "rgba(255,255,255,0.75)"
-                    - font-size: "13px"
-                  icon:
-                    - width: "36px"
-
-              - type: custom:button-card
-                entity: climate.warmepumpe_pool_warmepumpe
-                name: Wärmepumpe
-                icon: mdi:heat-pump
-                tap_action:
-                  action: more-info
-                state:
-                  - value: "off"
-                    color: "#546e7a"
-                  - operator: "default"
-                    color: "#ff6b35"
-                styles:
-                  card:
-                    - background: "linear-gradient(135deg, #0d1b2a, #1a2f45)"
-                    - border-radius: "14px"
-                    - border: "1px solid rgba(255,255,255,0.08)"
-                  name:
-                    - color: "rgba(255,255,255,0.75)"
-                    - font-size: "11px"
-                  icon:
-                    - width: "36px"
-
-              - type: custom:button-card
-                entity: switch.shelly_plug_m_gen3_4
-                name: Licht
-                icon: mdi:lightbulb-multiple
-                tap_action:
-                  action: toggle
-                state:
-                  - value: "on"
-                    color: "#ffe082"
-                  - value: "off"
-                    color: "#546e7a"
-                styles:
-                  card:
-                    - background: "linear-gradient(135deg, #0d1b2a, #1a2f45)"
-                    - border-radius: "14px"
-                    - border: "1px solid rgba(255,255,255,0.08)"
-                  name:
-                    - color: "rgba(255,255,255,0.75)"
-                    - font-size: "13px"
-                  icon:
-                    - width: "36px"
-
-              - type: custom:button-card
-                entity: switch.shelly_plug_m_gen3_3
-                name: Elektrolyse
-                icon: mdi:water-percent
-                tap_action:
-                  action: toggle
-                state:
-                  - value: "on"
-                    color: "#4caf50"
-                  - value: "off"
-                    color: "#546e7a"
-                styles:
-                  card:
-                    - background: "linear-gradient(135deg, #0d1b2a, #1a2f45)"
-                    - border-radius: "14px"
-                    - border: "1px solid rgba(255,255,255,0.08)"
-                  name:
-                    - color: "rgba(255,255,255,0.75)"
-                    - font-size: "13px"
-                  icon:
-                    - width: "36px"
+        <!-- Status-Leiste -->
+        <rect x="200" y="814" width="1370" height="32" rx="8" fill="rgba(0,0,0,0.35)"/>
+        <text x="885" y="834" text-anchor="middle"
+              font-family="Arial" font-size="11"
+              fill="rgba(255,255,255,0.38)" letter-spacing="0.5">${statusText}</text>
+      </svg>`;
+    ]]]
