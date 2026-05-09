@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pool Dashboard Vorschau</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #061020;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      padding: 16px;
+      gap: 12px;
+    }
+    h1 {
+      color: rgba(255,255,255,0.4);
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .card {
+      width: 100%;
+      max-width: 800px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+    }
+    .card svg { display: block; width: 100%; }
+
+    /* Chips row */
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+    }
+    .chip .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .dot.on  { background: #4caf50; box-shadow: 0 0 6px #4caf50; }
+    .dot.off { background: #546e7a; }
+    .dot.heat-on  { background: #ff6b35; box-shadow: 0 0 6px #ff6b35; }
+    .dot.light-on { background: #ffe082; box-shadow: 0 0 6px #ffe082; }
+
+    /* Controls grid */
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      max-width: 800px;
+    }
+    .btn {
+      background: linear-gradient(135deg, #0d1b2a, #1a2f45);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 18px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .btn svg { width: 32px; height: 32px; }
+    .btn span { font-size: 13px; color: rgba(255,255,255,0.75); }
+    .btn.active-pump  { border-color: rgba(76,175,80,0.4); }
+    .btn.active-heat  { border-color: rgba(255,107,53,0.4); }
+    .btn.active-light { border-color: rgba(255,224,130,0.4); }
+    .btn.active-cc    { border-color: rgba(33,150,243,0.4); }
+
+    @keyframes poolWave {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-200px); }
+    }
+    @keyframes lightPulse {
+      0%, 100% { opacity: 0.65; }
+      50%       { opacity: 1; }
+    }
+    @keyframes heaterFlicker {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.75; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Pool Dashboard — Vorschau</h1>
+
+  <!-- Hero SVG -->
+  <div class="card">
+    <svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="deckGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stop-color="#1e2d3d"/>
+          <stop offset="100%" stop-color="#0d1b2a"/>
+        </linearGradient>
+        <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#2196f3"/>
+          <stop offset="100%" stop-color="#0d47a1"/>
+        </linearGradient>
+        <linearGradient id="copingGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#5a6875"/>
+          <stop offset="100%" stop-color="#3d4d5c"/>
+        </linearGradient>
+        <radialGradient id="waterHL" cx="35%" cy="30%">
+          <stop offset="0%"   stop-color="rgba(255,255,255,0.13)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </radialGradient>
+        <radialGradient id="lightGlow1" cx="50%" cy="50%">
+          <stop offset="0%"   stop-color="#ffe082" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#ffe082" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="7" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="softGlow">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="textGlow">
+          <feGaussianBlur stdDeviation="5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <pattern id="waves" x="0" y="0" width="200" height="40" patternUnits="userSpaceOnUse">
+          <path d="M0 20 Q50 5 100 20 Q150 35 200 20"
+                fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="1.5"/>
+          <path d="M0 32 Q50 17 100 32 Q150 47 200 32"
+                fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+        </pattern>
+        <clipPath id="waterClip">
+          <rect x="108" y="78" width="584" height="294" rx="12"/>
+        </clipPath>
+      </defs>
+
+      <!-- Deck -->
+      <rect width="800" height="450" fill="url(#deckGrad)"/>
+
+      <!-- Coping -->
+      <rect x="78" y="54" width="644" height="342" rx="22" fill="url(#copingGrad)"/>
+      <rect x="78" y="54" width="644" height="14"  rx="12" fill="rgba(255,255,255,0.07)"/>
+      <line x1="78" y1="74" x2="722" y2="74" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>
+
+      <!-- Water -->
+      <rect x="108" y="78" width="584" height="294" rx="12" fill="url(#waterGrad)"/>
+
+      <!-- Tile border -->
+      <rect x="108" y="78"  width="584" height="8"   rx="6" fill="rgba(100,180,255,0.22)"/>
+      <rect x="108" y="364" width="584" height="8"   rx="6" fill="rgba(100,180,255,0.13)"/>
+      <rect x="108" y="78"  width="8"   height="294" rx="4" fill="rgba(100,180,255,0.13)"/>
+      <rect x="684" y="78"  width="8"   height="294" rx="4" fill="rgba(100,180,255,0.13)"/>
+
+      <!-- Animated waves -->
+      <g clip-path="url(#waterClip)">
+        <rect x="-200" y="78" width="1200" height="294"
+              fill="url(#waves)"
+              style="animation: poolWave 4s linear infinite"/>
+      </g>
+
+      <!-- Highlight -->
+      <ellipse cx="320" cy="170" rx="210" ry="72" fill="url(#waterHL)"/>
+
+      <!-- Temperature -->
+      <text x="400" y="228" text-anchor="middle"
+            font-family="'Helvetica Neue',Arial,sans-serif"
+            font-size="72" font-weight="700"
+            fill="rgba(255,255,255,0.95)" filter="url(#textGlow)">26.3°</text>
+      <text x="400" y="260" text-anchor="middle"
+            font-family="'Helvetica Neue',Arial,sans-serif"
+            font-size="11" fill="rgba(255,255,255,0.45)" letter-spacing="4">WASSERTEMPERATUR</text>
+
+      <!-- Skimmer -->
+      <rect x="138" y="65" width="72" height="20" rx="5" fill="#253445" stroke="#546e7a" stroke-width="1"/>
+      <text x="174" y="55" text-anchor="middle" font-family="Arial" font-size="9" fill="#78909c" letter-spacing="1">SKIMMER</text>
+
+      <!-- Pump ON -->
+      <circle cx="90" cy="148" r="16" fill="#4caf50" filter="url(#softGlow)" opacity="0.9"/>
+      <circle cx="90" cy="148" r="7"  fill="white" opacity="0.85"/>
+      <text x="90" y="174" text-anchor="middle" font-family="Arial" font-size="9" fill="#90a4ae" letter-spacing="1">PUMPE</text>
+      <text x="90" y="185" text-anchor="middle" font-family="Arial" font-size="8" fill="#4caf50">EIN</text>
+
+      <!-- Heizung ON -->
+      <circle cx="705" cy="68" r="18" fill="#ff6b35" filter="url(#softGlow)"
+              style="animation: heaterFlicker 3s ease-in-out infinite"/>
+      <text x="705" y="74" text-anchor="middle" font-family="Arial" font-size="16" fill="white">♨</text>
+      <text x="705" y="50" text-anchor="middle" font-family="Arial" font-size="9" fill="#90a4ae" letter-spacing="1">HEIZUNG</text>
+      <text x="705" y="96" text-anchor="middle" font-family="Arial" font-size="8" fill="#ff6b35">EIN</text>
+
+      <!-- Light halos -->
+      <circle cx="672" cy="90"  r="30" fill="url(#lightGlow1)" opacity="0.5"
+              style="animation: lightPulse 2s ease-in-out infinite"/>
+      <circle cx="672" cy="360" r="30" fill="url(#lightGlow1)" opacity="0.5"
+              style="animation: lightPulse 2s ease-in-out infinite 0.7s"/>
+      <!-- Lights ON -->
+      <circle cx="672" cy="90"  r="14" fill="#ffe082" filter="url(#glow)"
+              style="animation: lightPulse 2s ease-in-out infinite"/>
+      <circle cx="672" cy="360" r="14" fill="#ffe082" filter="url(#glow)"
+              style="animation: lightPulse 2s ease-in-out infinite 0.7s"/>
+      <circle cx="672" cy="90"  r="6" fill="white" opacity="0.9"/>
+      <circle cx="672" cy="360" r="6" fill="white" opacity="0.9"/>
+      <text x="672" y="44"  text-anchor="middle" font-family="Arial" font-size="9" fill="#90a4ae" letter-spacing="1">LICHT</text>
+      <text x="672" y="388" text-anchor="middle" font-family="Arial" font-size="8" fill="#ffe082">EIN</text>
+
+      <!-- Inlet nozzles -->
+      <circle cx="697" cy="160" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
+      <circle cx="697" cy="196" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
+      <circle cx="697" cy="304" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
+      <circle cx="697" cy="340" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
+      <text x="732" y="250" text-anchor="middle" font-family="Arial" font-size="8" fill="#546e7a"
+            transform="rotate(90 732 250)" letter-spacing="1">EINLAUF</text>
+
+      <!-- Gegenstrom ON -->
+      <rect x="78" y="238" width="30" height="22" rx="4" fill="#1565a0" stroke="#2196f3" stroke-width="1.5"/>
+      <text x="89"  y="252" font-family="Arial" font-size="14" fill="#64b5f6">›</text>
+      <text x="99"  y="252" font-family="Arial" font-size="14" fill="#42a5f5" opacity="0.7">›</text>
+      <text x="109" y="252" font-family="Arial" font-size="14" fill="#2196f3" opacity="0.4">›</text>
+      <text x="93" y="276" text-anchor="middle" font-family="Arial" font-size="8" fill="#78909c">GEG.</text>
+
+      <!-- Ladder -->
+      <rect x="680" y="348" width="3" height="30" rx="1.5" fill="#3d5060"/>
+      <rect x="691" y="348" width="3" height="30" rx="1.5" fill="#3d5060"/>
+      <rect x="680" y="355" width="14" height="2" rx="1" fill="#3d5060"/>
+      <rect x="680" y="366" width="14" height="2" rx="1" fill="#3d5060"/>
+
+      <!-- Status bar -->
+      <rect x="78" y="400" width="644" height="36" rx="10" fill="rgba(0,0,0,0.28)"/>
+      <text x="400" y="421" text-anchor="middle" font-family="Arial" font-size="11"
+            fill="rgba(255,255,255,0.45)" letter-spacing="0.5">
+        Pumpe: EIN  ·  Heizung: EIN  ·  Licht: EIN  ·  Gegenstrom: EIN
+      </text>
+    </svg>
+  </div>
+
+  <!-- Chips -->
+  <div class="chips">
+    <div class="chip"><span class="dot on"></span> Pumpe EIN</div>
+    <div class="chip"><span class="dot heat-on"></span> Heizung EIN</div>
+    <div class="chip"><span class="dot light-on"></span> Licht EIN</div>
+    <div class="chip"><span class="dot on"></span> Gegenstrom EIN</div>
+    <div class="chip">🌡 26.3°C</div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="btn active-pump">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="1.8">
+        <path d="M3 12h4l3-9 4 18 3-9h4"/>
+      </svg>
+      <span>Pumpe</span>
+    </div>
+    <div class="btn active-heat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="1.8">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+        <path d="M12 6v6l4 2"/>
+      </svg>
+      <span>Heizung</span>
+    </div>
+    <div class="btn active-light">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ffe082" stroke-width="1.8">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+      <span>Licht</span>
+    </div>
+    <div class="btn active-cc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2196f3" stroke-width="1.8">
+        <path d="M2 12c0 0 4-6 10-6s10 6 10 6-4 6-10 6S2 12 2 12z"/>
+        <path d="M8 12h8M13 9l3 3-3 3"/>
+      </svg>
+      <span>Gegenstrom</span>
+    </div>
+  </div>
+
+</body>
+</html>
