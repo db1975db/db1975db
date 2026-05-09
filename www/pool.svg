@@ -1,0 +1,178 @@
+<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" style="background:#0d1b2a;border-radius:16px">
+  <defs>
+    <style>
+      @keyframes poolWave {
+        0%   { transform: translateX(0); }
+        100% { transform: translateX(-200px); }
+      }
+      @keyframes lightPulse {
+        0%, 100% { opacity: 0.65; }
+        50%       { opacity: 1; }
+      }
+    </style>
+
+    <linearGradient id="deckGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#1e2d3d"/>
+      <stop offset="100%" stop-color="#0d1b2a"/>
+    </linearGradient>
+    <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#1976d2"/>
+      <stop offset="100%" stop-color="#0d47a1"/>
+    </linearGradient>
+    <linearGradient id="copingGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#5a6875"/>
+      <stop offset="100%" stop-color="#3d4d5c"/>
+    </linearGradient>
+    <radialGradient id="highlight" cx="35%" cy="30%">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0.13)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+    <radialGradient id="lightGlow1" cx="50%" cy="50%">
+      <stop offset="0%"   stop-color="#ffe082" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#ffe082" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="textGlow">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <pattern id="waves" x="0" y="0" width="200" height="40" patternUnits="userSpaceOnUse">
+      <path d="M0 20 Q50 5 100 20 Q150 35 200 20"
+            fill="none" stroke="rgba(255,255,255,0.13)" stroke-width="1.5"/>
+      <path d="M0 32 Q50 17 100 32 Q150 47 200 32"
+            fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+    </pattern>
+
+    <clipPath id="waterClip">
+      <rect x="108" y="78" width="584" height="294" rx="12"/>
+    </clipPath>
+  </defs>
+
+  <!-- Deck background -->
+  <rect width="800" height="450" fill="url(#deckGrad)"/>
+
+  <!-- Pool coping (stone border) -->
+  <rect x="78" y="54" width="644" height="342" rx="22" fill="url(#copingGrad)"/>
+  <!-- Coping highlight -->
+  <rect x="78" y="54" width="644" height="14" rx="12" fill="rgba(255,255,255,0.07)"/>
+  <!-- Coping tile lines (horizontal) -->
+  <line x1="78"  y1="74" x2="722" y2="74"  stroke="rgba(0,0,0,0.15)" stroke-width="1"/>
+  <line x1="78"  y1="82" x2="108" y2="82"  stroke="rgba(0,0,0,0.1)"  stroke-width="1"/>
+  <line x1="692" y1="82" x2="722" y2="82"  stroke="rgba(0,0,0,0.1)"  stroke-width="1"/>
+  <line x1="78"  y1="372" x2="722" y2="372" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>
+
+  <!-- Water fill -->
+  <rect x="108" y="78" width="584" height="294" rx="12" fill="url(#waterGrad)"/>
+
+  <!-- Animated wave overlay -->
+  <g clip-path="url(#waterClip)">
+    <rect x="-200" y="78" width="1200" height="294"
+          fill="url(#waves)"
+          style="animation: poolWave 5s linear infinite"/>
+  </g>
+
+  <!-- Water highlight (sun reflection) -->
+  <ellipse cx="320" cy="170" rx="210" ry="72" fill="url(#highlight)"/>
+
+  <!-- Pool tile border (water edge) -->
+  <rect x="108" y="78"  width="584" height="8"  rx="6" fill="rgba(100,180,255,0.25)"/>
+  <rect x="108" y="364" width="584" height="8"  rx="6" fill="rgba(100,180,255,0.15)"/>
+  <rect x="108" y="78"  width="8"   height="294" rx="4" fill="rgba(100,180,255,0.15)"/>
+  <rect x="684" y="78"  width="8"   height="294" rx="4" fill="rgba(100,180,255,0.15)"/>
+
+  <!-- Temperature display -->
+  <text x="400" y="228" text-anchor="middle"
+        font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="72" font-weight="700"
+        fill="rgba(255,255,255,0.95)"
+        filter="url(#textGlow)">26.3°</text>
+  <text x="400" y="260" text-anchor="middle"
+        font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="11" fill="rgba(255,255,255,0.45)" letter-spacing="4">WASSERTEMPERATUR</text>
+
+  <!-- ── Skimmer (top center-left) ── -->
+  <rect x="138" y="65" width="72" height="20" rx="5"
+        fill="#253445" stroke="#546e7a" stroke-width="1"/>
+  <rect x="141" y="68" width="66" height="14" rx="3" fill="rgba(255,255,255,0.04)"/>
+  <text x="174" y="55" text-anchor="middle"
+        font-family="Arial" font-size="9" fill="#78909c" letter-spacing="1">SKIMMER</text>
+
+  <!-- ── Pump indicator (left side) ── -->
+  <!-- Pump ON = green glow -->
+  <circle cx="90" cy="148" r="16" fill="#4caf50" filter="url(#glow)" opacity="0.85"/>
+  <circle cx="90" cy="148" r="9"  fill="#81c784"/>
+  <!-- Pump icon (simplified) -->
+  <circle cx="90" cy="148" r="4"  fill="white" opacity="0.9"/>
+  <text x="90" y="174" text-anchor="middle"
+        font-family="Arial" font-size="9" fill="#90a4ae" letter-spacing="1">PUMPE</text>
+  <text x="90" y="185" text-anchor="middle"
+        font-family="Arial" font-size="8" fill="#4caf50">EIN</text>
+
+  <!-- ── Heizung (top right) ── -->
+  <circle cx="705" cy="68" r="18" fill="#546e7a"/>
+  <text x="705" y="74" text-anchor="middle"
+        font-family="Arial" font-size="16" fill="#90a4ae">○</text>
+  <text x="705" y="50" text-anchor="middle"
+        font-family="Arial" font-size="9" fill="#78909c" letter-spacing="1">HEIZUNG</text>
+  <text x="705" y="96" text-anchor="middle"
+        font-family="Arial" font-size="8" fill="#78909c">AUS</text>
+
+  <!-- ── Underwater lights ── -->
+  <!-- Light glow halos -->
+  <circle cx="672" cy="90"  r="28" fill="url(#lightGlow1)" opacity="0.6"
+          style="animation: lightPulse 2s ease-in-out infinite"/>
+  <circle cx="672" cy="360" r="28" fill="url(#lightGlow1)" opacity="0.6"
+          style="animation: lightPulse 2s ease-in-out infinite 0.7s"/>
+  <!-- Light fixtures -->
+  <circle cx="672" cy="90"  r="13" fill="#ffe082" filter="url(#glow)"
+          style="animation: lightPulse 2s ease-in-out infinite"/>
+  <circle cx="672" cy="360" r="13" fill="#ffe082" filter="url(#glow)"
+          style="animation: lightPulse 2s ease-in-out infinite 0.7s"/>
+  <circle cx="672" cy="90"  r="6"  fill="white" opacity="0.9"/>
+  <circle cx="672" cy="360" r="6"  fill="white" opacity="0.9"/>
+  <text x="672" y="44" text-anchor="middle"
+        font-family="Arial" font-size="9" fill="#90a4ae" letter-spacing="1">LICHT</text>
+  <text x="672" y="388" text-anchor="middle"
+        font-family="Arial" font-size="8" fill="#ffe082">EIN</text>
+
+  <!-- ── Inlet nozzles (right wall) ── -->
+  <circle cx="697" cy="160" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
+  <circle cx="697" cy="195" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
+  <circle cx="697" cy="305" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
+  <circle cx="697" cy="340" r="6" fill="#3d5060" stroke="#546e7a" stroke-width="1.5"/>
+  <text x="730" y="250" text-anchor="middle"
+        font-family="Arial" font-size="8" fill="#546e7a"
+        transform="rotate(90 730 250)" letter-spacing="1">EINLAUF</text>
+
+  <!-- ── Gegenstrom (left wall) — AUS ── -->
+  <rect x="78" y="238" width="30" height="22" rx="4"
+        fill="#253445" stroke="#3d5060" stroke-width="1.5"/>
+  <text x="93" y="253" text-anchor="middle"
+        font-family="Arial" font-size="12" fill="#546e7a">–</text>
+  <text x="93" y="276" text-anchor="middle"
+        font-family="Arial" font-size="8" fill="#78909c">GEG.</text>
+
+  <!-- ── Pool ladder (bottom right) ── -->
+  <rect x="680" y="348" width="3" height="30" rx="1.5" fill="#3d5060"/>
+  <rect x="691" y="348" width="3" height="30" rx="1.5" fill="#3d5060"/>
+  <rect x="680" y="355" width="14" height="2" rx="1" fill="#3d5060"/>
+  <rect x="680" y="366" width="14" height="2" rx="1" fill="#3d5060"/>
+
+  <!-- ── Status bar (bottom) ── -->
+  <rect x="78" y="400" width="644" height="36" rx="10"
+        fill="rgba(0,0,0,0.3)"/>
+  <text x="400" y="422" text-anchor="middle"
+        font-family="Arial" font-size="11"
+        fill="rgba(255,255,255,0.45)" letter-spacing="0.5">
+    Pumpe: EIN  ·  Heizung: AUS  ·  Licht: EIN  ·  Gegenstrom: AUS
+  </text>
+</svg>
