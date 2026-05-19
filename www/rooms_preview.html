@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Haus-Grundriss – 12 Räume (Vorschau)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #060c12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+  }
+  .card {
+    background: linear-gradient(160deg, #0f1923 0%, #0a1218 100%);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+    width: 95vw;
+    max-width: 1400px;
+    aspect-ratio: 1600 / 820;
+  }
+  svg { display: block; width: 100%; height: 100%; }
+
+  @keyframes bulbPulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+</style>
+</head>
+<body>
+<div class="card">
+<svg viewBox="0 0 1600 820" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#0f1923"/>
+      <stop offset="100%" stop-color="#070e14"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="hdrGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Hintergrund -->
+  <rect width="1600" height="820" fill="url(#bgG)"/>
+
+  <!-- EG-Panel -->
+  <rect x="28" y="52" width="762" height="752" rx="16"
+        fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+  <!-- OG-Panel -->
+  <rect x="810" y="52" width="762" height="752" rx="16"
+        fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+  <!-- Trenn-Linie Mitte -->
+  <line x1="800" y1="52" x2="800" y2="804"
+        stroke="rgba(255,255,255,0.06)" stroke-width="1.5" stroke-dasharray="6,6"/>
+
+  <!-- EG-Beschriftung -->
+  <text x="409" y="36" text-anchor="middle"
+        font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="14" font-weight="700" letter-spacing="4"
+        fill="rgba(255,255,255,0.55)" filter="url(#hdrGlow)">ERDGESCHOSS</text>
+  <line x1="28" y1="52" x2="790" y2="52"
+        stroke="rgba(100,181,246,0.4)" stroke-width="1.5"/>
+
+  <!-- OG-Beschriftung -->
+  <text x="1191" y="36" text-anchor="middle"
+        font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="14" font-weight="700" letter-spacing="4"
+        fill="rgba(255,255,255,0.55)" filter="url(#hdrGlow)">OBERGESCHOSS</text>
+  <line x1="810" y1="52" x2="1572" y2="52"
+        stroke="rgba(100,181,246,0.4)" stroke-width="1.5"/>
+
+  <!-- ══ EG Raster 3×2 ══ -->
+  <!-- tw = (740 - 8*2) / 3 ≈ 241.3  →  241 -->
+  <!-- th = (720 - 8*3) / 2 = 348    -->
+
+  <!-- EG Zeile 1 -->
+
+  <!-- Eingang (EIN / Beispiel-Licht an) -->
+  <rect x="40" y="80" width="241" height="348" rx="10"
+        fill="rgba(255,213,79,0.13)" stroke="rgba(255,213,79,0.55)" stroke-width="1.5"/>
+  <circle cx="263" cy="98" r="7" fill="#ffe082" filter="url(#glow)"
+          style="animation:bulbPulse 2s ease-in-out infinite"/>
+  <text x="52" y="102" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#ffe082" letter-spacing="0.5">Eingang</text>
+  <circle cx="52" cy="414" r="4" fill="#4caf50"/>
+  <text x="62" y="418" font-family="Arial" font-size="10" fill="#81c784">EIN</text>
+
+  <!-- Flur EG (AUS) -->
+  <rect x="289" y="80" width="241" height="348" rx="10"
+        fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <circle cx="512" cy="98" r="7" fill="#37474f"/>
+  <text x="301" y="102" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#90a4ae" letter-spacing="0.5">Flur EG</text>
+  <circle cx="301" cy="414" r="4" fill="#37474f"/>
+  <text x="311" y="418" font-family="Arial" font-size="10" fill="#546e7a">AUS</text>
+
+  <!-- Küche (EIN + Temp) -->
+  <rect x="538" y="80" width="241" height="348" rx="10"
+        fill="rgba(255,213,79,0.13)" stroke="rgba(255,213,79,0.55)" stroke-width="1.5"/>
+  <circle cx="761" cy="98" r="7" fill="#ffe082" filter="url(#glow)"
+          style="animation:bulbPulse 2s ease-in-out infinite 0.4s"/>
+  <text x="550" y="102" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#ffe082" letter-spacing="0.5">Küche</text>
+  <text x="658" y="268" text-anchor="middle" font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="22" font-weight="700" fill="rgba(255,255,255,0.85)">21.4°</text>
+  <circle cx="550" cy="414" r="4" fill="#4caf50"/>
+  <text x="560" y="418" font-family="Arial" font-size="10" fill="#81c784">EIN</text>
+
+  <!-- EG Zeile 2 -->
+
+  <!-- Esszimmer (AUS + Temp) -->
+  <rect x="40" y="436" width="241" height="348" rx="10"
+        fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <circle cx="263" cy="454" r="7" fill="#37474f"/>
+  <text x="52" y="458" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#90a4ae" letter-spacing="0.5">Esszimmer</text>
+  <text x="160" y="624" text-anchor="middle" font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="22" font-weight="700" fill="rgba(255,255,255,0.85)">22.1°</text>
+  <circle cx="52" cy="770" r="4" fill="#37474f"/>
+  <text x="62" y="774" font-family="Arial" font-size="10" fill="#546e7a">AUS</text>
+
+  <!-- Wohnzimmer (EIN + Temp) -->
+  <rect x="289" y="436" width="241" height="348" rx="10"
+        fill="rgba(255,213,79,0.13)" stroke="rgba(255,213,79,0.55)" stroke-width="1.5"/>
+  <circle cx="512" cy="454" r="7" fill="#ffe082" filter="url(#glow)"
+          style="animation:bulbPulse 2s ease-in-out infinite 0.8s"/>
+  <text x="301" y="458" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#ffe082" letter-spacing="0.5">Wohnzimmer</text>
+  <text x="409" y="624" text-anchor="middle" font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="22" font-weight="700" fill="rgba(255,255,255,0.85)">22.8°</text>
+  <circle cx="301" cy="770" r="4" fill="#4caf50"/>
+  <text x="311" y="774" font-family="Arial" font-size="10" fill="#81c784">EIN</text>
+
+  <!-- Bad EG (AUS) -->
+  <rect x="538" y="436" width="241" height="348" rx="10"
+        fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <circle cx="761" cy="454" r="7" fill="#37474f"/>
+  <text x="550" y="458" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#90a4ae" letter-spacing="0.5">Bad EG</text>
+  <circle cx="550" cy="770" r="4" fill="#37474f"/>
+  <text x="560" y="774" font-family="Arial" font-size="10" fill="#546e7a">AUS</text>
+
+  <!-- ══ OG Raster 3×2 ══ -->
+
+  <!-- OG Zeile 1 -->
+
+  <!-- Flur OG (AUS) -->
+  <rect x="822" y="80" width="241" height="348" rx="10"
+        fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <circle cx="1045" cy="98" r="7" fill="#37474f"/>
+  <text x="834" y="102" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#90a4ae" letter-spacing="0.5">Flur OG</text>
+  <circle cx="834" cy="414" r="4" fill="#37474f"/>
+  <text x="844" y="418" font-family="Arial" font-size="10" fill="#546e7a">AUS</text>
+
+  <!-- Schlafzimmer (EIN + Temp) -->
+  <rect x="1071" y="80" width="241" height="348" rx="10"
+        fill="rgba(255,213,79,0.13)" stroke="rgba(255,213,79,0.55)" stroke-width="1.5"/>
+  <circle cx="1294" cy="98" r="7" fill="#ffe082" filter="url(#glow)"
+          style="animation:bulbPulse 2s ease-in-out infinite 1s"/>
+  <text x="1083" y="102" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#ffe082" letter-spacing="0.5">Schlafzimmer</text>
+  <text x="1191" y="268" text-anchor="middle" font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="22" font-weight="700" fill="rgba(255,255,255,0.85)">19.8°</text>
+  <circle cx="1083" cy="414" r="4" fill="#4caf50"/>
+  <text x="1093" y="418" font-family="Arial" font-size="10" fill="#81c784">EIN</text>
+
+  <!-- Kinderzimmer 1 (AUS + Temp) -->
+  <rect x="1320" y="80" width="241" height="348" rx="10"
+        fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <circle cx="1543" cy="98" r="7" fill="#37474f"/>
+  <text x="1332" y="102" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#90a4ae" letter-spacing="0.5">Kinder 1</text>
+  <text x="1440" y="268" text-anchor="middle" font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="22" font-weight="700" fill="rgba(255,255,255,0.85)">20.3°</text>
+  <circle cx="1332" cy="414" r="4" fill="#37474f"/>
+  <text x="1342" y="418" font-family="Arial" font-size="10" fill="#546e7a">AUS</text>
+
+  <!-- OG Zeile 2 -->
+
+  <!-- Kinderzimmer 2 (EIN + Temp) -->
+  <rect x="822" y="436" width="241" height="348" rx="10"
+        fill="rgba(255,213,79,0.13)" stroke="rgba(255,213,79,0.55)" stroke-width="1.5"/>
+  <circle cx="1045" cy="454" r="7" fill="#ffe082" filter="url(#glow)"
+          style="animation:bulbPulse 2s ease-in-out infinite 0.6s"/>
+  <text x="834" y="458" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#ffe082" letter-spacing="0.5">Kinder 2</text>
+  <text x="942" y="624" text-anchor="middle" font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="22" font-weight="700" fill="rgba(255,255,255,0.85)">21.0°</text>
+  <circle cx="834" cy="770" r="4" fill="#4caf50"/>
+  <text x="844" y="774" font-family="Arial" font-size="10" fill="#81c784">EIN</text>
+
+  <!-- Arbeitszimmer (AUS + Temp) -->
+  <rect x="1071" y="436" width="241" height="348" rx="10"
+        fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <circle cx="1294" cy="454" r="7" fill="#37474f"/>
+  <text x="1083" y="458" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#90a4ae" letter-spacing="0.5">Arbeitszimmer</text>
+  <text x="1191" y="624" text-anchor="middle" font-family="'Helvetica Neue',Arial,sans-serif"
+        font-size="22" font-weight="700" fill="rgba(255,255,255,0.85)">18.5°</text>
+  <circle cx="1083" cy="770" r="4" fill="#37474f"/>
+  <text x="1093" y="774" font-family="Arial" font-size="10" fill="#546e7a">AUS</text>
+
+  <!-- Bad OG (AUS) -->
+  <rect x="1320" y="436" width="241" height="348" rx="10"
+        fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+  <circle cx="1543" cy="454" r="7" fill="#37474f"/>
+  <text x="1332" y="458" font-family="'Helvetica Neue',Arial,sans-serif" font-size="13"
+        font-weight="600" fill="#90a4ae" letter-spacing="0.5">Bad OG</text>
+  <circle cx="1332" cy="770" r="4" fill="#37474f"/>
+  <text x="1342" y="774" font-family="Arial" font-size="10" fill="#546e7a">AUS</text>
+
+  <!-- Status-Leiste unten -->
+  <rect x="28" y="796" width="1544" height="20" rx="6" fill="rgba(0,0,0,0.4)"/>
+  <circle cx="48" cy="806" r="4" fill="#4caf50"/>
+  <text x="60" y="810" font-family="Arial" font-size="10"
+        fill="rgba(255,255,255,0.4)" letter-spacing="0.5">
+    BELEUCHTUNG: 5 / 12 RÄUME AKTIV
+  </text>
+
+</svg>
+</div>
+</body>
+</html>

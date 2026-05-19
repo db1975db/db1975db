@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HA Area-Karten Vorschau — 12 Räume</title>
+<style>
+  :root {
+    --ha-card-border-radius: 12px;
+    --card-bg: #1c2537;
+    --page-bg: #111827;
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --accent: #03a9f4;
+    --section-title: rgba(232,234,237,0.6);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--page-bg);
+    font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+
+  /* ── HA-Topbar ─────────────────────────────── */
+  .ha-topbar {
+    background: #162032;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 0 16px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .ha-topbar .menu-icon {
+    width: 24px; height: 24px;
+    display: flex; flex-direction: column;
+    justify-content: space-around; cursor: pointer;
+  }
+  .ha-topbar .menu-icon span {
+    display: block; height: 2px;
+    background: var(--text-secondary); border-radius: 1px;
+  }
+  .ha-topbar .title {
+    font-size: 20px; font-weight: 400;
+    color: var(--text-primary); flex: 1;
+  }
+  .ha-topbar .ha-icon {
+    width: 36px; height: 36px;
+    background: #03a9f4;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer;
+  }
+
+  /* ── Navigation Sidebar ─────────────────────── */
+  .layout { display: flex; }
+  .sidebar {
+    width: 64px;
+    background: #162032;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    min-height: calc(100vh - 56px);
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+    gap: 4px;
+  }
+  .nav-item {
+    width: 48px; height: 48px;
+    border-radius: 8px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer; gap: 3px;
+    color: var(--text-secondary);
+    font-size: 9px; transition: background 0.2s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); }
+  .nav-item.active {
+    background: rgba(3,169,244,0.15);
+    color: #03a9f4;
+  }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  /* ── Content ────────────────────────────────── */
+  .content {
+    flex: 1;
+    padding: 24px 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+    overflow: auto;
+  }
+
+  /* ── Section ────────────────────────────────── */
+  .section {
+    margin-bottom: 32px;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--section-title);
+    margin-bottom: 12px;
+    padding-left: 2px;
+  }
+  .area-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 700px) {
+    .area-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── Area Card ──────────────────────────────── */
+  .area-card {
+    position: relative;
+    border-radius: var(--ha-card-border-radius);
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .area-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  }
+
+  .area-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.3s;
+  }
+  .area-card:hover .area-bg { transform: scale(1.03); }
+
+  /* Gradient-Overlay unten */
+  .area-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 30%,
+      rgba(0,0,0,0.55) 70%,
+      rgba(0,0,0,0.82) 100%
+    );
+    pointer-events: none;
+  }
+
+  /* Navigation-Pfeil oben rechts */
+  .area-nav {
+    position: absolute;
+    top: 10px; right: 10px;
+    z-index: 2;
+    background: rgba(0,0,0,0.35);
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+  }
+
+  /* Text-Bereich unten */
+  .area-info {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 2;
+    padding: 10px 12px 12px;
+  }
+  .area-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 7px;
+    letter-spacing: 0.2px;
+  }
+  .area-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(4px);
+    border-radius: 20px;
+    padding: 3px 9px 3px 7px;
+    font-size: 11px;
+    color: #fff;
+    font-weight: 500;
+  }
+  .badge.light-on {
+    background: rgba(255,213,79,0.28);
+    color: #ffe082;
+  }
+  .badge.light-off {
+    background: rgba(255,255,255,0.10);
+    color: rgba(255,255,255,0.55);
+  }
+  .badge.temp {
+    background: rgba(3,169,244,0.22);
+    color: #81d4fa;
+  }
+  .badge.media {
+    background: rgba(76,175,80,0.25);
+    color: #a5d6a7;
+  }
+  .badge svg {
+    width: 12px; height: 12px; flex-shrink: 0;
+  }
+
+  /* ── Raumfarben / Hintergründe ──────────────── */
+  .bg-eingang    { background: linear-gradient(135deg, #2e3a4a 0%, #1a2535 100%); }
+  .bg-flur       { background: linear-gradient(135deg, #2a3545 0%, #1c2838 100%); }
+  .bg-kueche     { background: linear-gradient(135deg, #3d2a1a 0%, #2a1e10 100%); }
+  .bg-esszimmer  { background: linear-gradient(135deg, #3a2d1a 0%, #261e0e 100%); }
+  .bg-wohnzimmer { background: linear-gradient(135deg, #1a2e4a 0%, #0e1e33 100%); }
+  .bg-bad        { background: linear-gradient(135deg, #1a2e3a 0%, #0e1e28 100%); }
+  .bg-schlaf     { background: linear-gradient(135deg, #1e1a3a 0%, #140e28 100%); }
+  .bg-kind1      { background: linear-gradient(135deg, #1a3a2a 0%, #0e281a 100%); }
+  .bg-kind2      { background: linear-gradient(135deg, #3a1e2e 0%, #28101e 100%); }
+  .bg-arbeit     { background: linear-gradient(135deg, #1e2e3a 0%, #121e28 100%); }
+
+  /* Leuchtende Version (Licht an) */
+  .bg-eingang.lit    { background: linear-gradient(135deg, #4a3e1a 0%, #332a0a 100%); }
+  .bg-flur.lit       { background: linear-gradient(135deg, #3a3520 0%, #28240e 100%); }
+  .bg-kueche.lit     { background: linear-gradient(135deg, #5a3a1a 0%, #3d2610 100%); }
+  .bg-esszimmer.lit  { background: linear-gradient(135deg, #4a3420 0%, #322314 100%); }
+  .bg-wohnzimmer.lit { background: linear-gradient(135deg, #1e3a5a 0%, #122640 100%); }
+  .bg-bad.lit        { background: linear-gradient(135deg, #1a3848 0%, #0e2633 100%); }
+  .bg-schlaf.lit     { background: linear-gradient(135deg, #2e2850 0%, #1e1a3a 100%); }
+  .bg-kind1.lit      { background: linear-gradient(135deg, #24483a 0%, #163228 100%); }
+  .bg-kind2.lit      { background: linear-gradient(135deg, #4a2440 0%, #321830 100%); }
+  .bg-arbeit.lit     { background: linear-gradient(135deg, #243848 0%, #162834 100%); }
+
+  /* Licht-Schimmer-Effekt wenn Licht an */
+  .area-card.lit .area-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(255,213,79,0.18) 0%, transparent 60%);
+  }
+</style>
+</head>
+<body>
+
+<!-- HA Topbar -->
+<div class="ha-topbar">
+  <div class="menu-icon">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="title">Räume</div>
+  <div class="ha-icon">🏠</div>
+</div>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="nav-item active" title="Übersicht">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Über&shy;sicht</span>
+    </div>
+    <div class="nav-item" title="Energie">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+      <span>Energie</span>
+    </div>
+    <div class="nav-item" title="Karte">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+      <span>Karte</span>
+    </div>
+    <div class="nav-item" title="Einstellungen">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+      <span>Einstell.</span>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Erdgeschoss -->
+    <div class="section">
+      <div class="section-title">Erdgeschoss</div>
+      <div class="area-grid">
+
+        <!-- Eingang — Licht AUS -->
+        <div class="area-card">
+          <div class="area-bg bg-eingang"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Eingang</div>
+            <div class="area-badges">
+              <span class="badge light-off">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                AUS
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flur EG — Licht AUS -->
+        <div class="area-card">
+          <div class="area-bg bg-flur"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Flur EG</div>
+            <div class="area-badges">
+              <span class="badge light-off">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                AUS
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Küche — Licht AN + Temp -->
+        <div class="area-card lit">
+          <div class="area-bg bg-kueche lit"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Küche</div>
+            <div class="area-badges">
+              <span class="badge light-on">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                2 an
+              </span>
+              <span class="badge temp">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/></svg>
+                21.4°C
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Esszimmer — Licht AUS + Temp -->
+        <div class="area-card">
+          <div class="area-bg bg-esszimmer"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Esszimmer</div>
+            <div class="area-badges">
+              <span class="badge light-off">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                AUS
+              </span>
+              <span class="badge temp">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/></svg>
+                22.1°C
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wohnzimmer — Licht AN + Temp + TV -->
+        <div class="area-card lit">
+          <div class="area-bg bg-wohnzimmer lit"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Wohnzimmer</div>
+            <div class="area-badges">
+              <span class="badge light-on">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                3 an
+              </span>
+              <span class="badge temp">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/></svg>
+                22.8°C
+              </span>
+              <span class="badge media">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+                TV
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bad EG — Licht AUS -->
+        <div class="area-card">
+          <div class="area-bg bg-bad"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Bad EG</div>
+            <div class="area-badges">
+              <span class="badge light-off">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                AUS
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Obergeschoss -->
+    <div class="section">
+      <div class="section-title">Obergeschoss</div>
+      <div class="area-grid">
+
+        <!-- Flur OG — AUS -->
+        <div class="area-card">
+          <div class="area-bg bg-flur"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Flur OG</div>
+            <div class="area-badges">
+              <span class="badge light-off">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                AUS
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schlafzimmer — AN + Temp -->
+        <div class="area-card lit">
+          <div class="area-bg bg-schlaf lit"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Schlafzimmer</div>
+            <div class="area-badges">
+              <span class="badge light-on">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                1 an
+              </span>
+              <span class="badge temp">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/></svg>
+                19.8°C
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kinderzimmer 1 — AUS + Temp -->
+        <div class="area-card">
+          <div class="area-bg bg-kind1"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Kinderzimmer 1</div>
+            <div class="area-badges">
+              <span class="badge light-off">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                AUS
+              </span>
+              <span class="badge temp">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/></svg>
+                20.3°C
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kinderzimmer 2 — AN + Temp -->
+        <div class="area-card lit">
+          <div class="area-bg bg-kind2 lit"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Kinderzimmer 2</div>
+            <div class="area-badges">
+              <span class="badge light-on">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                2 an
+              </span>
+              <span class="badge temp">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/></svg>
+                21.0°C
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Arbeitszimmer — AUS + Temp -->
+        <div class="area-card">
+          <div class="area-bg bg-arbeit"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Arbeitszimmer</div>
+            <div class="area-badges">
+              <span class="badge light-off">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                AUS
+              </span>
+              <span class="badge temp">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-8c0-.55.45-1 1-1s1 .45 1 1h-1v1h1v2h-1v1h1v2h-2V5z"/></svg>
+                18.5°C
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bad OG — AUS -->
+        <div class="area-card">
+          <div class="area-bg bg-bad"></div>
+          <div class="area-nav">›</div>
+          <div class="area-info">
+            <div class="area-name">Bad OG</div>
+            <div class="area-badges">
+              <span class="badge light-off">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+                AUS
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /layout -->
+
+</body>
+</html>

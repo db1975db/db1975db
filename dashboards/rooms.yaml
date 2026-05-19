@@ -1,0 +1,207 @@
+# ══════════════════════════════════════════════════════
+#  Haus-Grundriss — 12 Räume (EG + OG)
+#  Einfügen unter: Lovelace → Karte hinzufügen → Manuell
+#
+#  GRÖSSE ANPASSEN:
+#    height weiter unten ändern, z.B.:
+#    50vh = klein / 70vh = mittel / 90vh = groß
+#
+#  Entity-IDs anpassen — Suche nach: ANPASSEN
+# ══════════════════════════════════════════════════════
+
+type: custom:button-card
+entity: light.wohnzimmer   # ANPASSEN: beliebige Haupt-Entity
+show_name: false
+show_icon: false
+show_state: false
+tap_action:
+  action: none
+hold_action:
+  action: none
+double_tap_action:
+  action: none
+styles:
+  card:
+    - background: "linear-gradient(160deg, #0f1923 0%, #0a1218 100%)"
+    - border-radius: "16px"
+    - padding: "0"
+    - overflow: "hidden"
+    - box-shadow: "0 10px 40px rgba(0,0,0,0.7)"
+    - height: "70vh"    # ◄── GRÖSSE: hier anpassen
+  custom_fields:
+    floor_map:
+      - width: "100%"
+      - height: "100%"
+      - display: "block"
+      - padding: "0"
+custom_fields:
+  floor_map: |
+    [[[
+      // ── Räume: Entity-IDs anpassen ──────────────────
+      var rooms = [
+        // EG — Erdgeschoss
+        { id: 'eg_eingang',     label: 'Eingang',        light: states['light.eingang'],        temp: null,                                floor: 'EG' },
+        { id: 'eg_flur',        label: 'Flur EG',        light: states['light.flur_eg'],         temp: null,                                floor: 'EG' },
+        { id: 'eg_kueche',      label: 'Küche',          light: states['light.kueche'],          temp: states['sensor.temp_kueche'],        floor: 'EG' },
+        { id: 'eg_esszimmer',   label: 'Esszimmer',      light: states['light.esszimmer'],       temp: states['sensor.temp_esszimmer'],     floor: 'EG' },
+        { id: 'eg_wohnzimmer',  label: 'Wohnzimmer',     light: states['light.wohnzimmer'],      temp: states['sensor.temp_wohnzimmer'],    floor: 'EG' },
+        { id: 'eg_bad',         label: 'Bad EG',         light: states['light.bad_eg'],          temp: null,                                floor: 'EG' },
+        // OG — Obergeschoss
+        { id: 'og_flur',        label: 'Flur OG',        light: states['light.flur_og'],         temp: null,                                floor: 'OG' },
+        { id: 'og_schlaf',      label: 'Schlafzimmer',   light: states['light.schlafzimmer'],    temp: states['sensor.temp_schlafzimmer'],  floor: 'OG' },
+        { id: 'og_kind1',       label: 'Kinder 1',       light: states['light.kinderzimmer_1'],  temp: states['sensor.temp_kinderzimmer_1'],floor: 'OG' },
+        { id: 'og_kind2',       label: 'Kinder 2',       light: states['light.kinderzimmer_2'],  temp: states['sensor.temp_kinderzimmer_2'],floor: 'OG' },
+        { id: 'og_arbeit',      label: 'Arbeitszimmer',  light: states['light.arbeitszimmer'],   temp: states['sensor.temp_arbeitszimmer'], floor: 'OG' },
+        { id: 'og_bad',         label: 'Bad OG',         light: states['light.bad_og'],          temp: null,                                floor: 'OG' },
+      ];
+
+      // ── Hilfsfunktionen ──────────────────────────────
+      function isOn(e)   { return e && e.state === 'on'; }
+      function getTemp(e){ return e && e.state && e.state !== 'unavailable' ? parseFloat(e.state).toFixed(1) : null; }
+
+      // ── Raum-Kachel generieren ───────────────────────
+      // x, y = linke obere Ecke; w, h = Breite/Höhe
+      function tile(r, x, y, w, h) {
+        var on       = isOn(r.light);
+        var temp     = getTemp(r.temp);
+        var bg       = on ? 'rgba(255,213,79,0.13)' : 'rgba(255,255,255,0.04)';
+        var stroke   = on ? 'rgba(255,213,79,0.55)' : 'rgba(255,255,255,0.12)';
+        var lblCol   = on ? '#ffe082' : '#90a4ae';
+        var bulbCol  = on ? '#ffe082' : '#37474f';
+        var bulbGlow = on ? 'url(#glow)' : 'none';
+        var tempStr  = temp ? temp + '°' : '';
+        var cx = x + w/2;
+        var cy = y + h/2;
+
+        return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="10" '
+             + 'fill="' + bg + '" stroke="' + stroke + '" stroke-width="1.5"/>'
+             // Glühbirnen-Icon oben rechts
+             + '<circle cx="' + (x+w-18) + '" cy="' + (y+18) + '" r="7" fill="' + bulbCol + '" filter="' + bulbGlow + '" '
+             + (on ? 'style="animation:bulbPulse 2s ease-in-out infinite"' : '') + '/>'
+             // Raum-Label
+             + '<text x="' + (x+12) + '" y="' + (y+22) + '" '
+             + 'font-family="\'Helvetica Neue\',Arial,sans-serif" font-size="13" font-weight="600" '
+             + 'fill="' + lblCol + '" letter-spacing="0.5">' + r.label + '</text>'
+             // Temperatur
+             + (tempStr ? '<text x="' + (cx) + '" y="' + (cy+8) + '" text-anchor="middle" '
+             + 'font-family="\'Helvetica Neue\',Arial,sans-serif" font-size="22" font-weight="700" '
+             + 'fill="rgba(255,255,255,0.85)">' + tempStr + '</text>' : '')
+             // Status-Dot
+             + '<circle cx="' + (x+12) + '" cy="' + (y+h-14) + '" r="4" fill="' + (on ? '#4caf50' : '#37474f') + '"/>'
+             + '<text x="' + (x+22) + '" y="' + (y+h-10) + '" '
+             + 'font-family="Arial" font-size="10" fill="' + (on ? '#81c784' : '#546e7a') + '">'
+             + (on ? 'EIN' : 'AUS') + '</text>';
+      }
+
+      // ── Layout-Gitter ────────────────────────────────
+      // Viewport: 1600 × 820
+      // EG: linke Hälfte  (x: 40–780)
+      // OG: rechte Hälfte (x: 820–1560)
+      // Trenner bei x=800
+
+      var pad = 8;   // Abstand zwischen Kacheln
+      var ox  = 40;  // EG Start-X
+      var oy  = 80;  // Start-Y (unter Beschriftung)
+      var tw  = (740 - pad*2) / 3;  // Kachelbreite EG (3 Spalten)
+      var th  = (720 - pad*3) / 2;  // Kachelhöhe   (2 Zeilen)
+
+      // EG — 6 Räume, 3×2 Raster
+      // Zeile 1: Eingang | Flur | Küche
+      // Zeile 2: Esszimmer | Wohnzimmer | Bad
+      var egLayout = [
+        [0, 0], [1, 0], [2, 0],
+        [0, 1], [1, 1], [2, 1],
+      ];
+      var egRooms = rooms.filter(function(r){ return r.floor === 'EG'; });
+      var ogRooms = rooms.filter(function(r){ return r.floor === 'OG'; });
+
+      var svg_eg = egRooms.map(function(r, i){
+        var col = egLayout[i][0];
+        var row = egLayout[i][1];
+        var x = ox + col * (tw + pad);
+        var y = oy + row * (th + pad);
+        return tile(r, x, y, tw, th);
+      }).join('');
+
+      // OG — 6 Räume, 3×2 Raster (gleiche Struktur)
+      var ox2 = 820;
+      var tw2 = (740 - pad*2) / 3;
+      var svg_og = ogRooms.map(function(r, i){
+        var col = egLayout[i][0];
+        var row = egLayout[i][1];
+        var x = ox2 + col * (tw2 + pad);
+        var y = oy + row * (th + pad);
+        return tile(r, x, y, tw2, th);
+      }).join('');
+
+      // ── Aktive Lichter zählen ────────────────────────
+      var lightsOn = rooms.filter(function(r){ return isOn(r.light); }).length;
+
+      return \`<svg viewBox="0 0 1600 820" xmlns="http://www.w3.org/2000/svg"
+                   style="display:block;width:100%;height:100%">
+        <defs>
+          <style>
+            @keyframes bulbPulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+          </style>
+          <linearGradient id="bgG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#0f1923"/>
+            <stop offset="100%" stop-color="#070e14"/>
+          </linearGradient>
+          <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="hdrGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Hintergrund -->
+        <rect width="1600" height="820" fill="url(#bgG)"/>
+
+        <!-- EG-Panel -->
+        <rect x="28" y="52" width="762" height="752" rx="16"
+              fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+        <!-- OG-Panel -->
+        <rect x="810" y="52" width="762" height="752" rx="16"
+              fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+
+        <!-- Trenn-Linie Mitte -->
+        <line x1="800" y1="52" x2="800" y2="804"
+              stroke="rgba(255,255,255,0.06)" stroke-width="1.5" stroke-dasharray="6,6"/>
+
+        <!-- EG-Beschriftung -->
+        <text x="409" y="36" text-anchor="middle"
+              font-family="'Helvetica Neue',Arial,sans-serif"
+              font-size="14" font-weight="700" letter-spacing="4"
+              fill="rgba(255,255,255,0.55)" filter="url(#hdrGlow)">ERDGESCHOSS</text>
+        <line x1="28" y1="52" x2="790" y2="52"
+              stroke="rgba(100,181,246,0.4)" stroke-width="1.5"/>
+
+        <!-- OG-Beschriftung -->
+        <text x="1191" y="36" text-anchor="middle"
+              font-family="'Helvetica Neue',Arial,sans-serif"
+              font-size="14" font-weight="700" letter-spacing="4"
+              fill="rgba(255,255,255,0.55)" filter="url(#hdrGlow)">OBERGESCHOSS</text>
+        <line x1="810" y1="52" x2="1572" y2="52"
+              stroke="rgba(100,181,246,0.4)" stroke-width="1.5"/>
+
+        <!-- Raum-Kacheln EG -->
+        \${svg_eg}
+
+        <!-- Raum-Kacheln OG -->
+        \${svg_og}
+
+        <!-- Status-Leiste unten -->
+        <rect x="28" y="796" width="1544" height="20" rx="6" fill="rgba(0,0,0,0.4)"/>
+        <circle cx="48" cy="806" r="4" fill="\${lightsOn > 0 ? '#4caf50' : '#37474f'}"/>
+        <text x="60" y="810"
+              font-family="Arial" font-size="10"
+              fill="rgba(255,255,255,0.4)" letter-spacing="0.5">
+          BELEUCHTUNG: \${lightsOn} / 12 RÄUME AKTIV
+        </text>
+
+      </svg>\`;
+    ]]]
