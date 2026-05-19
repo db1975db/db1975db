@@ -1,0 +1,420 @@
+# ══════════════════════════════════════════════════════
+#  12 Räume — mushroom-template-card (HACS Variante B)
+#
+#  Voraussetzungen (HACS → Frontend):
+#    • mushroom          lovelace-mushroom
+#    • card-mod          lovelace-card-mod   ← für Hintergrundfarben
+#
+#  Entity-IDs anpassen: alle Zeilen mit # ANPASSEN
+#
+#  Kurzreferenz Aktionen:
+#    Tippen  → öffnet Raum-Detailseite
+#    Halten  → schaltet Hauptlicht um
+# ══════════════════════════════════════════════════════
+
+views:
+  - type: sections
+    path: raeume
+    title: Räume
+    max_columns: 3
+    badges: []
+    sections:
+
+      # ╔══════════════════════════════════════════╗
+      # ║  ERDGESCHOSS                             ║
+      # ╚══════════════════════════════════════════╝
+      - type: grid
+        title: Erdgeschoss
+        cards:
+
+          # ── Eingang ──────────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Eingang
+            secondary: >-
+              {% if is_state('light.eingang', 'on') %}
+                Licht an
+              {% else %}
+                Alles aus
+              {% endif %}
+            icon: mdi:door-open
+            icon_color: >-
+              {{ 'amber' if is_state('light.eingang', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.eingang', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'amber' if is_state('light.eingang', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/eingang
+            hold_action:
+              action: toggle
+              entity: light.eingang          # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#3d2e0e' if is_state('light.eingang', 'on') else '#1c2537' }};
+                }
+
+          # ── Flur EG ──────────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Flur EG
+            secondary: >-
+              {% if is_state('light.flur_eg', 'on') %}
+                Licht an
+              {% else %}
+                Alles aus
+              {% endif %}
+            icon: mdi:floor-plan
+            icon_color: >-
+              {{ 'amber' if is_state('light.flur_eg', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.flur_eg', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'amber' if is_state('light.flur_eg', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/flur-eg
+            hold_action:
+              action: toggle
+              entity: light.flur_eg          # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#2e2810' if is_state('light.flur_eg', 'on') else '#1c2537' }};
+                }
+
+          # ── Küche ────────────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Küche
+            secondary: >-
+              {% set t = states('sensor.temp_kueche') %}
+              {% set l = expand('light.kueche') | selectattr('state','eq','on') | list | count %}
+              {{ t | round(1) }}°C
+              {%- if l > 0 %} · {{ l }} Licht{{ 'er' if l > 1 else '' }} an{% endif %}
+            icon: mdi:countertop
+            icon_color: >-
+              {{ 'deep-orange' if is_state('light.kueche', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.kueche', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'amber' if is_state('light.kueche', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/kueche
+            hold_action:
+              action: toggle
+              entity: light.kueche           # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#3d2410' if is_state('light.kueche', 'on') else '#1c2537' }};
+                }
+
+          # ── Esszimmer ────────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Esszimmer
+            secondary: >-
+              {% set t = states('sensor.temp_esszimmer') %}
+              {% set l = expand('light.esszimmer') | selectattr('state','eq','on') | list | count %}
+              {{ t | round(1) }}°C
+              {%- if l > 0 %} · {{ l }} Licht{{ 'er' if l > 1 else '' }} an{% endif %}
+            icon: mdi:table-furniture
+            icon_color: >-
+              {{ 'amber' if is_state('light.esszimmer', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.esszimmer', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'amber' if is_state('light.esszimmer', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/esszimmer
+            hold_action:
+              action: toggle
+              entity: light.esszimmer        # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#352212' if is_state('light.esszimmer', 'on') else '#1c2537' }};
+                }
+
+          # ── Wohnzimmer ───────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Wohnzimmer
+            secondary: >-
+              {% set t = states('sensor.temp_wohnzimmer') %}
+              {% set l = expand('light.wohnzimmer') | selectattr('state','eq','on') | list | count %}
+              {% set tv = is_state('media_player.wohnzimmer_tv', 'playing') %}
+              {{ t | round(1) }}°C
+              {%- if l > 0 %} · {{ l }} Licht{{ 'er' if l > 1 else '' }} an{% endif %}
+              {%- if tv %} · TV läuft{% endif %}
+            icon: mdi:sofa
+            icon_color: >-
+              {{ 'light-blue' if is_state('light.wohnzimmer', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {% if is_state('media_player.wohnzimmer_tv', 'playing') %}
+                mdi:television-play
+              {% elif is_state('light.wohnzimmer', 'on') %}
+                mdi:lightbulb
+              {% else %}
+                mdi:lightbulb-off-outline
+              {% endif %}
+            badge_color: >-
+              {% if is_state('media_player.wohnzimmer_tv', 'playing') %}
+                green
+              {% elif is_state('light.wohnzimmer', 'on') %}
+                amber
+              {% else %}
+                disabled
+              {% endif %}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/wohnzimmer
+            hold_action:
+              action: toggle
+              entity: light.wohnzimmer       # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#122640' if is_state('light.wohnzimmer', 'on') else '#1c2537' }};
+                }
+
+          # ── Bad EG ───────────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Bad EG
+            secondary: >-
+              {% if is_state('light.bad_eg', 'on') %}
+                Licht an
+              {% elif is_state('switch.lueftung_bad_eg', 'on') %}
+                Lüftung läuft
+              {% else %}
+                Alles aus
+              {% endif %}
+            icon: mdi:shower
+            icon_color: >-
+              {{ 'cyan' if is_state('light.bad_eg', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.bad_eg', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'cyan' if is_state('light.bad_eg', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/bad-eg
+            hold_action:
+              action: toggle
+              entity: light.bad_eg           # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#0e2633' if is_state('light.bad_eg', 'on') else '#1c2537' }};
+                }
+
+      # ╔══════════════════════════════════════════╗
+      # ║  OBERGESCHOSS                            ║
+      # ╚══════════════════════════════════════════╝
+      - type: grid
+        title: Obergeschoss
+        cards:
+
+          # ── Flur OG ──────────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Flur OG
+            secondary: >-
+              {% if is_state('light.flur_og', 'on') %}
+                Licht an
+              {% else %}
+                Alles aus
+              {% endif %}
+            icon: mdi:stairs
+            icon_color: >-
+              {{ 'amber' if is_state('light.flur_og', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.flur_og', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'amber' if is_state('light.flur_og', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/flur-og
+            hold_action:
+              action: toggle
+              entity: light.flur_og          # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#2e2810' if is_state('light.flur_og', 'on') else '#1c2537' }};
+                }
+
+          # ── Schlafzimmer ─────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Schlafzimmer
+            secondary: >-
+              {% set t = states('sensor.temp_schlafzimmer') %}
+              {% set l = expand('light.schlafzimmer') | selectattr('state','eq','on') | list | count %}
+              {{ t | round(1) }}°C
+              {%- if l > 0 %} · {{ l }} Licht{{ 'er' if l > 1 else '' }} an{% endif %}
+            icon: mdi:bed
+            icon_color: >-
+              {{ 'deep-purple' if is_state('light.schlafzimmer', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.schlafzimmer', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'deep-purple' if is_state('light.schlafzimmer', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/schlafzimmer
+            hold_action:
+              action: toggle
+              entity: light.schlafzimmer     # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#1e1a3a' if is_state('light.schlafzimmer', 'on') else '#1c2537' }};
+                }
+
+          # ── Kinderzimmer 1 ───────────────────────
+          - type: custom:mushroom-template-card
+            primary: Kinderzimmer 1
+            secondary: >-
+              {% set t = states('sensor.temp_kinderzimmer_1') %}
+              {% set l = expand('light.kinderzimmer_1') | selectattr('state','eq','on') | list | count %}
+              {{ t | round(1) }}°C
+              {%- if l > 0 %} · {{ l }} Licht{{ 'er' if l > 1 else '' }} an{% endif %}
+            icon: mdi:toy-brick
+            icon_color: >-
+              {{ 'green' if is_state('light.kinderzimmer_1', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.kinderzimmer_1', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'green' if is_state('light.kinderzimmer_1', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/kinderzimmer-1
+            hold_action:
+              action: toggle
+              entity: light.kinderzimmer_1   # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#163228' if is_state('light.kinderzimmer_1', 'on') else '#1c2537' }};
+                }
+
+          # ── Kinderzimmer 2 ───────────────────────
+          - type: custom:mushroom-template-card
+            primary: Kinderzimmer 2
+            secondary: >-
+              {% set t = states('sensor.temp_kinderzimmer_2') %}
+              {% set l = expand('light.kinderzimmer_2') | selectattr('state','eq','on') | list | count %}
+              {{ t | round(1) }}°C
+              {%- if l > 0 %} · {{ l }} Licht{{ 'er' if l > 1 else '' }} an{% endif %}
+            icon: mdi:toy-brick
+            icon_color: >-
+              {{ 'pink' if is_state('light.kinderzimmer_2', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.kinderzimmer_2', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'pink' if is_state('light.kinderzimmer_2', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/kinderzimmer-2
+            hold_action:
+              action: toggle
+              entity: light.kinderzimmer_2   # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#321830' if is_state('light.kinderzimmer_2', 'on') else '#1c2537' }};
+                }
+
+          # ── Arbeitszimmer ────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Arbeitszimmer
+            secondary: >-
+              {% set t = states('sensor.temp_arbeitszimmer') %}
+              {% set l = expand('light.arbeitszimmer') | selectattr('state','eq','on') | list | count %}
+              {% set pc = is_state('switch.pc_arbeitszimmer', 'on') %}
+              {{ t | round(1) }}°C
+              {%- if l > 0 %} · {{ l }} Licht{{ 'er' if l > 1 else '' }} an{% endif %}
+              {%- if pc %} · PC an{% endif %}
+            icon: mdi:desk
+            icon_color: >-
+              {{ 'light-blue' if is_state('light.arbeitszimmer', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {% if is_state('switch.pc_arbeitszimmer', 'on') %}
+                mdi:desktop-tower
+              {% elif is_state('light.arbeitszimmer', 'on') %}
+                mdi:lightbulb
+              {% else %}
+                mdi:lightbulb-off-outline
+              {% endif %}
+            badge_color: >-
+              {% if is_state('switch.pc_arbeitszimmer', 'on') %}
+                light-blue
+              {% elif is_state('light.arbeitszimmer', 'on') %}
+                amber
+              {% else %}
+                disabled
+              {% endif %}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/arbeitszimmer
+            hold_action:
+              action: toggle
+              entity: light.arbeitszimmer    # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#162834' if is_state('light.arbeitszimmer', 'on') else '#1c2537' }};
+                }
+
+          # ── Bad OG ───────────────────────────────
+          - type: custom:mushroom-template-card
+            primary: Bad OG
+            secondary: >-
+              {% if is_state('light.bad_og', 'on') %}
+                Licht an
+              {% elif is_state('switch.lueftung_bad_og', 'on') %}
+                Lüftung läuft
+              {% else %}
+                Alles aus
+              {% endif %}
+            icon: mdi:bathtub
+            icon_color: >-
+              {{ 'cyan' if is_state('light.bad_og', 'on') else 'blue-grey' }}
+            badge_icon: >-
+              {{ 'mdi:lightbulb' if is_state('light.bad_og', 'on') else 'mdi:lightbulb-off-outline' }}
+            badge_color: >-
+              {{ 'cyan' if is_state('light.bad_og', 'on') else 'disabled' }}
+            fill_container: true
+            tap_action:
+              action: navigate
+              navigation_path: /lovelace/bad-og
+            hold_action:
+              action: toggle
+              entity: light.bad_og           # ANPASSEN
+            card_mod:
+              style: >
+                :host {
+                  --card-background-color:
+                    {{ '#0e2633' if is_state('light.bad_og', 'on') else '#1c2537' }};
+                }

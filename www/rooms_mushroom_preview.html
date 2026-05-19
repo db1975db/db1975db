@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mushroom-template-card Vorschau — 12 Räume</title>
+<style>
+  :root {
+    --card-bg: #1c2537;
+    --card-bg-hover: #222e44;
+    --page-bg: #111827;
+    --text-primary: #e8eaed;
+    --text-secondary: rgba(232,234,237,0.55);
+    --section-title: rgba(232,234,237,0.5);
+    --radius: 12px;
+    --icon-size: 42px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--page-bg);
+    font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+
+  /* ── HA-Topbar ─────────────────────────────── */
+  .ha-topbar {
+    background: #162032;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 0 16px;
+    height: 56px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .menu-icon { width:24px; height:24px; display:flex; flex-direction:column;
+    justify-content:space-around; cursor:pointer; }
+  .menu-icon span { display:block; height:2px; background:rgba(255,255,255,0.4); border-radius:1px; }
+  .ha-topbar .title { font-size:20px; font-weight:400; flex:1; }
+  .ha-topbar .ha-icon { width:36px; height:36px; background:#03a9f4; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:18px; }
+
+  /* ── Layout ─────────────────────────────────── */
+  .layout { display:flex; }
+
+  .sidebar {
+    width: 64px;
+    background: #162032;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    min-height: calc(100vh - 56px);
+    display: flex; flex-direction:column; align-items:center;
+    padding: 8px 0; gap:4px;
+  }
+  .nav-item { width:48px; height:48px; border-radius:8px; display:flex;
+    flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; gap:3px; color:rgba(255,255,255,0.4); font-size:9px; }
+  .nav-item:hover { background:rgba(255,255,255,0.06); }
+  .nav-item.active { background:rgba(3,169,244,0.15); color:#03a9f4; }
+  .nav-item svg { width:22px; height:22px; }
+
+  .content { flex:1; padding:24px 20px; max-width:1100px; margin:0 auto; }
+
+  /* ── Section ─────────────────────────────────── */
+  .section { margin-bottom:28px; }
+  .section-title {
+    font-size:12px; font-weight:500; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--section-title);
+    margin-bottom:10px; padding-left:2px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-title::after {
+    content:''; flex:1; height:1px;
+    background:rgba(255,255,255,0.07);
+  }
+  .room-grid {
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:8px;
+  }
+  @media(max-width:680px) { .room-grid { grid-template-columns: repeat(2,1fr); } }
+
+  /* ── mushroom-template-card ──────────────────── */
+  .mush-card {
+    border-radius: var(--radius);
+    padding: 14px 14px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.15s;
+    position: relative;
+    min-height: 72px;
+    background: var(--card-bg);
+  }
+  .mush-card:hover {
+    background: var(--card-bg-hover);
+    transform: translateY(-1px);
+  }
+  .mush-card:active { transform: scale(0.98); }
+
+  /* Icon-Kreis */
+  .mush-icon {
+    flex-shrink: 0;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    border-radius: 50%;
+    display: flex; align-items:center; justify-content:center;
+    position: relative;
+  }
+  .mush-icon svg { width:22px; height:22px; }
+
+  /* Badge oben rechts am Icon */
+  .mush-badge {
+    position: absolute;
+    top: -2px; right: -2px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex; align-items:center; justify-content:center;
+    border: 2px solid var(--card-bg);
+  }
+  .mush-badge svg { width:10px; height:10px; }
+
+  /* Text */
+  .mush-text { flex: 1; min-width: 0; }
+  .mush-primary {
+    font-size: 14px; font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mush-secondary {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    white-space: nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  /* Pfeil rechts */
+  .mush-arrow {
+    flex-shrink: 0;
+    color: rgba(255,255,255,0.2);
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  /* ── Icon-Farben ─────────────────────────────── */
+  .c-amber    { background: rgba(255,193,7,0.15);   color:#ffca28; }
+  .c-orange   { background: rgba(255,87,34,0.15);   color:#ff7043; }
+  .c-blue     { background: rgba(33,150,243,0.15);  color:#42a5f5; }
+  .c-lblue    { background: rgba(3,169,244,0.15);   color:#29b6f6; }
+  .c-cyan     { background: rgba(0,188,212,0.15);   color:#26c6da; }
+  .c-green    { background: rgba(76,175,80,0.15);   color:#66bb6a; }
+  .c-pink     { background: rgba(233,30,99,0.15);   color:#ec407a; }
+  .c-purple   { background: rgba(103,58,183,0.15);  color:#9575cd; }
+  .c-grey     { background: rgba(96,125,139,0.15);  color:#78909c; }
+
+  .b-amber  { background:#ffca28; color:#1c2537; }
+  .b-orange { background:#ff7043; color:#fff; }
+  .b-blue   { background:#42a5f5; color:#fff; }
+  .b-lblue  { background:#29b6f6; color:#fff; }
+  .b-cyan   { background:#26c6da; color:#fff; }
+  .b-green  { background:#66bb6a; color:#fff; }
+  .b-pink   { background:#ec407a; color:#fff; }
+  .b-purple { background:#9575cd; color:#fff; }
+  .b-grey   { background:rgba(96,125,139,0.3); color:#78909c; }
+
+  /* ── card_mod Hintergrundfarben (beleuchtet) ── */
+  .lit-warm    { background: #2e2410; }
+  .lit-orange  { background: #3d2410; }
+  .lit-blue    { background: #122640; }
+  .lit-cyan    { background: #0e2633; }
+  .lit-green   { background: #163228; }
+  .lit-pink    { background: #321830; }
+  .lit-purple  { background: #1e1a3a; }
+  .lit-lblue   { background: #162834; }
+</style>
+</head>
+<body>
+
+<div class="ha-topbar">
+  <div class="menu-icon"><span></span><span></span><span></span></div>
+  <div class="title">Räume</div>
+  <div class="ha-icon">🏠</div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Über&shy;sicht</span>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+      <span>Energie</span>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+      <span>Karte</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ Erdgeschoss ══ -->
+    <div class="section">
+      <div class="section-title">Erdgeschoss</div>
+      <div class="room-grid">
+
+        <!-- Eingang — AUS -->
+        <div class="mush-card">
+          <div class="mush-icon c-grey">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+            <div class="mush-badge b-grey">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Eingang</div>
+            <div class="mush-secondary">Alles aus</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Flur EG — AUS -->
+        <div class="mush-card">
+          <div class="mush-icon c-grey">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+            <div class="mush-badge b-grey">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Flur EG</div>
+            <div class="mush-secondary">Alles aus</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Küche — EIN + Temp -->
+        <div class="mush-card lit-orange">
+          <div class="mush-icon c-orange">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2.01L6 2c-1.1 0-2 .89-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.11-.9-1.99-2-1.99zM18 20H6v-9.02h12V20zm0-11H6V4h12v5zM8 5h2v3H8zm0 7h2v5H8z"/></svg>
+            <div class="mush-badge b-amber">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Küche</div>
+            <div class="mush-secondary">21.4°C · 2 Lichter an</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Esszimmer — AUS + Temp -->
+        <div class="mush-card">
+          <div class="mush-icon c-grey">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h10v2H7zm0 4h7v2H7z"/></svg>
+            <div class="mush-badge b-grey">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Esszimmer</div>
+            <div class="mush-secondary">22.1°C</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Wohnzimmer — EIN + Temp + TV -->
+        <div class="mush-card lit-blue">
+          <div class="mush-icon c-lblue">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 8H4V6h16m0 14H4v-2h16m0-10H4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-6c0-1.1-.9-2-2-2z"/></svg>
+            <div class="mush-badge b-green">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Wohnzimmer</div>
+            <div class="mush-secondary">22.8°C · 3 Lichter an · TV läuft</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Bad EG — AUS -->
+        <div class="mush-card">
+          <div class="mush-icon c-grey">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 9V7h-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h3v1h2v-1h6v1h2v-1h3c1.1 0 2-.9 2-2v-3h-2v3H4V5h14v2h-3v2h7zm-7 5c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"/></svg>
+            <div class="mush-badge b-grey">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Bad EG</div>
+            <div class="mush-secondary">Alles aus</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ Obergeschoss ══ -->
+    <div class="section">
+      <div class="section-title">Obergeschoss</div>
+      <div class="room-grid">
+
+        <!-- Flur OG — AUS -->
+        <div class="mush-card">
+          <div class="mush-icon c-grey">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 12h-2v3h-3v2h5v-5zM7 9h3V7H5v5h2V9zm14-6H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16.01H3V4.99h18v14.02z"/></svg>
+            <div class="mush-badge b-grey">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Flur OG</div>
+            <div class="mush-secondary">Alles aus</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Schlafzimmer — EIN + Temp -->
+        <div class="mush-card lit-purple">
+          <div class="mush-icon c-purple">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>
+            <div class="mush-badge b-purple">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Schlafzimmer</div>
+            <div class="mush-secondary">19.8°C · 1 Licht an</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Kinderzimmer 1 — AUS + Temp -->
+        <div class="mush-card">
+          <div class="mush-icon c-grey">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.66 7.93L12 2.27 6.34 7.93c-3.12 3.12-3.12 8.19 0 11.31C7.9 20.8 9.95 21.58 12 21.58c2.05 0 4.1-.78 5.66-2.34 3.12-3.12 3.12-8.19 0-11.31zM12 19.59c-1.6 0-3.11-.62-4.24-1.76C6.62 16.69 6 15.19 6 13.59s.62-3.11 1.76-4.24L12 5.1v14.49z"/></svg>
+            <div class="mush-badge b-grey">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Kinderzimmer 1</div>
+            <div class="mush-secondary">20.3°C</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Kinderzimmer 2 — EIN + Temp -->
+        <div class="mush-card lit-pink">
+          <div class="mush-icon c-pink">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.66 7.93L12 2.27 6.34 7.93c-3.12 3.12-3.12 8.19 0 11.31C7.9 20.8 9.95 21.58 12 21.58c2.05 0 4.1-.78 5.66-2.34 3.12-3.12 3.12-8.19 0-11.31zM12 19.59c-1.6 0-3.11-.62-4.24-1.76C6.62 16.69 6 15.19 6 13.59s.62-3.11 1.76-4.24L12 5.1v14.49z"/></svg>
+            <div class="mush-badge b-pink">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Kinderzimmer 2</div>
+            <div class="mush-secondary">21.0°C · 2 Lichter an</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Arbeitszimmer — AUS + Temp -->
+        <div class="mush-card">
+          <div class="mush-icon c-grey">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>
+            <div class="mush-badge b-grey">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Arbeitszimmer</div>
+            <div class="mush-secondary">18.5°C</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+        <!-- Bad OG — AUS -->
+        <div class="mush-card">
+          <div class="mush-icon c-grey">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 9V7h-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h3v1h2v-1h6v1h2v-1h3c1.1 0 2-.9 2-2v-3h-2v3H4V5h14v2h-3v2h7zm-7 5c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"/></svg>
+            <div class="mush-badge b-grey">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+            </div>
+          </div>
+          <div class="mush-text">
+            <div class="mush-primary">Bad OG</div>
+            <div class="mush-secondary">Alles aus</div>
+          </div>
+          <div class="mush-arrow">›</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
