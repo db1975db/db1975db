@@ -1,0 +1,127 @@
+# ══════════════════════════════════════════════════════
+#  12 Räume — Area-Karten im HA-Übersicht-Stil
+#
+#  VARIANTE A (empfohlen): native type:area
+#    → Räume müssen unter Einstellungen → Bereiche angelegt sein
+#    → Entity-IDs danach den Bereichen zuweisen
+#
+#  VARIANTE B: mushroom-template-card (HACS)
+#    → funktioniert ohne Bereiche, Entity-IDs direkt anpassen
+#
+#  Installation:
+#    Einstellungen → Dashboards → Dashboard hinzufügen
+#    → Lovelace YAML-Modus, diese Datei einfügen
+# ══════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────
+#  VARIANTE A — Native HA Area-Karten
+#  (Bereich-IDs unten ggf. anpassen)
+# ─────────────────────────────────────────────────────
+views:
+  - type: sections
+    path: raeume
+    title: Räume
+    max_columns: 3
+    badges: []
+    sections:
+
+      # ── Erdgeschoss ────────────────────────────────
+      - type: grid
+        title: Erdgeschoss
+        cards:
+          - type: area
+            area: eingang          # ANPASSEN: Bereich-ID
+            navigation_path: eingang
+          - type: area
+            area: flur_eg          # ANPASSEN
+            navigation_path: flur-eg
+          - type: area
+            area: kueche           # ANPASSEN
+            navigation_path: kueche
+          - type: area
+            area: esszimmer        # ANPASSEN
+            navigation_path: esszimmer
+          - type: area
+            area: wohnzimmer       # ANPASSEN
+            navigation_path: wohnzimmer
+          - type: area
+            area: bad_eg           # ANPASSEN
+            navigation_path: bad-eg
+
+      # ── Obergeschoss ───────────────────────────────
+      - type: grid
+        title: Obergeschoss
+        cards:
+          - type: area
+            area: flur_og          # ANPASSEN
+            navigation_path: flur-og
+          - type: area
+            area: schlafzimmer     # ANPASSEN
+            navigation_path: schlafzimmer
+          - type: area
+            area: kinderzimmer_1   # ANPASSEN
+            navigation_path: kinderzimmer-1
+          - type: area
+            area: kinderzimmer_2   # ANPASSEN
+            navigation_path: kinderzimmer-2
+          - type: area
+            area: arbeitszimmer    # ANPASSEN
+            navigation_path: arbeitszimmer
+          - type: area
+            area: bad_og           # ANPASSEN
+            navigation_path: bad-og
+
+---
+# ─────────────────────────────────────────────────────
+#  VARIANTE B — mushroom-template-card (HACS)
+#  HACS → Frontend → mushroom installieren
+#  Entity-IDs anpassen, dann diesen Block verwenden
+# ─────────────────────────────────────────────────────
+
+# views:
+#   - type: sections
+#     path: raeume
+#     title: Räume
+#     max_columns: 3
+#     sections:
+#
+#       - type: grid
+#         title: Erdgeschoss
+#         cards:
+#
+#           # Wohnzimmer ─────────────────────────────
+#           - type: custom:mushroom-template-card
+#             primary: Wohnzimmer
+#             secondary: >-
+#               {{ states('sensor.temp_wohnzimmer') | round(1) }}°C •
+#               {{ expand('light.wohnzimmer_group') | selectattr('state','eq','on') | list | count }} Lichter an
+#             icon: mdi:sofa
+#             icon_color: >-
+#               {{ 'amber' if is_state('light.wohnzimmer','on') else 'grey' }}
+#             badge_icon: >-
+#               {{ 'mdi:lightbulb' if is_state('light.wohnzimmer','on') else 'mdi:lightbulb-off' }}
+#             badge_color: >-
+#               {{ 'amber' if is_state('light.wohnzimmer','on') else 'grey' }}
+#             tap_action:
+#               action: navigate
+#               navigation_path: /lovelace/wohnzimmer
+#             hold_action:
+#               action: toggle
+#               entity: light.wohnzimmer
+#
+#           # Küche ───────────────────────────────────
+#           - type: custom:mushroom-template-card
+#             primary: Küche
+#             secondary: >-
+#               {{ states('sensor.temp_kueche') | round(1) }}°C •
+#               {{ expand('light.kueche_group') | selectattr('state','eq','on') | list | count }} Lichter an
+#             icon: mdi:countertop
+#             icon_color: >-
+#               {{ 'deep-orange' if is_state('light.kueche','on') else 'grey' }}
+#             badge_icon: >-
+#               {{ 'mdi:lightbulb' if is_state('light.kueche','on') else 'mdi:lightbulb-off' }}
+#             tap_action:
+#               action: navigate
+#               navigation_path: /lovelace/kueche
+#
+#           # ... weitere Räume analog
