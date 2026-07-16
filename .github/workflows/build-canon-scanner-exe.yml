@@ -9,6 +9,9 @@ on:
       - ".github/workflows/build-canon-scanner-exe.yml"
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -35,3 +38,12 @@ jobs:
         with:
           name: ScanToPDF-exe
           path: canon-scanner-pdf/dist/ScanToPDF.exe
+
+      - name: Publish as GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: scanner-v${{ github.run_number }}
+          name: ScanToPDF v${{ github.run_number }}
+          files: canon-scanner-pdf/dist/ScanToPDF.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
