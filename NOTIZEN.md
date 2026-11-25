@@ -37,13 +37,19 @@
 ### Dashboard „Zuhause (neu)“ (`/dashboard-haus`) – im Aufbau
 - Ziel: EIN Dashboard mit mehreren Ansichten statt vieler einzelner Dashboards. Schritt für Schritt, Dennis will jede Ansicht vorher als Vorschau sehen und gibt dann sein Ok.
 - Steht vorläufig als **„Zuhause (neu)“** in der Seitenleiste (Symbol Haus mit Herz), damit es nicht mit dem alten „Zuhause“ (`/dashboard-g1`) verwechselt wird.
-- Ansicht „Start“ (Panel) mit `custom:haus-card` (Datei `www/haus-card.js`, Konfiguration `dashboards/haus-start.yaml`).
-  Inhalt: Wetter mit animiertem Himmel, Personen mit Fotos (grüner Ring = zu Hause), Hinweise (Rauch, offene Fenster, Müll morgen, schwache Batterien),
-  vier große Kacheln Erdgeschoss / Obergeschoss / Garten / Pool, Energie-Leiste mit Hausbatterie.
-- **Ressource:** inline, Resource-ID `0e363120356147f5a4a40e85bcafc8be`.
+- Komplette Konfiguration: `dashboards/haus.yaml` (wird aus `haus-start.yaml`, `wohnzimmer.yaml`, `kueche.yaml` erzeugt).
+- Ansichten: `start` (Startseite), Unteransichten `erdgeschoss`, `wohnzimmer`, `kueche`.
+  Fehlen noch: `obergeschoss`, `garten`, `pool`, `wetter`, `maehroboter`, `bewaesserung` und die übrigen Räume. Deren Links sind in `haus-start.yaml` auskommentiert („Ansicht folgt“), damit man ohne Kopfzeile nicht auf einer leeren Seite landet.
+- Startseite (`custom:haus-card`, `www/haus-card.js`): Wetter, Personen mit Fotos, Hinweise, 4 Kacheln, Energie-Leiste. Im Querformat bis 860 px Höhe kompakt (4 Kacheln nebeneinander), damit das iPad mini (1133×744) nicht scrollen muss.
+- Etagen-Ansicht: `haus-card` mit `sections: [header, rooms]` und `floor: …`; Kopf mit „‹ Übersicht“, „Alle Lichter aus“ und Lichtschalter auf jeder Raum-Kachel.
+- Raum-Ansichten: `raum-card` mit `back`, `back_label`, `base_path` (Zurück-Knopf, ab raum-card v1.3).
+- **kiosk-mode** (v16) im Dashboard: `hide_header: '{{ "iPad" in user_agent }}'` → nur auf dem iPad keine Kopfzeile.
+  Auf dem iPad öffnet der kleine ☰-Knopf oben rechts in der Startseite (`menu_button: ipad`) die Seitenleiste. Notausgang: `?disable_km` an die Adresse hängen.
+- iPad mini Küche: browser_mod-Browser „iPad mini“, angemeldet als Dennis (wie das iPhone) – deshalb Unterscheidung über die Browserkennung, nicht über den Benutzer.
+- **Ressourcen:** haus-card inline `0e363120356147f5a4a40e85bcafc8be`; raum-card `1bc3365d5d504c3c9d14d27f5598de9a` (beide exakt = Repo, per SHA-256 geprüft).
 - Hausbatterie `sensor.varta_battery_power_signed`: negativ = lädt, positiv = entlädt (aus dem Verlauf geprüft). Abends leer, nachts 0 % ist normal.
-- Geplante Ansichten (Pfade sind in der Startseite schon verlinkt): `erdgeschoss`, `obergeschoss`, `garten`, `pool`, `wetter`, `maehroboter`, `bewaesserung`, plus Räume `wohnzimmer`, `kueche` usw.
-- Danach sollen die Einzel-Dashboards (Wohnzimmer, Küche, Wetterstation, Mähroboter, Hunter-Bewässerung) überflüssig werden – erst löschen, wenn Dennis das will.
+- Nach jeder Karten-Änderung auf iPhone/iPad: Companion App → Debugging → Frontend-Cache zurücksetzen, App neu starten.
+- Später: Einzel-Dashboards (Wohnzimmer, Küche, Wetterstation, Mähroboter, Hunter-Bewässerung) erst löschen, wenn Dennis das will.
 
 ## Die Raum-Karte für weitere Räume
 `raum-card` ist allgemein gebaut. Alle Bereiche sind optional:

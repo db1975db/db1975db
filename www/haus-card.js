@@ -1,4 +1,4 @@
-// Haus-Karte – Startseite im Stil der Wetterstation (v0.3.0, Entwurf)
+// Haus-Karte – Startseite im Stil der Wetterstation (v0.4.0)
 const H_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const H_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const H_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -23,6 +23,8 @@ const H_CSS = `
 .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,24,.05),rgba(6,10,24,.5))}
 .hin{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;padding:24px 26px 22px;align-items:end}
 .greet{font-size:15px;opacity:.92;font-weight:500}
+.hero.hasm .hin{padding-right:62px}
+.mnu{font:inherit;position:absolute;top:10px;right:10px;z-index:3;width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px)}
 .title{font-size:clamp(30px,5vw,44px);font-weight:650;letter-spacing:-.02em;margin:2px 0 10px}
 .wx{display:flex;align-items:center;gap:14px}
 .big{font-size:clamp(54px,9vw,86px);font-weight:200;line-height:1;letter-spacing:-.03em;white-space:nowrap}
@@ -170,7 +172,7 @@ class HausCard extends HTMLElement {
     this.root = this.attachShadow({ mode: 'open' });
     const c = this.c, S = this.sec;
     this.root.innerHTML = `<style>${H_CSS}</style><div class="wrap">
-      ${S.has('hero') ? `<div class="hero full" id="hero" role="link" tabindex="0" ${c.weather && c.weather.path ? `data-nav="${H_esc(c.weather.path)}"` : ''}><div class="sky" id="sky"></div><div class="shade"></div><div class="hin" id="hin"></div></div>` : ''}
+      ${S.has('hero') ? `<div class="hero full ${this.showMenu() ? 'hasm' : ''}" id="hero" role="link" tabindex="0" ${c.weather && c.weather.path ? `data-nav="${H_esc(c.weather.path)}"` : ''}><div class="sky" id="sky"></div><div class="shade"></div>${this.showMenu() ? `<button class="mnu" data-act="menu" aria-label="Menü">${H_icon('mdi:menu', 20)}</button>` : ''}<div class="hin" id="hin"></div></div>` : ''}
       ${S.has('header') ? `<div class="full fh" id="fh"></div>` : ''}
       ${S.has('hints') ? `<div class="full hints" id="hints"></div>` : ''}
       ${S.has('tiles') ? `<div class="full tiles" id="tiles"></div>` : ''}
@@ -195,7 +197,9 @@ class HausCard extends HTMLElement {
     history.pushState(null, '', path);
     window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } }));
   }
+  showMenu() { const m = this.c.menu_button; return m === true || (m === 'ipad' && /iPad/.test(navigator.userAgent)); }
   act(el) {
+    if (el.dataset.act === 'menu') { this.dispatchEvent(new CustomEvent('hass-toggle-menu', { bubbles: true, composed: true, detail: { open: true } })); return; }
     const ids = (el.dataset.e || '').split(',').filter(Boolean); if (!ids.length) return;
     const on = ids.filter(e => (this.s(e) || {}).state === 'on');
     if (el.dataset.act === 'off' || on.length) this._hass.callService('homeassistant', 'turn_off', { entity_id: on.length ? on : ids });

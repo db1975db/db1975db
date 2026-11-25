@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.2.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.3.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -18,6 +18,7 @@ const R_CSS = `
 .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,24,.15),rgba(6,10,24,.55))}
 .hin{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;padding:24px 26px 22px}
 .loc{font-size:14px;opacity:.9;font-weight:500;display:flex;align-items:center;gap:6px}
+.back{font:inherit;display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:5px 13px 5px 6px;font-size:13.5px;font-weight:600;cursor:pointer;backdrop-filter:blur(6px);margin-bottom:10px}
 .title{font-size:clamp(30px,5vw,44px);font-weight:650;letter-spacing:-.02em;margin:4px 0 2px}
 .big{font-size:clamp(56px,9vw,92px);font-weight:200;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
 .big small{font-size:.34em;font-weight:400;letter-spacing:0;opacity:.85;margin-left:6px;vertical-align:.9em}
@@ -136,6 +137,7 @@ class RaumCard extends HTMLElement {
     const t = ev.target.closest('[data-act]'); if (!t || t.tagName === 'INPUT' || t.tagName === 'SELECT') return;
     if (ev.target.closest('input,select')) return;
     const a = t.dataset.act, e = t.dataset.e;
+    if (a === 'back') { const p = this.c.back.startsWith('/') ? this.c.back : `${this.c.base_path || ''}/${this.c.back}`; history.pushState(null, '', p); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); return; }
     if (a === 'toggle') this.call(e.split('.')[0], 'toggle', { entity_id: e });
     else if (a === 'alloff') this.call('homeassistant', 'turn_off', { entity_id: [...this.c.lights.map(x => x.entity), ...this.c.switches.filter(x => !x.keep).map(x => x.entity)] });
     else if (a === 'scene') this.call('select', 'select_option', { entity_id: this.c.scene_select, option: t.dataset.o });
@@ -199,6 +201,7 @@ class RaumCard extends HTMLElement {
         <div class="row"><button class="rb" data-act="temp" data-d="-1" aria-label="Kälter">${R_icon('mdi:minus', 18)}</button><button class="rb ${off ? '' : 'on'}" data-act="hvac">${R_icon('mdi:power', 16)}${off ? 'Aus' : 'Heizen'}</button><button class="rb" data-act="temp" data-d="1" aria-label="Wärmer">${R_icon('mdi:plus', 18)}</button></div></div>`;
     }
     this.$('hin').innerHTML = `<div>
+      ${c.back ? `<button class="back" data-act="back">${R_icon('mdi:chevron-left', 20)}${R_esc(c.back_label || 'Zurück')}</button>` : ''}
       <div class="loc">${R_icon(c.icon || 'mdi:sofa', 16)}${R_esc(c.floor || 'Raum')}</div>
       <div class="title">${R_esc(c.name || 'Raum')}</div>
       <div class="big">${R_fmt(t)}<small>°C</small></div>
