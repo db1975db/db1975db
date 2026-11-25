@@ -15,7 +15,8 @@ views:
     - hero
     - hints
     - tiles
-    - ebar
+    - flow
+    tile_rooms: false
     menu_button: ipad
     tiles:
     - name: Erdgeschoss
