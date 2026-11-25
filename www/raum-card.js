@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.4.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.5.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -168,7 +168,7 @@ class RaumCard extends HTMLElement {
   // ---------- Hero ----------
   kHero() { const c = this.c; return this.ks([c.temperature, c.humidity, c.climate, c.scene_select, ...c.windows, ...c.lights.map(x => x.entity), ...c.media.map(x => x.entity), ...c.power.map(x => x.entity)]) + (this._tgt ?? ''); }
   r_hero() {
-    const c = this.c, cl = this.s(c.climate), t = this.n(c.temperature) ?? (cl && cl.attributes.current_temperature), hum = this.n(c.humidity) ?? (cl && cl.attributes.current_humidity);
+    const c = this.c, cl0 = this.s(c.climate), cl = cl0 && !['unavailable', 'unknown'].includes(cl0.state) ? cl0 : null, t = this.n(c.temperature) ?? (cl && cl.attributes.current_temperature), hum = this.n(c.humidity) ?? (cl && cl.attributes.current_humidity);
     const cols = c.lights.map(x => ({ rgb: this.lightColor(this.s(x.entity)), b: (this.s(x.entity) || { attributes: {} }).attributes.brightness || 200 })).filter(x => x.rgb);
     const blobs = this.$('glow').children, pos = [[5, 0], [50, -5], [20, 45], [60, 40], [35, 15]];
     for (let i = 0; i < blobs.length; i++) {
@@ -178,7 +178,7 @@ class RaumCard extends HTMLElement {
     }
     const chips = [], ch = (i, s, k = '') => chips.push(`<span class="chip ${k}">${R_icon(i, 15)}${s}</span>`);
     const onL = c.lights.filter(x => (this.s(x.entity) || {}).state === 'on').length;
-    ch(onL ? 'mdi:lightbulb-on' : 'mdi:lightbulb-off-outline', onL ? `${onL} von ${c.lights.length} Lichtern an` : 'Licht aus');
+    if (c.lights.length) ch(onL ? 'mdi:lightbulb-on' : 'mdi:lightbulb-off-outline', onL ? `${onL} von ${c.lights.length} Lichtern an` : 'Licht aus');
     const sc = this.s(c.scene_select); if (sc && onL) ch('mdi:palette', R_esc(sc.state));
     const open = c.windows.filter(w => (this.s(w.entity) || {}).state === 'on'); if (open.length) ch('mdi:window-open-variant', open.map(w => w.name).join(', ') + ' offen', 'warn');
     if (cl && cl.attributes.hvac_action === 'heating') ch('mdi:fire', 'heizt', 'heat');

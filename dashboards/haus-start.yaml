@@ -1,203 +1,301 @@
 # Startseite des neuen Dashboards "Haus" (Entwurf, noch nicht in Home Assistant)
 # Benötigt die Ressource www/haus-card.js
-type: "custom:haus-card"
-title: "Zuhause"
-base_path: "/dashboard-haus"
-# Startseite: Wetter, Hinweise, vier große Kacheln, Energie-Leiste
-sections: ["hero", "hints", "tiles", "flow"]
-tile_rooms: false   # keine Raumliste in den Startseiten-Kacheln (steht in der Etagen-Ansicht)
-hint_batteries: false   # schwache Batterien nicht auf der Startseite (gehören in den Raum)
-hints_ok: false   # keine „Alles in Ordnung“-Zeile – Hinweise erscheinen nur, wenn etwas ist
-menu_button: "ipad"   # ☰-Knopf nur auf dem iPad (dort blendet kiosk-mode die Kopfzeile aus)
+type: custom:haus-card
+title: Zuhause
+base_path: /dashboard-haus
+sections:
+- hero
+- hints
+- tiles
+- flow
+tile_rooms: false
+hint_batteries: false
+hints_ok: false
+menu_button: ipad
 tiles:
-  - name: "Erdgeschoss"
-    icon: "mdi:home-floor-0"
-    floor: "Erdgeschoss"
-    path: "erdgeschoss"
-    background: "linear-gradient(150deg,#7a4a2e,#c27a45)"
-  - name: "Obergeschoss"
-    icon: "mdi:home-floor-1"
-    floor: "Obergeschoss"
-    path: "obergeschoss"
-    background: "linear-gradient(150deg,#3b3f78,#6a63b5)"
-  - name: "Garten"
-    icon: "mdi:flower"
-    floor: "Außen"
-    # path: "garten"   # Ansicht folgt
-    temperature: "sensor.garden_wetterstation_temperatur"
-    background: "linear-gradient(150deg,#245b3a,#4f9a5c)"
-    items:
-      - { type: "mower", entity: "lawn_mower.robi", battery: "sensor.robi_batterie" }
-      - type: "irrigation"
-        entity: "binary_sensor.hunter_bewasserung_konnektivitat"
-        zones: ["binary_sensor.gewachshaus_bewasserung", "binary_sensor.vorgarten_bewasserung", "binary_sensor.holzregal_bewasserung", "binary_sensor.poolpumpe_bewasserung", "binary_sensor.garage_bewasserung", "binary_sensor.pool_bewasserung", "binary_sensor.feuerstelle_bewasserung", "binary_sensor.terrasse_bewasserung", "binary_sensor.nebeneingang_bewasserung", "binary_sensor.kompost_bewasserung", "binary_sensor.rosenbeet_bewasserung"]
-  - name: "Pool"
-    icon: "mdi:pool"
-    # path: "pool"   # Ansicht folgt
-    temperature: "sensor.pooltemperatur"
-    climate: "climate.pool_warmepumpe"
-    background: "linear-gradient(150deg,#0d5c8a,#1fa2c9)"
-smoke: "binary_sensor.gruppe_rauchmelder"
+- name: Erdgeschoss
+  icon: mdi:home-floor-0
+  floor: Erdgeschoss
+  path: erdgeschoss
+  background: linear-gradient(150deg,#7a4a2e,#c27a45)
+- name: Obergeschoss
+  icon: mdi:home-floor-1
+  floor: Obergeschoss
+  path: obergeschoss
+  background: linear-gradient(150deg,#3b3f78,#6a63b5)
+- name: Garten
+  icon: mdi:flower
+  floor: Außen
+  path: garten
+  temperature: sensor.garden_wetterstation_temperatur
+  background: linear-gradient(150deg,#245b3a,#4f9a5c)
+  items:
+  - type: mower
+    entity: lawn_mower.robi
+    battery: sensor.robi_batterie
+  - type: irrigation
+    entity: binary_sensor.hunter_bewasserung_konnektivitat
+    zones:
+    - binary_sensor.gewachshaus_bewasserung
+    - binary_sensor.vorgarten_bewasserung
+    - binary_sensor.holzregal_bewasserung
+    - binary_sensor.poolpumpe_bewasserung
+    - binary_sensor.garage_bewasserung
+    - binary_sensor.pool_bewasserung
+    - binary_sensor.feuerstelle_bewasserung
+    - binary_sensor.terrasse_bewasserung
+    - binary_sensor.nebeneingang_bewasserung
+    - binary_sensor.kompost_bewasserung
+    - binary_sensor.rosenbeet_bewasserung
+- name: Pool
+  icon: mdi:pool
+  path: pool
+  temperature: sensor.pooltemperatur
+  climate: climate.pool_warmepumpe
+  background: linear-gradient(150deg,#0d5c8a,#1fa2c9)
+smoke: binary_sensor.gruppe_rauchmelder
 battery_limit: 20
 battery_names:
-  sensor.taster_badezimmer_batterie: "Hue-Dimmer Bad"
-  sensor.taster_kuche_batterie: "Hue-Dimmer Küche"
-  sensor.hue_dimmer_buro_batterie: "Hue-Dimmer Büro"
-  sensor.bthome_sensor_5dca_batterie: "Klimasensor Terrasse"
-  sensor.bthome_sensor_4d05_battery: "Sensor Holzregal"
-  sensor.shelly_blu_h_t_c34d_battery: "Klimasensor HWR"
-battery_exclude: ["cupra", "formentor", "iphone", "ipad", "evcc", "varta", "_soc", "ss_batterie"]
+  sensor.taster_badezimmer_batterie: Hue-Dimmer Bad
+  sensor.taster_kuche_batterie: Hue-Dimmer Küche
+  sensor.hue_dimmer_buro_batterie: Hue-Dimmer Büro
+  sensor.bthome_sensor_5dca_batterie: Klimasensor Terrasse
+  sensor.bthome_sensor_4d05_battery: Sensor Holzregal
+  sensor.shelly_blu_h_t_c34d_battery: Klimasensor HWR
+battery_exclude:
+- cupra
+- formentor
+- iphone
+- ipad
+- evcc
+- varta
+- _soc
+- ss_batterie
 weather:
-  entity: "weather.pirateweather"
-  name: "Wetterstation Garten"
-  temperature: "sensor.garden_wetterstation_temperatur"
-  max: "sensor.garten_wetterstation_temperatur_max_24h"
-  min: "sensor.garten_wetterstation_temperatur_min_24h"
-  wind: "sensor.garden_wetterstation_geschwindigkeit"
-  rain_day: "sensor.garten_wetterstation_niederschlag_heute"
-  humidity: "sensor.garden_wetterstation_luftfeuchtigkeit"
-  path: "wetter"
+  entity: weather.pirateweather
+  name: Wetterstation Garten
+  temperature: sensor.garden_wetterstation_temperatur
+  max: sensor.garten_wetterstation_temperatur_max_24h
+  min: sensor.garten_wetterstation_temperatur_min_24h
+  wind: sensor.garden_wetterstation_geschwindigkeit
+  rain_day: sensor.garten_wetterstation_niederschlag_heute
+  humidity: sensor.garden_wetterstation_luftfeuchtigkeit
+  path: wetter
 persons:
-  - entity: "person.smattex"
-    name: "Dennis"
-  - entity: "person.ricarda"
-    name: "Ricarda"
-  - entity: "person.carlo"
-    name: "Carlo"
+- entity: person.smattex
+  name: Dennis
+- entity: person.ricarda
+  name: Ricarda
+- entity: person.carlo
+  name: Carlo
 waste_days: 1
 waste:
-  - { entity: "sensor.hausmull_datum_2", name: "Hausmüll", icon: "mdi:trash-can" }
-  - { entity: "sensor.gelbe_tonne_datum_2", name: "Gelbe Tonne", icon: "mdi:recycle" }
-  - { entity: "sensor.biotonne_auf_abruf_datum_2", name: "Biotonne", icon: "mdi:leaf" }
-  - { entity: "sensor.pappe_papier_datum", name: "Papier", icon: "mdi:package-variant" }
+- entity: sensor.hausmull_datum_2
+  name: Hausmüll
+  icon: mdi:trash-can
+- entity: sensor.gelbe_tonne_datum_2
+  name: Gelbe Tonne
+  icon: mdi:recycle
+- entity: sensor.biotonne_auf_abruf_datum_2
+  name: Biotonne
+  icon: mdi:leaf
+- entity: sensor.pappe_papier_datum
+  name: Papier
+  icon: mdi:package-variant
 energy:
-  pv: "sensor.pv_produktion_aktuell"
-  home: "sensor.hausverbrauch_aktuell"
-  grid_import: "sensor.netzbezug_aktuell"
-  grid_export: "sensor.netzeinspeisung_aktuell"
-  battery_soc: "sensor.mb_varta_soc"
-  battery_power: "sensor.varta_battery_power_signed"
-  pv_today: "sensor.pv_energie_tag"
+  pv: sensor.pv_produktion_aktuell
+  home: sensor.hausverbrauch_aktuell
+  grid_import: sensor.netzbezug_aktuell
+  grid_export: sensor.netzeinspeisung_aktuell
+  battery_soc: sensor.mb_varta_soc
+  battery_power: sensor.varta_battery_power_signed
+  pv_today: sensor.pv_energie_tag
 garden:
-  - type: "mower"
-    name: "Mähroboter"
-    icon: "mdi:robot-mower"
-    entity: "lawn_mower.robi"
-    battery: "sensor.robi_batterie"
-    progress: "sensor.robi_mah_fortschritt"
-    path: "maehroboter"
-  - type: "irrigation"
-    name: "Bewässerung"
-    icon: "mdi:sprinkler-variant"
-    entity: "binary_sensor.hunter_bewasserung_konnektivitat"
-    recommendation: "sensor.bewasserung_empfehlung"
-    zones:
-      - "binary_sensor.gewachshaus_bewasserung"
-      - "binary_sensor.vorgarten_bewasserung"
-      - "binary_sensor.holzregal_bewasserung"
-      - "binary_sensor.poolpumpe_bewasserung"
-      - "binary_sensor.garage_bewasserung"
-      - "binary_sensor.pool_bewasserung"
-      - "binary_sensor.feuerstelle_bewasserung"
-      - "binary_sensor.terrasse_bewasserung"
-      - "binary_sensor.nebeneingang_bewasserung"
-      - "binary_sensor.kompost_bewasserung"
-      - "binary_sensor.rosenbeet_bewasserung"
-    path: "bewaesserung"
-  - type: "pool"
-    name: "Pool"
-    icon: "mdi:pool"
-    entity: "climate.pool_warmepumpe"
-    temperature: "sensor.pooltemperatur"
-    climate: "climate.pool_warmepumpe"
+- type: mower
+  name: Mähroboter
+  icon: mdi:robot-mower
+  entity: lawn_mower.robi
+  battery: sensor.robi_batterie
+  progress: sensor.robi_mah_fortschritt
+  path: /dashboard-mahroboter/robi
+- type: irrigation
+  name: Bewässerung
+  icon: mdi:sprinkler-variant
+  entity: binary_sensor.hunter_bewasserung_konnektivitat
+  recommendation: sensor.bewasserung_empfehlung
+  zones:
+  - binary_sensor.gewachshaus_bewasserung
+  - binary_sensor.vorgarten_bewasserung
+  - binary_sensor.holzregal_bewasserung
+  - binary_sensor.poolpumpe_bewasserung
+  - binary_sensor.garage_bewasserung
+  - binary_sensor.pool_bewasserung
+  - binary_sensor.feuerstelle_bewasserung
+  - binary_sensor.terrasse_bewasserung
+  - binary_sensor.nebeneingang_bewasserung
+  - binary_sensor.kompost_bewasserung
+  - binary_sensor.rosenbeet_bewasserung
+  path: bewaesserung
+- type: pool
+  name: Pool
+  icon: mdi:pool
+  entity: climate.pool_warmepumpe
+  temperature: sensor.pooltemperatur
+  climate: climate.pool_warmepumpe
+  path: pool
 floors:
-  - name: "Erdgeschoss"
-    rooms:
-      - name: "Wohnzimmer"
-        icon: "mdi:sofa"
-        path: "wohnzimmer"
-        temperature: "sensor.bthome_sensor_86a9_temperatur"
-        humidity: "sensor.bthome_sensor_86a9_luftfeuchtigkeit"
-        climate: "climate.shellywalldisplay_000822196d2a"
-        lights: ["light.sofa", "light.tisch_2", "light.tisch", "light.laterne"]
-        windows: [{ entity: "binary_sensor.multi_state_sensor_p100_tur_3", name: "Terrassentür" }]
-      - name: "Küche"
-        icon: "mdi:silverware-fork-knife"
-        path: "kueche"
-        temperature: "sensor.bthome_sensor_28a8_temperatur"
-        humidity: "sensor.bthome_sensor_28a8_luftfeuchtigkeit"
-        climate: "climate.shellywalldisplay_000822de33c9"
-        lights: ["light.aqara_led_deckenspots", "light.aqara_kuchentisch", "light.aqara_led_decke"]
-        windows: [{ entity: "binary_sensor.kuche_fensterkontakt_tur", name: "Fenster" }]
-      - name: "Eingang"
-        icon: "mdi:door"
-        temperature: "sensor.shelly_blu_h_t_42d4_temperature"
-        humidity: "sensor.shelly_blu_h_t_42d4_humidity"
-        climate: "climate.shellywalldisplay_000822e3235e"
-        lights: ["light.spots_flur_eingang", "light.wandlampen_eingang", "light.eingang_rechts"]
-        windows: [{ entity: "binary_sensor.multi_state_sensor_p100_tur", name: "Haustür" }]
-      - name: "Flur unten"
-        icon: "mdi:floor-plan"
-        temperature: "sensor.flur_unten_aqara_presence_multisensor_fp300_temperatur"
-        humidity: "sensor.flur_unten_aqara_presence_multisensor_fp300_luftfeuchtigkeit"
-        lights: ["light.flur_unten_aqara_flur_led_1", "light.flur_unten_aqara_flur_led_2", "light.flur_unten_aqara_flur_led_3", "light.flur_unten_aqara_flur_led_4"]
-      - name: "WC"
-        icon: "mdi:toilet"
-        temperature: "sensor.shelly_blu_h_t_51bb_temperature"
-        humidity: "sensor.shelly_blu_h_t_51bb_humidity"
-        climate: "climate.shellywalldisplay_000822b4ef43"
-        windows: [{ entity: "binary_sensor.shelly_blu_door_window_45b9_window", name: "Fenster" }]
-      - name: "HWR"
-        icon: "mdi:washing-machine"
-        temperature: "sensor.shelly_blu_h_t_c34d_temperature"
-        humidity: "sensor.shelly_blu_h_t_c34d_humidity"
-        lights: ["light.hwr_steckdose"]
-        windows: [{ entity: "binary_sensor.bthome_sensor_cc6a_window", name: "Fenster" }, { entity: "binary_sensor.hwr_aqara_door_and_window_sensor_p2_tur", name: "Tür" }]
-      - name: "Speisekammer"
-        icon: "mdi:fridge-outline"
-        temperature: "sensor.shelly_blu_h_t_d061_temperature"
-        humidity: "sensor.shelly_blu_h_t_d061_humidity"
-        lights: ["light.licht"]
-  - name: "Obergeschoss"
-    rooms:
-      - name: "Schlafzimmer"
-        icon: "mdi:bed-king-outline"
-        temperature: "sensor.shelly_blu_h_t_3914_temperature"
-        humidity: "sensor.shelly_blu_h_t_3914_humidity"
-        climate: "climate.shellywalldisplay_000822ffbd78"
-        lights: ["light.schlafzimmer", "light.hue_go_1"]
-        windows: [{ entity: "binary_sensor.shelly_blu_door_window_3729_window", name: "Fenster" }, { entity: "binary_sensor.bthome_sensor_bdbb_window", name: "Fenster 2" }]
-      - name: "Kinderzimmer"
-        icon: "mdi:teddy-bear"
-        temperature: "sensor.shelly_blu_h_t_7675_temperature"
-        humidity: "sensor.shelly_blu_h_t_7675_humidity"
-        climate: "climate.shellywalldisplay_000822f97f83"
-        lights: ["light.kinderzimmer_licht"]
-        windows: [{ entity: "binary_sensor.shelly_blu_door_window_c931_window", name: "Fenster" }, { entity: "binary_sensor.bthome_sensor_907e_window", name: "Fenster 2" }]
-      - name: "Büro"
-        icon: "mdi:desk"
-        temperature: "sensor.shelly_blu_h_t_6215_temperature"
-        humidity: "sensor.shelly_blu_h_t_6215_humidity"
-        climate: "climate.shellywalldisplay_000822d8f919"
-        lights: ["light.buro"]
-        windows: [{ entity: "binary_sensor.shelly_blu_door_window_ab1a_window", name: "Fenster" }]
-      - name: "Badezimmer"
-        icon: "mdi:shower-head"
-        temperature: "sensor.shelly_blu_h_t_1eca_temperature"
-        humidity: "sensor.shelly_blu_h_t_1eca_humidity"
-        climate: "climate.shellywalldisplay_000822acf8f5"
-        lights: ["light.badezimmer", "light.hue_sauna"]
-        windows: [{ entity: "binary_sensor.bthome_sensor_1ada_window", name: "Fenster" }]
-      - name: "Flur oben"
-        icon: "mdi:stairs"
-        lights: ["light.wohnzimmer_aqara_sofa_1", "light.wohnzimmer_aqara_sofa_2", "light.wohnzimmer_aqara_sofa_3"]
-  - name: "Außen"
-    rooms:
-      - name: "Terrasse"
-        icon: "mdi:balcony"
-        temperature: "sensor.bthome_sensor_5dca_temperatur"
-        humidity: "sensor.bthome_sensor_5dca_luftfeuchtigkeit"
-        lights: ["light.wandlampen_terrasse", "light.terrasse_links", "light.terrasse_rechts"]
-      - name: "Carport"
-        icon: "mdi:car"
-        lights: ["light.carport"]
+- name: Erdgeschoss
+  rooms:
+  - name: Wohnzimmer
+    icon: mdi:sofa
+    path: wohnzimmer
+    temperature: sensor.bthome_sensor_86a9_temperatur
+    humidity: sensor.bthome_sensor_86a9_luftfeuchtigkeit
+    climate: climate.shellywalldisplay_000822196d2a
+    lights:
+    - light.sofa
+    - light.tisch_2
+    - light.tisch
+    - light.laterne
+    windows:
+    - entity: binary_sensor.multi_state_sensor_p100_tur_3
+      name: Terrassentür
+  - name: Küche
+    icon: mdi:silverware-fork-knife
+    path: kueche
+    temperature: sensor.bthome_sensor_28a8_temperatur
+    humidity: sensor.bthome_sensor_28a8_luftfeuchtigkeit
+    climate: climate.shellywalldisplay_000822de33c9
+    lights:
+    - light.aqara_led_deckenspots
+    - light.aqara_kuchentisch
+    - light.aqara_led_decke
+    windows:
+    - entity: binary_sensor.kuche_fensterkontakt_tur
+      name: Fenster
+  - name: Eingang
+    icon: mdi:door
+    temperature: sensor.shelly_blu_h_t_42d4_temperature
+    humidity: sensor.shelly_blu_h_t_42d4_humidity
+    climate: climate.shellywalldisplay_000822e3235e
+    lights:
+    - light.spots_flur_eingang
+    - light.wandlampen_eingang
+    - light.eingang_rechts
+    windows:
+    - entity: binary_sensor.multi_state_sensor_p100_tur
+      name: Haustür
+    path: eingang
+  - name: Flur unten
+    icon: mdi:floor-plan
+    temperature: sensor.flur_unten_aqara_presence_multisensor_fp300_temperatur
+    humidity: sensor.flur_unten_aqara_presence_multisensor_fp300_luftfeuchtigkeit
+    lights:
+    - light.flur_unten_aqara_flur_led_1
+    - light.flur_unten_aqara_flur_led_2
+    - light.flur_unten_aqara_flur_led_3
+    - light.flur_unten_aqara_flur_led_4
+    path: flur-unten
+  - name: WC
+    icon: mdi:toilet
+    temperature: sensor.shelly_blu_h_t_51bb_temperature
+    humidity: sensor.shelly_blu_h_t_51bb_humidity
+    climate: climate.shellywalldisplay_000822b4ef43
+    windows:
+    - entity: binary_sensor.shelly_blu_door_window_45b9_window
+      name: Fenster
+    path: wc
+  - name: HWR
+    icon: mdi:washing-machine
+    temperature: sensor.shelly_blu_h_t_c34d_temperature
+    humidity: sensor.shelly_blu_h_t_c34d_humidity
+    lights:
+    - light.hwr_steckdose
+    windows:
+    - entity: binary_sensor.bthome_sensor_cc6a_window
+      name: Fenster
+    - entity: binary_sensor.hwr_aqara_door_and_window_sensor_p2_tur
+      name: Tür
+    path: hwr
+  - name: Speisekammer
+    icon: mdi:fridge-outline
+    temperature: sensor.shelly_blu_h_t_d061_temperature
+    humidity: sensor.shelly_blu_h_t_d061_humidity
+    lights:
+    - light.licht
+    path: speisekammer
+- name: Obergeschoss
+  rooms:
+  - name: Schlafzimmer
+    icon: mdi:bed-king-outline
+    temperature: sensor.shelly_blu_h_t_3914_temperature
+    humidity: sensor.shelly_blu_h_t_3914_humidity
+    climate: climate.shellywalldisplay_000822ffbd78
+    lights:
+    - light.schlafzimmer
+    - light.hue_go_1
+    windows:
+    - entity: binary_sensor.shelly_blu_door_window_3729_window
+      name: Fenster
+    - entity: binary_sensor.bthome_sensor_bdbb_window
+      name: Fenster 2
+    path: schlafzimmer
+  - name: Kinderzimmer
+    icon: mdi:teddy-bear
+    temperature: sensor.shelly_blu_h_t_7675_temperature
+    humidity: sensor.shelly_blu_h_t_7675_humidity
+    climate: climate.shellywalldisplay_000822f97f83
+    lights:
+    - light.kinderzimmer_licht
+    windows:
+    - entity: binary_sensor.shelly_blu_door_window_c931_window
+      name: Fenster
+    - entity: binary_sensor.bthome_sensor_907e_window
+      name: Fenster 2
+    path: kinderzimmer
+  - name: Büro
+    icon: mdi:desk
+    temperature: sensor.shelly_blu_h_t_6215_temperature
+    humidity: sensor.shelly_blu_h_t_6215_humidity
+    climate: climate.shellywalldisplay_000822d8f919
+    lights:
+    - light.buro
+    windows:
+    - entity: binary_sensor.shelly_blu_door_window_ab1a_window
+      name: Fenster
+    path: buero
+  - name: Badezimmer
+    icon: mdi:shower-head
+    temperature: sensor.shelly_blu_h_t_1eca_temperature
+    humidity: sensor.shelly_blu_h_t_1eca_humidity
+    climate: climate.shellywalldisplay_000822acf8f5
+    lights:
+    - light.badezimmer
+    - light.hue_sauna
+    windows:
+    - entity: binary_sensor.bthome_sensor_1ada_window
+      name: Fenster
+    path: badezimmer
+  - name: Flur oben
+    icon: mdi:stairs
+    lights:
+    - light.wohnzimmer_aqara_sofa_1
+    - light.wohnzimmer_aqara_sofa_2
+    - light.wohnzimmer_aqara_sofa_3
+    path: flur-oben
+- name: Außen
+  rooms:
+  - name: Terrasse
+    icon: mdi:balcony
+    temperature: sensor.bthome_sensor_5dca_temperatur
+    humidity: sensor.bthome_sensor_5dca_luftfeuchtigkeit
+    lights:
+    - light.wandlampen_terrasse
+    - light.terrasse_links
+    - light.terrasse_rechts
+    path: terrasse
+  - name: Carport
+    icon: mdi:car
+    lights:
+    - light.carport
+    path: carport

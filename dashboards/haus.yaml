@@ -34,6 +34,7 @@ views:
     - name: Garten
       icon: mdi:flower
       floor: Außen
+      path: garten
       temperature: sensor.garden_wetterstation_temperatur
       background: linear-gradient(150deg,#245b3a,#4f9a5c)
       items:
@@ -56,6 +57,7 @@ views:
         - binary_sensor.rosenbeet_bewasserung
     - name: Pool
       icon: mdi:pool
+      path: pool
       temperature: sensor.pooltemperatur
       climate: climate.pool_warmepumpe
       background: linear-gradient(150deg,#0d5c8a,#1fa2c9)
@@ -116,14 +118,14 @@ views:
       battery_soc: sensor.mb_varta_soc
       battery_power: sensor.varta_battery_power_signed
       pv_today: sensor.pv_energie_tag
-    garden:
+    garden: &id002
     - type: mower
       name: Mähroboter
       icon: mdi:robot-mower
       entity: lawn_mower.robi
       battery: sensor.robi_batterie
       progress: sensor.robi_mah_fortschritt
-      path: maehroboter
+      path: /dashboard-mahroboter/robi
     - type: irrigation
       name: Bewässerung
       icon: mdi:sprinkler-variant
@@ -148,179 +150,7 @@ views:
       entity: climate.pool_warmepumpe
       temperature: sensor.pooltemperatur
       climate: climate.pool_warmepumpe
-    floors:
-    - name: Erdgeschoss
-      rooms:
-      - name: Wohnzimmer
-        icon: mdi:sofa
-        path: wohnzimmer
-        temperature: sensor.bthome_sensor_86a9_temperatur
-        humidity: sensor.bthome_sensor_86a9_luftfeuchtigkeit
-        climate: climate.shellywalldisplay_000822196d2a
-        lights:
-        - light.sofa
-        - light.tisch_2
-        - light.tisch
-        - light.laterne
-        windows:
-        - entity: binary_sensor.multi_state_sensor_p100_tur_3
-          name: Terrassentür
-      - name: Küche
-        icon: mdi:silverware-fork-knife
-        path: kueche
-        temperature: sensor.bthome_sensor_28a8_temperatur
-        humidity: sensor.bthome_sensor_28a8_luftfeuchtigkeit
-        climate: climate.shellywalldisplay_000822de33c9
-        lights:
-        - light.aqara_led_deckenspots
-        - light.aqara_kuchentisch
-        - light.aqara_led_decke
-        windows:
-        - entity: binary_sensor.kuche_fensterkontakt_tur
-          name: Fenster
-      - name: Eingang
-        icon: mdi:door
-        temperature: sensor.shelly_blu_h_t_42d4_temperature
-        humidity: sensor.shelly_blu_h_t_42d4_humidity
-        climate: climate.shellywalldisplay_000822e3235e
-        lights:
-        - light.spots_flur_eingang
-        - light.wandlampen_eingang
-        - light.eingang_rechts
-        windows:
-        - entity: binary_sensor.multi_state_sensor_p100_tur
-          name: Haustür
-      - name: Flur unten
-        icon: mdi:floor-plan
-        temperature: sensor.flur_unten_aqara_presence_multisensor_fp300_temperatur
-        humidity: sensor.flur_unten_aqara_presence_multisensor_fp300_luftfeuchtigkeit
-        lights:
-        - light.flur_unten_aqara_flur_led_1
-        - light.flur_unten_aqara_flur_led_2
-        - light.flur_unten_aqara_flur_led_3
-        - light.flur_unten_aqara_flur_led_4
-      - name: WC
-        icon: mdi:toilet
-        temperature: sensor.shelly_blu_h_t_51bb_temperature
-        humidity: sensor.shelly_blu_h_t_51bb_humidity
-        climate: climate.shellywalldisplay_000822b4ef43
-        windows:
-        - entity: binary_sensor.shelly_blu_door_window_45b9_window
-          name: Fenster
-      - name: HWR
-        icon: mdi:washing-machine
-        temperature: sensor.shelly_blu_h_t_c34d_temperature
-        humidity: sensor.shelly_blu_h_t_c34d_humidity
-        lights:
-        - light.hwr_steckdose
-        windows:
-        - entity: binary_sensor.bthome_sensor_cc6a_window
-          name: Fenster
-        - entity: binary_sensor.hwr_aqara_door_and_window_sensor_p2_tur
-          name: Tür
-      - name: Speisekammer
-        icon: mdi:fridge-outline
-        temperature: sensor.shelly_blu_h_t_d061_temperature
-        humidity: sensor.shelly_blu_h_t_d061_humidity
-        lights:
-        - light.licht
-    - name: Obergeschoss
-      rooms:
-      - name: Schlafzimmer
-        icon: mdi:bed-king-outline
-        temperature: sensor.shelly_blu_h_t_3914_temperature
-        humidity: sensor.shelly_blu_h_t_3914_humidity
-        climate: climate.shellywalldisplay_000822ffbd78
-        lights:
-        - light.schlafzimmer
-        - light.hue_go_1
-        windows:
-        - entity: binary_sensor.shelly_blu_door_window_3729_window
-          name: Fenster
-        - entity: binary_sensor.bthome_sensor_bdbb_window
-          name: Fenster 2
-      - name: Kinderzimmer
-        icon: mdi:teddy-bear
-        temperature: sensor.shelly_blu_h_t_7675_temperature
-        humidity: sensor.shelly_blu_h_t_7675_humidity
-        climate: climate.shellywalldisplay_000822f97f83
-        lights:
-        - light.kinderzimmer_licht
-        windows:
-        - entity: binary_sensor.shelly_blu_door_window_c931_window
-          name: Fenster
-        - entity: binary_sensor.bthome_sensor_907e_window
-          name: Fenster 2
-      - name: Büro
-        icon: mdi:desk
-        temperature: sensor.shelly_blu_h_t_6215_temperature
-        humidity: sensor.shelly_blu_h_t_6215_humidity
-        climate: climate.shellywalldisplay_000822d8f919
-        lights:
-        - light.buro
-        windows:
-        - entity: binary_sensor.shelly_blu_door_window_ab1a_window
-          name: Fenster
-      - name: Badezimmer
-        icon: mdi:shower-head
-        temperature: sensor.shelly_blu_h_t_1eca_temperature
-        humidity: sensor.shelly_blu_h_t_1eca_humidity
-        climate: climate.shellywalldisplay_000822acf8f5
-        lights:
-        - light.badezimmer
-        - light.hue_sauna
-        windows:
-        - entity: binary_sensor.bthome_sensor_1ada_window
-          name: Fenster
-      - name: Flur oben
-        icon: mdi:stairs
-        lights:
-        - light.wohnzimmer_aqara_sofa_1
-        - light.wohnzimmer_aqara_sofa_2
-        - light.wohnzimmer_aqara_sofa_3
-    - name: Außen
-      rooms:
-      - name: Terrasse
-        icon: mdi:balcony
-        temperature: sensor.bthome_sensor_5dca_temperatur
-        humidity: sensor.bthome_sensor_5dca_luftfeuchtigkeit
-        lights:
-        - light.wandlampen_terrasse
-        - light.terrasse_links
-        - light.terrasse_rechts
-      - name: Carport
-        icon: mdi:car
-        lights:
-        - light.carport
-- title: Wetter
-  path: wetter
-  icon: mdi:weather-partly-cloudy
-  type: panel
-  subview: true
-  back_path: /dashboard-haus/start
-  cards:
-  - type: custom:wetterstation-garten-card
-    back: start
-    back_label: Übersicht
-    base_path: /dashboard-haus
-    inset: ipad
-- title: Erdgeschoss
-  path: erdgeschoss
-  icon: mdi:home-floor-0
-  type: panel
-  subview: true
-  cards:
-  - type: custom:haus-card
-    sections:
-    - header
-    - rooms
-    floor: Erdgeschoss
-    title: Erdgeschoss
-    icon: mdi:home-floor-0
-    back: start
-    base_path: /dashboard-haus
-    inset: ipad
-    background: linear-gradient(150deg,#7a4a2e,#c27a45)
+      path: pool
     floors: &id001
     - name: Erdgeschoss
       rooms:
@@ -363,6 +193,7 @@ views:
         windows:
         - entity: binary_sensor.multi_state_sensor_p100_tur
           name: Haustür
+        path: eingang
       - name: Flur unten
         icon: mdi:floor-plan
         temperature: sensor.flur_unten_aqara_presence_multisensor_fp300_temperatur
@@ -372,6 +203,7 @@ views:
         - light.flur_unten_aqara_flur_led_2
         - light.flur_unten_aqara_flur_led_3
         - light.flur_unten_aqara_flur_led_4
+        path: flur-unten
       - name: WC
         icon: mdi:toilet
         temperature: sensor.shelly_blu_h_t_51bb_temperature
@@ -380,6 +212,7 @@ views:
         windows:
         - entity: binary_sensor.shelly_blu_door_window_45b9_window
           name: Fenster
+        path: wc
       - name: HWR
         icon: mdi:washing-machine
         temperature: sensor.shelly_blu_h_t_c34d_temperature
@@ -391,12 +224,14 @@ views:
           name: Fenster
         - entity: binary_sensor.hwr_aqara_door_and_window_sensor_p2_tur
           name: Tür
+        path: hwr
       - name: Speisekammer
         icon: mdi:fridge-outline
         temperature: sensor.shelly_blu_h_t_d061_temperature
         humidity: sensor.shelly_blu_h_t_d061_humidity
         lights:
         - light.licht
+        path: speisekammer
     - name: Obergeschoss
       rooms:
       - name: Schlafzimmer
@@ -412,6 +247,7 @@ views:
           name: Fenster
         - entity: binary_sensor.bthome_sensor_bdbb_window
           name: Fenster 2
+        path: schlafzimmer
       - name: Kinderzimmer
         icon: mdi:teddy-bear
         temperature: sensor.shelly_blu_h_t_7675_temperature
@@ -424,6 +260,7 @@ views:
           name: Fenster
         - entity: binary_sensor.bthome_sensor_907e_window
           name: Fenster 2
+        path: kinderzimmer
       - name: Büro
         icon: mdi:desk
         temperature: sensor.shelly_blu_h_t_6215_temperature
@@ -434,6 +271,7 @@ views:
         windows:
         - entity: binary_sensor.shelly_blu_door_window_ab1a_window
           name: Fenster
+        path: buero
       - name: Badezimmer
         icon: mdi:shower-head
         temperature: sensor.shelly_blu_h_t_1eca_temperature
@@ -445,12 +283,14 @@ views:
         windows:
         - entity: binary_sensor.bthome_sensor_1ada_window
           name: Fenster
+        path: badezimmer
       - name: Flur oben
         icon: mdi:stairs
         lights:
         - light.wohnzimmer_aqara_sofa_1
         - light.wohnzimmer_aqara_sofa_2
         - light.wohnzimmer_aqara_sofa_3
+        path: flur-oben
     - name: Außen
       rooms:
       - name: Terrasse
@@ -461,10 +301,42 @@ views:
         - light.wandlampen_terrasse
         - light.terrasse_links
         - light.terrasse_rechts
+        path: terrasse
       - name: Carport
         icon: mdi:car
         lights:
         - light.carport
+        path: carport
+- title: Wetter
+  path: wetter
+  icon: mdi:weather-partly-cloudy
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/start
+  cards:
+  - type: custom:wetterstation-garten-card
+    back: start
+    back_label: Übersicht
+    base_path: /dashboard-haus
+    inset: ipad
+- title: Erdgeschoss
+  path: erdgeschoss
+  icon: mdi:home-floor-0
+  type: panel
+  subview: true
+  cards:
+  - type: custom:haus-card
+    sections:
+    - header
+    - rooms
+    floor: Erdgeschoss
+    title: Erdgeschoss
+    icon: mdi:home-floor-0
+    back: start
+    base_path: /dashboard-haus
+    inset: ipad
+    background: linear-gradient(150deg,#7a4a2e,#c27a45)
+    floors: *id001
   back_path: /dashboard-haus/start
 - title: Obergeschoss
   path: obergeschoss
@@ -485,6 +357,764 @@ views:
     inset: ipad
     background: linear-gradient(150deg,#3b3f78,#6a63b5)
     floors: *id001
+- title: Garten
+  path: garten
+  icon: mdi:flower
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/start
+  cards:
+  - type: custom:haus-card
+    sections:
+    - header
+    - rooms
+    - garden
+    floor: Außen
+    title: Garten
+    icon: mdi:flower
+    back: start
+    base_path: /dashboard-haus
+    inset: ipad
+    background: linear-gradient(150deg,#245b3a,#4f9a5c)
+    floors: *id001
+    garden: *id002
+- title: Eingang
+  path: eingang
+  icon: mdi:door
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/erdgeschoss
+  cards:
+  - type: custom:raum-card
+    name: Eingang
+    floor: Erdgeschoss
+    icon: mdi:door
+    back: erdgeschoss
+    back_label: Erdgeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.shelly_blu_h_t_42d4_temperature
+    humidity: sensor.shelly_blu_h_t_42d4_humidity
+    climate: climate.shellywalldisplay_000822e3235e
+    lights:
+    - entity: light.spots_flur_eingang
+      name: Spots Flur
+      icon: mdi:light-recessed
+    - entity: light.wandlampen_eingang
+      name: Wandlampen
+      icon: mdi:wall-sconce
+    - entity: light.eingang_rechts
+      name: Govee rechts
+      icon: mdi:led-strip-variant
+    switches:
+    - entity: switch.shelly1pmmini_348518df06e4
+      name: Außenbeleuchtung
+      icon: mdi:outdoor-lamp
+      power: sensor.shelly1pmmini_348518df06e4_power
+    covers:
+    - entity: cover.shellyplus2pm_e86beae58e64_rollladen
+      name: Eingang
+    - entity: cover.shellyplus2pm_d48afc423e9c
+      name: Alle (Zentral)
+    windows:
+    - entity: binary_sensor.multi_state_sensor_p100_tur
+      name: Haustür
+    power:
+    - entity: sensor.shelly1pmmini_348518df06e4_power
+      name: Außenbeleuchtung
+    batteries:
+    - entity: sensor.shelly_blu_h_t_42d4_battery
+      name: Klimasensor
+    - entity: sensor.multi_state_sensor_p100_batterie
+      name: Türkontakt
+    - entity: sensor.eingang_aqara_smart_lock_u200_batterie
+      name: Türschloss
+    - entity: sensor.eingang_vibrationssensor_briefkasten_batterie
+      name: Briefkasten
+    - entity: sensor.eingang_bewegung_klingel_hexe_batterie
+      name: Bewegung Klingel
+- title: Flur unten
+  path: flur-unten
+  icon: mdi:floor-plan
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/erdgeschoss
+  cards:
+  - type: custom:raum-card
+    name: Flur unten
+    floor: Erdgeschoss
+    icon: mdi:floor-plan
+    back: erdgeschoss
+    back_label: Erdgeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.flur_unten_aqara_presence_multisensor_fp300_temperatur
+    humidity: sensor.flur_unten_aqara_presence_multisensor_fp300_luftfeuchtigkeit
+    lights:
+    - entity: light.flur_unten_aqara_flur_led_1
+      name: Flur LED 1
+      icon: mdi:led-strip
+    - entity: light.flur_unten_aqara_flur_led_2
+      name: Flur LED 2
+      icon: mdi:led-strip
+    - entity: light.flur_unten_aqara_flur_led_3
+      name: Flur LED 3
+      icon: mdi:led-strip
+    - entity: light.flur_unten_aqara_flur_led_4
+      name: Flur LED 4
+      icon: mdi:led-strip
+    switches:
+    - entity: switch.shelly1pmmini_6055f99a1348_taster_flur
+      name: Deckenspots
+      icon: mdi:light-recessed
+      power: sensor.shelly1pmmini_6055f99a1348_taster_flur_power
+    covers:
+    - entity: cover.shellyplus2pm_b8d61a8abd40_rollladen_treppe
+      name: Treppe
+    batteries:
+    - entity: sensor.flur_unten_aqara_presence_multisensor_fp300_batterie
+      name: Präsenzmelder
+    - entity: sensor.shelly_blu_motion_2d3d_battery
+      name: Bewegungsmelder
+- title: WC
+  path: wc
+  icon: mdi:toilet
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/erdgeschoss
+  cards:
+  - type: custom:raum-card
+    name: WC
+    floor: Erdgeschoss
+    icon: mdi:toilet
+    back: erdgeschoss
+    back_label: Erdgeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.shelly_blu_h_t_51bb_temperature
+    humidity: sensor.shelly_blu_h_t_51bb_humidity
+    climate: climate.shellywalldisplay_000822b4ef43
+    switches:
+    - entity: switch.shellyplus1pm_d4d4da7cb368
+      name: Beleuchtung
+      icon: mdi:ceiling-light
+      power: sensor.shellyplus1pm_d4d4da7cb368_power
+    covers:
+    - entity: cover.shellyplus2pm_e86beae708b0
+      name: WC
+    windows:
+    - entity: binary_sensor.shelly_blu_door_window_45b9_window
+      name: Fenster
+    batteries:
+    - entity: sensor.shelly_blu_h_t_51bb_battery
+      name: Klimasensor
+    - entity: sensor.shelly_blu_door_window_45b9_battery
+      name: Fensterkontakt
+    - entity: sensor.aqara_presence_multisensor_fp300_batterie
+      name: Präsenzmelder
+    - entity: sensor.bthome_sensor_8649_battery
+      name: Bewegungsmelder
+- title: HWR
+  path: hwr
+  icon: mdi:washing-machine
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/erdgeschoss
+  cards:
+  - type: custom:raum-card
+    name: HWR
+    floor: Erdgeschoss
+    icon: mdi:washing-machine
+    back: erdgeschoss
+    back_label: Erdgeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.shelly_blu_h_t_c34d_temperature
+    humidity: sensor.shelly_blu_h_t_c34d_humidity
+    switches:
+    - entity: switch.shelly1pmmini_348518e06610
+      name: Licht
+      icon: mdi:ceiling-light
+      power: sensor.shelly1pmmini_348518e06610_power
+    sockets:
+    - entity: switch.hwr_steckdose
+      name: Steckdose
+      icon: mdi:power-socket-de
+      power: sensor.hwr_steckdose_leistung
+    - entity: switch.shelly1pmg4_a085e3bd38e0
+      name: Strom im Garten
+      icon: mdi:power-plug-outline
+      power: sensor.shelly1pmg4_a085e3bd38e0_power
+    - entity: switch.shelly_1pm_gen4
+      name: Brunnenpumpe
+      icon: mdi:water-pump
+      power: sensor.shelly_1pm_gen4_leistung
+    - entity: switch.shelly1pmg4_a085e3bdd940
+      name: Brunnenpumpe (2)
+      icon: mdi:water-pump
+      power: sensor.shelly1pmg4_a085e3bdd940_power
+    covers:
+    - entity: cover.shellyplus2pm_e86beae5a6bc
+      name: HWR
+    windows:
+    - entity: binary_sensor.bthome_sensor_cc6a_window
+      name: Fenster
+    - entity: binary_sensor.hwr_aqara_door_and_window_sensor_p2_tur
+      name: Tür
+    power:
+    - entity: sensor.hwr_steckdose_leistung
+      name: Steckdose
+    - entity: sensor.shelly_1pm_gen4_leistung
+      name: Brunnenpumpe
+    - entity: sensor.shelly1pmg4_a085e3bd38e0_power
+      name: Strom im Garten
+    batteries:
+    - entity: sensor.shelly_blu_h_t_c34d_battery
+      name: Klimasensor
+    - entity: sensor.bthome_sensor_cc6a_battery
+      name: Fensterkontakt
+    - entity: sensor.hwr_aqara_door_and_window_sensor_p2_batterie
+      name: Türkontakt
+    - entity: sensor.hwr_rauchmelder_batterie
+      name: Rauchmelder
+    - entity: sensor.wassersensor_hwr_battery
+      name: Wassersensor
+    - entity: sensor.shelly_blu_motion_7c97_battery
+      name: Bewegungsmelder
+- title: Speisekammer
+  path: speisekammer
+  icon: mdi:fridge-outline
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/erdgeschoss
+  cards:
+  - type: custom:raum-card
+    name: Speisekammer
+    floor: Erdgeschoss
+    icon: mdi:fridge-outline
+    back: erdgeschoss
+    back_label: Erdgeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.shelly_blu_h_t_d061_temperature
+    humidity: sensor.shelly_blu_h_t_d061_humidity
+    lights:
+    - entity: light.licht
+      name: Licht
+      icon: mdi:ceiling-light
+    covers:
+    - entity: cover.shellyplus2pm_d48afc777a40
+      name: Speisekammer
+    batteries:
+    - entity: sensor.shelly_blu_h_t_d061_battery
+      name: Klimasensor
+    - entity: sensor.motion_2_battery
+      name: Bewegungsmelder
+- title: Schlafzimmer
+  path: schlafzimmer
+  icon: mdi:bed-king-outline
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/obergeschoss
+  cards:
+  - type: custom:raum-card
+    name: Schlafzimmer
+    floor: Obergeschoss
+    icon: mdi:bed-king-outline
+    back: obergeschoss
+    back_label: Obergeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.shelly_blu_h_t_3914_temperature
+    humidity: sensor.shelly_blu_h_t_3914_humidity
+    climate: climate.shellywalldisplay_000822ffbd78
+    lights:
+    - entity: light.schlafzimmer
+      name: Ambiente
+      icon: mdi:lamps
+    - entity: light.nachtisch_links
+      name: Nachttisch links
+      icon: mdi:lamp
+    - entity: light.nachtisch_rechts
+      name: Nachttisch rechts
+      icon: mdi:lamp
+    - entity: light.hue_go_1
+      name: Hue Go
+      icon: mdi:lamp-outline
+    switches:
+    - entity: switch.shellyplus1pm_90380c37bf1c_deckenlampe
+      name: Deckenlicht
+      icon: mdi:ceiling-light
+      power: sensor.shellyplus1pm_90380c37bf1c_deckenlampe_power
+    scene_select: select.schlafzimmer_schlafzimmer_scenen_szene
+    covers:
+    - entity: cover.rollladen_gross_schlafzimmer_grosser_rollladen
+      name: Großes Fenster
+    - entity: cover.rollladen_klein_schlafzimmer_kleiner_rollladen
+      name: Kleines Fenster
+    media:
+    - entity: media_player.samsung_2
+      name: Fernseher
+      icon: mdi:television
+      play: false
+    - entity: media_player.schlafzimmer_schlafzimmer
+      name: HomePod
+      icon: mdi:speaker
+      power: false
+    sockets:
+    - entity: switch.fernseher
+      name: Fernseher
+      icon: mdi:television
+    - entity: switch.tablet_schlafzimmer_laden
+      name: Tablet laden
+      icon: mdi:tablet
+      power: sensor.flur_oben_schneeflocke_leistung
+    windows:
+    - entity: binary_sensor.shelly_blu_door_window_3729_window
+      name: Großes Fenster
+    - entity: binary_sensor.bthome_sensor_bdbb_window
+      name: Kleines Fenster
+    batteries:
+    - entity: sensor.shelly_blu_h_t_3914_battery
+      name: Klimasensor
+    - entity: sensor.temperatur_battery
+      name: Klimasensor 2
+    - entity: sensor.shelly_blu_door_window_3729_battery
+      name: Großes Fenster
+    - entity: sensor.bthome_sensor_bdbb_battery
+      name: Kleines Fenster
+    - entity: sensor.nachttisch_links_batterie
+      name: Nachttisch links
+    - entity: sensor.nachttisch_rechts_batterie
+      name: Nachttisch rechts
+    - entity: sensor.bthome_sensor_efe3_batterie
+      name: 4-Fach-Taster
+    - entity: sensor.schlafzimmer_rauchmelder_batterie
+      name: Rauchmelder
+- title: Kinderzimmer
+  path: kinderzimmer
+  icon: mdi:teddy-bear
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/obergeschoss
+  cards:
+  - type: custom:raum-card
+    name: Kinderzimmer
+    floor: Obergeschoss
+    icon: mdi:teddy-bear
+    back: obergeschoss
+    back_label: Obergeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.shelly_blu_h_t_7675_temperature
+    humidity: sensor.shelly_blu_h_t_7675_humidity
+    climate: climate.shellywalldisplay_000822f97f83
+    lights:
+    - entity: light.kinderzimmer_licht
+      name: Decke
+      icon: mdi:ceiling-light
+    switches:
+    - entity: switch.shellyplus1pm_d4d4da097f98
+      name: Taster-Beleuchtung
+      icon: mdi:light-switch
+      power: sensor.shellyplus1pm_d4d4da097f98_power
+    covers:
+    - entity: cover.shellyplus2pm_b48a0a2223ec_grosser_rollladen
+      name: Großes Fenster
+    - entity: cover.shelly2pmg3_b08184e89350
+      name: Kleines Fenster
+    media:
+    - entity: media_player.av_samsung_soundbar_q80r
+      name: Soundbar
+      icon: mdi:soundbar
+      power: false
+    - entity: media_player.kinderzimmer_kinderzimmer
+      name: HomePod
+      icon: mdi:speaker
+      power: false
+    sockets:
+    - entity: switch.shellyplusplugs_3ce90e30a134_computer
+      name: Computer
+      icon: mdi:desktop-tower
+      power: sensor.shellyplusplugs_3ce90e30a134_computer_power
+    - entity: switch.shellyplusplugs_80646fd0eecc_schreibtisch
+      name: Schreibtisch
+      icon: mdi:desk
+      power: sensor.shellyplusplugs_80646fd0eecc_schreibtisch_power
+    - entity: switch.shellyplusplugs_80646fd676ec_led
+      name: LED
+      icon: mdi:led-strip-variant
+      power: sensor.shellyplusplugs_80646fd676ec_led_power
+    - entity: switch.dartscheibe
+      name: Dartscheibe
+      icon: mdi:bullseye-arrow
+      power: sensor.dartscheibe_leistung
+    power:
+    - entity: sensor.shellyplusplugs_3ce90e30a134_computer_power
+      name: Computer
+    - entity: sensor.shellyplusplugs_80646fd0eecc_schreibtisch_power
+      name: Schreibtisch
+    - entity: sensor.shellyplusplugs_80646fd676ec_led_power
+      name: LED
+    - entity: sensor.dartscheibe_leistung
+      name: Dartscheibe
+    windows:
+    - entity: binary_sensor.shelly_blu_door_window_c931_window
+      name: Großes Fenster
+    - entity: binary_sensor.bthome_sensor_907e_window
+      name: Kleines Fenster
+    batteries:
+    - entity: sensor.shelly_blu_h_t_7675_battery
+      name: Klimasensor
+    - entity: sensor.shelly_blu_door_window_c931_battery
+      name: Großes Fenster
+    - entity: sensor.shelly_blu_door_window_907e_battery
+      name: Kleines Fenster
+    - entity: sensor.kinderzimmer_rauchmelder_batterie
+      name: Rauchmelder
+- title: Büro
+  path: buero
+  icon: mdi:desk
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/obergeschoss
+  cards:
+  - type: custom:raum-card
+    name: Büro
+    floor: Obergeschoss
+    icon: mdi:desk
+    back: obergeschoss
+    back_label: Obergeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.shelly_blu_h_t_6215_temperature
+    humidity: sensor.shelly_blu_h_t_6215_humidity
+    climate: climate.shellywalldisplay_000822d8f919
+    lights:
+    - entity: light.buro
+      name: Ambiente
+      icon: mdi:lamps
+    - entity: light.hue_aurelle_panel_1
+      name: Panel
+      icon: mdi:ceiling-light
+    switches:
+    - entity: switch.shelly1pmminig3_84fce6391768
+      name: Taster-Beleuchtung
+      icon: mdi:light-switch
+      power: sensor.shelly1pmminig3_84fce6391768_power
+    scene_select: select.buro_buro_scenen_szene
+    covers:
+    - entity: cover.shellyplus2pm_b48a0a224fe8_rollladen
+      name: Büro
+    media:
+    - entity: media_player.buro_buro
+      name: HomePod
+      icon: mdi:speaker
+      power: false
+    - entity: media_player.home_assistant_voice_0a9379_media_player
+      name: Sprachassistent
+      icon: mdi:microphone
+      power: false
+    sockets:
+    - entity: switch.shellyplusplugs_d48afc4890b0
+      name: Computer
+      icon: mdi:desktop-tower
+      power: sensor.shellyplusplugs_d48afc4890b0_power
+    power:
+    - entity: sensor.shellyplusplugs_d48afc4890b0_power
+      name: Computer
+    windows:
+    - entity: binary_sensor.shelly_blu_door_window_ab1a_window
+      name: Fenster
+    batteries:
+    - entity: sensor.shelly_blu_h_t_6215_battery
+      name: Klimasensor
+    - entity: sensor.shelly_blu_door_window_ab1a_battery
+      name: Fensterkontakt
+    - entity: sensor.hue_dimmer_buro_batterie
+      name: Hue-Dimmer
+- title: Badezimmer
+  path: badezimmer
+  icon: mdi:shower-head
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/obergeschoss
+  cards:
+  - type: custom:raum-card
+    name: Badezimmer
+    floor: Obergeschoss
+    icon: mdi:shower-head
+    back: obergeschoss
+    back_label: Obergeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.shelly_blu_h_t_1eca_temperature
+    humidity: sensor.shelly_blu_h_t_1eca_humidity
+    climate: climate.shellywalldisplay_000822acf8f5
+    lights:
+    - entity: light.hue_surimu_panel_1
+      name: Decke
+      icon: mdi:ceiling-light
+    - entity: light.badezimmer
+      name: Ambiente
+      icon: mdi:lamps
+    - entity: light.badezimmer_aqara_taster_badezimmer
+      name: Spiegel
+      icon: mdi:mirror
+    - entity: light.hue_sauna
+      name: Sauna
+      icon: mdi:spa-outline
+    switches:
+    - entity: switch.shelly1pmmini_543204aa8fbc
+      name: Taster-Sauna
+      icon: mdi:light-switch
+      power: sensor.shelly1pmmini_543204aa8fbc_power
+    scene_select: select.badezimmer_scenen_badezimmer_szene
+    covers:
+    - entity: cover.shelly2pmg3_28372f203808
+      name: Bad
+    media:
+    - entity: media_player.bad_bad
+      name: HomePod
+      icon: mdi:speaker
+      power: false
+    windows:
+    - entity: binary_sensor.bthome_sensor_1ada_window
+      name: Fenster
+    batteries:
+    - entity: sensor.shelly_blu_h_t_1eca_battery
+      name: Klimasensor
+    - entity: sensor.shelly_blu_door_window_1ada_battery
+      name: Fensterkontakt
+    - entity: sensor.taster_badezimmer_batterie
+      name: Hue-Dimmer
+    - entity: sensor.badezimmer_aqara_presence_multisensor_fp300_batterie
+      name: Präsenzmelder
+    - entity: sensor.shelly_blu_motion_e6b6_battery
+      name: Bewegung Sauna
+- title: Flur oben
+  path: flur-oben
+  icon: mdi:stairs
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/obergeschoss
+  cards:
+  - type: custom:raum-card
+    name: Flur oben
+    floor: Obergeschoss
+    icon: mdi:stairs
+    back: obergeschoss
+    back_label: Obergeschoss
+    base_path: /dashboard-haus
+    inset: ipad
+    lights:
+    - entity: light.wohnzimmer_aqara_sofa_1
+      name: Deckenlampe
+      icon: mdi:ceiling-light
+    - entity: light.wohnzimmer_aqara_sofa_2
+      name: Wandlampe 1
+      icon: mdi:wall-sconce
+    - entity: light.wohnzimmer_aqara_sofa_3
+      name: Wandlampe 2
+      icon: mdi:wall-sconce
+    switches:
+    - entity: switch.shelly1pmg3_dcda0ce02460
+      name: Treppenlicht
+      icon: mdi:stairs
+      power: sensor.shelly1pmg3_dcda0ce02460_power
+    covers:
+    - entity: cover.shelly2pmg3_b08184e878ec
+      name: Flur oben
+    batteries:
+    - entity: sensor.shelly_blu_motion_2cfd_battery
+      name: Bewegungsmelder
+    - entity: sensor.hue_smart_button_1_batterie
+      name: Hue-Button
+- title: Terrasse
+  path: terrasse
+  icon: mdi:balcony
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/garten
+  cards:
+  - type: custom:raum-card
+    name: Terrasse
+    floor: Garten
+    icon: mdi:balcony
+    back: garten
+    back_label: Garten
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.bthome_sensor_5dca_temperatur
+    humidity: sensor.bthome_sensor_5dca_luftfeuchtigkeit
+    lights:
+    - entity: light.wandlampen_terrasse
+      name: Wandlampen
+      icon: mdi:wall-sconce
+    - entity: light.terrasse_links
+      name: Govee links
+      icon: mdi:led-strip-variant
+    - entity: light.terrasse_rechts
+      name: Govee rechts
+      icon: mdi:led-strip-variant
+    switches:
+    - entity: switch.terrassenlicht_2
+      name: Terrassenlicht
+      icon: mdi:outdoor-lamp
+      power: sensor.terrassenlicht_leistung
+    batteries:
+    - entity: sensor.bthome_sensor_5dca_batterie
+      name: Klimasensor
+    - entity: sensor.shelly_blu_button1_f719_battery
+      name: Taster Brunnenpumpe
+- title: Carport
+  path: carport
+  icon: mdi:car
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/garten
+  cards:
+  - type: custom:raum-card
+    name: Carport
+    floor: Garten
+    icon: mdi:car
+    back: garten
+    back_label: Garten
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.garden_wetterstation_temperatur
+    humidity: sensor.garden_wetterstation_luftfeuchtigkeit
+    lights:
+    - entity: light.carport
+      name: Carport
+      icon: mdi:outdoor-lamp
+    - entity: light.hue_outdoor_carport
+      name: Hue Outdoor
+      icon: mdi:coach-lamp
+    switches:
+    - entity: switch.shelly1pmmini_348518df1370
+      name: Taster-Licht
+      icon: mdi:light-switch
+      power: sensor.shelly1pmmini_348518df1370_power
+    scene_select: select.carport_carport_scenen_szene
+    sockets_title: Geräte
+    sockets_icon: mdi:ev-station
+    sockets:
+    - entity: switch.stadtvilla_charging
+      name: Wallbox laden
+      icon: mdi:ev-station
+      power: sensor.stadtvilla_charge_power
+    - entity: switch.mol_db_975_standheizung
+      name: Standheizung Vito
+      icon: mdi:car-seat-heater
+    power:
+    - entity: sensor.stadtvilla_charge_power
+      name: Wallbox
+    - entity: sensor.shelly1pmmini_348518df1370_power
+      name: Licht
+- title: Pool
+  path: pool
+  icon: mdi:pool
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/garten
+  cards:
+  - type: custom:raum-card
+    name: Pool
+    floor: Garten
+    icon: mdi:pool
+    back: garten
+    back_label: Garten
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.pooltemperatur
+    climate: climate.pool_warmepumpe
+    sockets_title: Pooltechnik
+    sockets_icon: mdi:pump
+    sockets:
+    - entity: switch.pumpe_elektrolyse_2
+      name: Pumpe/Elektrolyse
+      icon: mdi:pump
+    - entity: switch.shelly_plug_m_gen3_4
+      name: Poollicht
+      icon: mdi:lightbulb
+      power: sensor.shelly_plug_m_gen3_leistung_4
+    - entity: switch.shellyplusplugs_e465b860cf68
+      name: Poolroboter
+      icon: mdi:robot-vacuum
+      power: sensor.shellyplusplugs_e465b860cf68_power
+    - entity: switch.0x8c65a3fffeee2318
+      name: Poolbefüllung
+      icon: mdi:water-pump
+    power:
+    - entity: sensor.shellyplusplugs_e465b860cf68_power
+      name: Poolroboter
+    - entity: sensor.shelly_plug_m_gen3_leistung_4
+      name: Poollicht
+    batteries:
+    - entity: sensor.0x8c65a3fffeee2318_battery
+      name: Poolbefüllung
+    - entity: sensor.0xa4c138049fdbffff_battery
+      name: Poolthermometer
+- title: Bewässerung
+  path: bewaesserung
+  icon: mdi:sprinkler-variant
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/garten
+  cards:
+  - type: custom:raum-card
+    name: Bewässerung
+    floor: Garten
+    icon: mdi:sprinkler-variant
+    back: garten
+    back_label: Garten
+    base_path: /dashboard-haus
+    inset: ipad
+    temperature: sensor.garden_wetterstation_temperatur
+    humidity: sensor.garden_wetterstation_luftfeuchtigkeit
+    sockets_title: Zonen – von Hand starten
+    sockets_icon: mdi:sprinkler-variant
+    sockets:
+    - entity: switch.vorgarten_manuelle_bewasserung
+      name: Vorgarten
+      icon: mdi:sprinkler-variant
+    - entity: switch.holzregal_manuelle_bewasserung
+      name: Holzregal
+      icon: mdi:sprinkler-variant
+    - entity: switch.poolpumpe_manuelle_bewasserung
+      name: Poolpumpe
+      icon: mdi:sprinkler-variant
+    - entity: switch.pool_manuelle_bewasserung
+      name: Pool
+      icon: mdi:sprinkler-variant
+    - entity: switch.feuerstelle_manuelle_bewasserung
+      name: Feuerstelle
+      icon: mdi:sprinkler-variant
+    - entity: switch.rosenbeet_manuelle_bewasserung
+      name: Rosenbeet
+      icon: mdi:sprinkler-variant
+    - entity: switch.gewachshaus_manuelle_bewasserung
+      name: Gewächshaus
+      icon: mdi:sprinkler-variant
+    - entity: switch.kompost_manuelle_bewasserung
+      name: Kompost
+      icon: mdi:sprinkler-variant
+    - entity: switch.terrasse_manuelle_bewasserung
+      name: Terrasse
+      icon: mdi:sprinkler-variant
+    - entity: switch.garage_manuelle_bewasserung
+      name: Garage
+      icon: mdi:sprinkler-variant
+    - entity: switch.nebeneingang_manuelle_bewasserung
+      name: Nebeneingang
+      icon: mdi:sprinkler-variant
+    switches: []
+    batteries:
+    - entity: sensor.garden_wetterstation_batterie
+      name: Wetterstation
+    - entity: sensor.bthome_sensor_4d05_battery
+      name: Sensor Holzregal
 - title: Wohnzimmer
   path: wohnzimmer
   icon: mdi:sofa

@@ -19,7 +19,7 @@
 - Hintergrund: Die Recorder-Datenbank ist bei 10 Tagen Speicherdauer schon etwa 3,7 GB groß. Deshalb wurde die Speicherdauer bewusst **nicht** erhöht.
 
 ### Dashboard „Wohnzimmer“ (`/dashboard-wohnzimmer`)
-- Eine Panel-Ansicht mit eigener Karte `custom:raum-card` (Datei `www/raum-card.js`, v1.1). Der frühere Tab „Klassisch“ wurde auf Wunsch entfernt.
+- Eine Panel-Ansicht mit eigener Karte `custom:raum-card` (Datei `www/raum-card.js`, v1.5). Der frühere Tab „Klassisch“ wurde auf Wunsch entfernt.
 - Konfiguration: `dashboards/wohnzimmer.yaml`.
 - Bereiche: Lichtstimmung mit Thermostat-Regler, Licht, Steckdosen, Lichtszenen (Hue-Szenen über `select.wohnzimmer_wohnzimmer_scenen_szene`), Rollläden, Medien, Strom, Raumklima über 24 h, Status.
 - Laterne = Gruppe `light.laterne` (ShellyVintage 1–3). Diese Lampen hängen an der Steckdose `switch.shellyplusplugs_e465b893b740`. Ist die Steckdose aus, schaltet ein Tipp auf die Kachel die Steckdose ein.
@@ -38,8 +38,10 @@
 - Ziel: EIN Dashboard mit mehreren Ansichten statt vieler einzelner Dashboards. Schritt für Schritt, Dennis will jede Ansicht vorher als Vorschau sehen und gibt dann sein Ok.
 - Steht vorläufig als **„Zuhause (neu)“** in der Seitenleiste (Symbol Haus mit Herz), damit es nicht mit dem alten „Zuhause“ (`/dashboard-g1`) verwechselt wird.
 - Komplette Konfiguration: `dashboards/haus.yaml` (wird aus `haus-start.yaml`, `wohnzimmer.yaml`, `kueche.yaml` erzeugt).
-- Ansichten: `start` (Startseite), Unteransichten `wetter`, `erdgeschoss`, `obergeschoss`, `wohnzimmer`, `kueche`.
-  Fehlen noch: `garten`, `pool`, `maehroboter`, `bewaesserung` und die übrigen Räume. Deren Links sind in `haus-start.yaml` auskommentiert („Ansicht folgt“), damit man ohne Kopfzeile nicht auf einer leeren Seite landet.
+- Ansichten (alle als Unteransichten außer `start`): `wetter`, `erdgeschoss`, `obergeschoss`, `garten`,
+  Räume `wohnzimmer`, `kueche`, `eingang`, `flur-unten`, `wc`, `hwr`, `speisekammer`, `schlafzimmer`, `kinderzimmer`, `buero`, `badezimmer`, `flur-oben`, `terrasse`, `carport`,
+  dazu `pool` und `bewaesserung` (beide als Raum-Karte). Raum-Konfigurationen: `dashboards/raeume.yaml` (Erstentwurf aus den HA-Bereichen, 25.11.2026).
+- Mähroboter: Kachel im Garten verweist vorerst auf das alte Dashboard `/dashboard-mahroboter/robi` (die Dreame-Entitäten `lawn_mower.robi` usw. gibt es derzeit nicht).
 - Startseite (`custom:haus-card`, `www/haus-card.js`, v0.8; Energiebereich dunkel mit Tagesverlauf aus der 5-Minuten-Statistik, Batterie-Hinweise aus: `hint_batteries: false`, keine „Alles in Ordnung“-Zeile: `hints_ok: false`): Wetter, Personen mit Fotos, Hinweise, 4 Kacheln ohne Raumliste (`tile_rooms: false`), Energiefluss (`sections: flow`) mit Autarkie-Ring. Im Querformat bis 860 px Höhe kompakt (4 Kacheln nebeneinander), damit das iPad mini (1133×744) nicht scrollen muss.
 - Etagen-Ansicht: `haus-card` mit `sections: [header, rooms]` und `floor: …`; Kopf mit „‹ Übersicht“, „Alle Lichter aus“ und Lichtschalter auf jeder Raum-Kachel.
 - Raum-Ansichten: `raum-card` mit `back`, `back_label`, `base_path` (Zurück-Knopf, ab raum-card v1.3).
@@ -59,7 +61,13 @@
 `media[]` (`entity`, `name`, `icon`, `sources`, `play`, `power`, `chip`), `power[]`, `windows[]`, `batteries[]`.
 
 ## Offene Punkte
-- Schwache Batterien je Raum in den Raum-Ansichten zeigen (auf der Startseite bewusst entfernt).
+- Räume sind ein Erstentwurf – mit Dennis durchgehen, was raus/rein soll (Batterien stehen je Raum unter „Status“).
+- HWR: zwei Schalter heißen „Brunnenpumpe“ (`switch.shelly_1pm_gen4` und `switch.shelly1pmg4_a085e3bdd940`) – klären, welcher richtig ist.
+- Pool: Wärmepumpe `climate.pool_warmepumpe`, Pumpe/Elektrolyse und Poollicht sind derzeit nicht erreichbar (Winter?). Das alte Pool-Dashboard nutzt teils Entitäten, die es nicht mehr gibt.
+- Eingang: Türschloss (`lock.eingang_aqara_smart_lock_u200`) wird noch nicht angezeigt – raum-card kann keine Schlösser.
+- Flur oben hat keinen Temperatursensor (große Temperatur zeigt „–“).
+- Mähroboter-Ansicht im neuen Stil bauen, sobald die Dreame-Integration wieder Entitäten liefert.
+- Später: „Zuhause (neu)“ umbenennen/als Standard setzen, alte Einzel-Dashboards löschen – nur nach Rückfrage.
 - Name bzw. Gerät für „Aqara Taster“ in der Stromübersicht klären (`sensor.wohnzimmer_aqara_taster_wohnzimmer_leistung`).
 - Raum-Karte für weitere Räume bauen, zum Beispiel Schlafzimmer, Büro.
 - Küche: Gerät hinter `sensor.kuche_aqara_taster_kuche_leistung` klären (in der Karte vorläufig „Deckenlicht (Aqara Taster)“).

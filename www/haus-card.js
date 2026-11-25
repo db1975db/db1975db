@@ -1,4 +1,4 @@
-// Haus-Karte – Startseite im Stil der Wetterstation (v0.8.0)
+// Haus-Karte – Startseite im Stil der Wetterstation (v0.8.1)
 const H_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const H_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const H_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -208,7 +208,7 @@ class HausCard extends HTMLElement {
       ${S.has('flow') && c.energy ? `<div class="full fl2" id="flow"></div>` : ''}
       ${S.has('rooms') && c.floors.length ? `<div class="blk full ${c.floor ? 'big-rooms' : ''}">${c.floor ? '' : `<div class="bh"><h2>${H_icon('mdi:home-floor-g', 20)}Räume</h2><p id="rsum"></p></div>`}<div id="rooms"></div></div>` : ''}
       ${S.has('energy') && c.energy ? `<div class="blk half"><div class="bh"><h2>${H_icon('mdi:solar-power-variant', 20)}Energie jetzt</h2><p id="esum"></p></div><div id="energy"></div></div>` : ''}
-      ${S.has('garden') && c.garden.length ? `<div class="blk half"><div class="bh"><h2>${H_icon('mdi:flower', 20)}Garten</h2></div><div class="gd" id="garden"></div></div>` : ''}
+      ${S.has('garden') && c.garden.length ? `<div class="blk ${c.floor ? 'full' : 'half'}"><div class="bh"><h2>${H_icon('mdi:flower', 20)}Garten</h2></div><div class="gd" id="garden"></div></div>` : ''}
     </div>`;
     this.$ = (id) => this.root.getElementById(id);
     this.root.addEventListener('click', (ev) => {
