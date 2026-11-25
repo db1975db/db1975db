@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.7.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.7.1)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -46,7 +46,7 @@ const R_CSS = `
 .lt .ic{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--r-line)}
 .lt.on .ic{background:rgba(255,255,255,.55)}
 .lt .n{font-weight:650;font-size:14.5px}.lt .s{font-size:12.5px;opacity:.75}
-.fx{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:12px}.fx:empty{display:none}
+.fx{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;margin-bottom:12px}.fx:empty{display:none}
 .fxi{border-radius:22px;overflow:hidden;background:radial-gradient(130% 100% at 50% 0%,#1d2438 0%,#0d111c 70%);color:#fff;display:flex;flex-direction:column;box-shadow:0 10px 26px rgba(0,0,0,.18)}
 .fxs{height:190px;padding:0 10px}.fxs svg{width:100%;height:100%;display:block}
 .fxb{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 14px 14px}
@@ -251,7 +251,7 @@ class RaumCard extends HTMLElement {
     el.innerHTML = tiles.join('') + this.c.switches.map(x => this.swTile(x)).join('');
     this.keyNav(el);
   }
-  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln, je Kugel eine Lampe) und 'bar' (Balken mit Up- und Downlight)
+  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln), 'bar' (Balken mit Up- und Downlight), 'spots' (Einbaustrahler in der Decke)
   fixture(f) {
     const st = (e) => this.s(e), on = (e) => (st(e) || {}).state === 'on', col = (e) => this.lightColor(st(e)), al = (e) => on(e) ? 0.35 + 0.65 * ((st(e).attributes.brightness || 255) / 255) : 0;
     const rgba = (c, a) => `rgba(${c.join(',')},${a.toFixed(2)})`;
@@ -283,6 +283,17 @@ class RaumCard extends HTMLElement {
         <rect x="16" y="104" width="212" height="22" rx="11" fill="#0b0e16" stroke="rgba(255,255,255,.12)"/>
         <rect x="24" y="103" width="196" height="3" rx="1.5" fill="${cu ? rgba(cu, 1) : '#2a3040'}"/>
         <rect x="24" y="124" width="196" height="3" rx="1.5" fill="${cd ? rgba(cd, 1) : '#2a3040'}"/></svg>`;
+    } else if (f.type === 'spots') {
+      ents = f.bulbs || [];
+      const n = ents.length || 1, xs = ents.map((e, i) => 244 * (i + .5) / n);
+      const sp = ents.map((e, i) => {
+        const x = xs[i], c = col(e), a = al(e), g = `${id}s${i}`;
+        return `<g data-act="toggle" data-e="${e}" style="cursor:pointer"><rect x="${x - 122 / n}" y="0" width="${244 / n}" height="200" fill="transparent"/>
+          ${c ? `<defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${rgba(c, .75)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></linearGradient><radialGradient id="${g}r"><stop offset="0" stop-color="${rgba(c, .55)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></radialGradient></defs>
+          <path d="M${x - 15},40 L${x + 15},40 L${x + 62},196 L${x - 62},196 Z" fill="url(#${g})" opacity="${a.toFixed(2)}"/><ellipse cx="${x}" cy="190" rx="70" ry="12" fill="url(#${g}r)" opacity="${a.toFixed(2)}"/><ellipse cx="${x}" cy="36" rx="44" ry="14" fill="url(#${g}r)" opacity="${a.toFixed(2)}"/>` : ''}
+          <ellipse cx="${x}" cy="36" rx="19" ry="6" fill="${c ? '#fff' : '#141824'}" stroke="${c ? rgba(c, 1) : 'rgba(255,255,255,.25)'}" stroke-width="2.5"/></g>`;
+      }).join('');
+      svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet">${sp}</svg>`;
     } else return '';
     const g = f.entity && st(f.entity), nOn = ents.filter(on).length, gOn = g ? g.state === 'on' : nOn > 0;
     const pct = g && gOn && g.attributes.brightness ? Math.round(g.attributes.brightness / 2.55) : 0;
