@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.11.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.12.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -106,6 +106,14 @@ const R_CSS = `
 .eq{position:absolute;right:8px;bottom:8px;display:flex;gap:2px;align-items:flex-end;height:16px;padding:3px 4px;border-radius:6px;background:rgba(0,0,0,.45)}.eq b{width:3px;background:#fff;border-radius:1px;animation:eqb 1s infinite ease-in-out}.eq b:nth-child(2){animation-delay:-.4s}.eq b:nth-child(3){animation-delay:-.7s}.eq b:nth-child(4){animation-delay:-.2s}
 .eq.sm{position:static;background:none;padding:0;height:12px}.eq.sm b{background:#141826}
 @keyframes eqb{0%,100%{height:25%}50%{height:100%}}
+.tvc{position:relative;border-radius:22px;overflow:hidden;color:#fff;background:#11151f;box-shadow:0 12px 30px rgba(0,0,0,.22)}
+.tvi{position:relative;aspect-ratio:16/9;max-height:260px;width:100%;background:radial-gradient(120% 120% at 30% 20%,#25304f,#0d111c);overflow:hidden}
+.tvi img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.tvn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:.35}
+.tvg{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,12,20,.45) 0%,rgba(10,12,20,0) 35%,rgba(10,12,20,.15) 55%,rgba(10,12,20,.92) 100%)}
+.tvt{position:absolute;left:14px;right:14px;top:12px;display:flex;gap:8px;align-items:center}.tvt .plive{margin-top:0}
+.tvch{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;background:rgba(10,14,24,.6);backdrop-filter:blur(6px);border-radius:999px;padding:3px 10px}
+.tvb{position:absolute;left:16px;right:16px;bottom:12px}.tvb .pti{font-size:24px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.tvc2 .pct{padding:12px 16px 4px;margin-top:0;justify-content:center}
 .md{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--r-line);border-radius:18px;padding:10px 12px}
 .md .ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--r-line)}
 .md.on .ic{background:var(--r-acc);color:#fff}
@@ -484,6 +492,7 @@ class RaumCard extends HTMLElement {
     el.innerHTML = this.c.media.map(x => {
       const s = this.s(x.entity); if (!s) return '';
       if (x.style === 'player') return this.player(x, s);
+      if (x.style === 'tv') return this.tv(x, s);
       const A = s.attributes, on = !['off', 'standby', 'unavailable', 'unknown'].includes(s.state), pl = s.state === 'playing';
       const st = { on: 'an', off: 'aus', playing: 'spielt', paused: 'pausiert', idle: 'bereit', standby: 'Standby', unavailable: 'nicht erreichbar' }[s.state] || s.state;
       const info = [st, A.media_title, A.source].filter(Boolean).map(R_esc).join(' · ');
@@ -514,6 +523,24 @@ class RaumCard extends HTMLElement {
           <div class="pct">${F & 32768 && !radio ? b('shuffle_set', 'mdi:shuffle-variant', 'Zufall', A.shuffle ? 'act' : '') : ''}${F & 16 && !radio ? b('media_previous_track', 'mdi:skip-previous', 'Zurück') : ''}${b('media_play_pause', pl ? 'mdi:pause' : 'mdi:play', 'Play/Pause', 'big')}${F & 32 && !radio ? b('media_next_track', 'mdi:skip-next', 'Weiter') : ''}${F & 262144 && !radio ? b('repeat_set', A.repeat === 'one' ? 'mdi:repeat-once' : 'mdi:repeat', 'Wiederholen', A.repeat && A.repeat !== 'off' ? 'act' : '') : ''}</div></div></div>
       ${vol != null ? `<div class="pvo"><button class="pb sm" data-act="mp" data-sv="volume_mute" data-e="${e}" aria-label="Stumm">${R_icon(A.is_volume_muted ? 'mdi:volume-off' : vol < 30 ? 'mdi:volume-low' : vol < 70 ? 'mdi:volume-medium' : 'mdi:volume-high', 18)}</button><input type="range" min="0" max="100" value="${vol}" data-act="vol" data-e="${e}" data-busy="media" data-live="${id}" data-unit=" %" aria-label="Lautstärke ${R_esc(x.name)}"><span id="${id}">${vol} %</span></div>` : ''}
       ${favs.length ? `<div class="pfv">${favs.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${o === A.source && pl ? '<i class="eq sm"><b></b><b></b><b></b></i>' : R_icon('mdi:radio', 14)}${R_esc(o)}</button>`).join('')}</div>` : ''}</div>`;
+  }
+  // Fernseher mit Receiver: großes Sendungsbild (16:9) vom Receiver, Sender, Titel, Steuerung, Lautstärke, Apps
+  tv(x, s) {
+    const A = s.attributes, on = !['off', 'standby', 'unavailable', 'unknown'].includes(s.state), e = x.entity;
+    const k = x.sky && this.s(x.sky), K = k ? k.attributes : {}, kon = k && !['off', 'standby', 'unavailable', 'unknown'].includes(k.state), kpl = k && k.state === 'playing';
+    const pic = kon ? (K.entity_picture_local || K.entity_picture) : null, live = K.skyq_media_type === 'live';
+    const title = kon ? (K.media_series_title || K.media_title || K.media_channel) : on ? 'Fernseher an' : 'Fernseher aus';
+    const sub = kon && K.media_series_title && K.media_title && K.media_title !== K.media_channel && K.media_title !== K.media_series_title ? K.media_title : '';
+    const ch = kon ? [K.skyq_channelno, K.media_channel].filter(Boolean).join(' · ') : '';
+    const vol = A.volume_level != null ? Math.round(A.volume_level * 100) : null, id = 'mv-' + e.replace(/\W/g, '');
+    const KF = K.supported_features || 0, apps = x.sources === true ? (A.source_list || []) : (x.sources || []);
+    const b = (ent, sv, ic, lb, cls = '') => `<button class="pb ${cls}" data-act="mp" data-sv="${sv}" data-e="${ent}" aria-label="${lb}">${R_icon(ic, cls.includes('big') ? 30 : 22)}</button>`;
+    return `<div class="tvc ${on ? 'on' : ''}"><div class="tvi">${pic ? `<img src="${pic}" alt="">` : `<div class="tvn">${R_icon(x.icon || 'mdi:television', 54)}</div>`}<div class="tvg"></div>
+        <div class="tvt">${ch ? `<span class="tvch">${R_icon('mdi:satellite-variant', 14)}${R_esc(ch)}</span>` : ''}${kon && live ? '<span class="plive"><i></i>Live</span>' : kon ? `<span class="tvch">${kpl ? 'läuft' : 'pausiert'}</span>` : ''}</div>
+        <div class="tvb"><div class="pti">${R_esc(title)}</div>${sub ? `<div class="par">${R_esc(sub)}</div>` : ''}</div></div>
+      <div class="tvc2"><div class="pct">${b(e, 'toggle', 'mdi:power', 'Fernseher ein/aus', on ? 'act' : '')}${k ? `${KF & 16 ? b(x.sky, 'media_previous_track', 'mdi:rewind', 'Zurück') : ''}${b(x.sky, 'media_play_pause', kpl ? 'mdi:pause' : 'mdi:play', 'Play/Pause', 'big')}${KF & 32 ? b(x.sky, 'media_next_track', 'mdi:fast-forward', 'Vor') : ''}${b(x.sky, 'toggle', 'mdi:satellite-variant', 'Receiver ein/aus', kon ? 'act' : '')}` : ''}</div>
+      ${on && vol != null ? `<div class="pvo"><button class="pb sm" data-act="mp" data-sv="volume_mute" data-e="${e}" aria-label="Stumm">${R_icon(A.is_volume_muted ? 'mdi:volume-off' : vol < 30 ? 'mdi:volume-low' : vol < 70 ? 'mdi:volume-medium' : 'mdi:volume-high', 18)}</button><input type="range" min="0" max="100" value="${vol}" data-act="vol" data-e="${e}" data-busy="media" data-live="${id}" data-unit=" %" aria-label="Lautstärke ${R_esc(x.name)}"><span id="${id}">${vol} %</span></div>` : ''}
+      ${on && apps.length ? `<div class="pfv">${apps.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${R_esc(String(o).split(' – ')[0])}</button>`).join('')}</div>` : ''}</div></div>`;
   }
   // ---------- Strom ----------
   kPower() { return this.ks(this.c.power.map(x => x.entity)); }
