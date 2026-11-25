@@ -3,6 +3,36 @@
 type: "custom:haus-card"
 title: "Zuhause"
 base_path: "/dashboard-haus"
+# Startseite: Wetter, Hinweise, vier große Kacheln, Energie-Leiste
+sections: ["hero", "hints", "tiles", "ebar"]
+tiles:
+  - name: "Erdgeschoss"
+    icon: "mdi:home-floor-0"
+    floor: "Erdgeschoss"
+    path: "erdgeschoss"
+    background: "linear-gradient(150deg,#7a4a2e,#c27a45)"
+  - name: "Obergeschoss"
+    icon: "mdi:home-floor-1"
+    floor: "Obergeschoss"
+    path: "obergeschoss"
+    background: "linear-gradient(150deg,#3b3f78,#6a63b5)"
+  - name: "Garten"
+    icon: "mdi:flower"
+    floor: "Außen"
+    path: "garten"
+    temperature: "sensor.garden_wetterstation_temperatur"
+    background: "linear-gradient(150deg,#245b3a,#4f9a5c)"
+    items:
+      - { type: "mower", entity: "lawn_mower.robi", battery: "sensor.robi_batterie" }
+      - type: "irrigation"
+        entity: "binary_sensor.hunter_bewasserung_konnektivitat"
+        zones: ["binary_sensor.gewachshaus_bewasserung", "binary_sensor.vorgarten_bewasserung", "binary_sensor.holzregal_bewasserung", "binary_sensor.poolpumpe_bewasserung", "binary_sensor.garage_bewasserung", "binary_sensor.pool_bewasserung", "binary_sensor.feuerstelle_bewasserung", "binary_sensor.terrasse_bewasserung", "binary_sensor.nebeneingang_bewasserung", "binary_sensor.kompost_bewasserung", "binary_sensor.rosenbeet_bewasserung"]
+  - name: "Pool"
+    icon: "mdi:pool"
+    path: "pool"
+    temperature: "sensor.pooltemperatur"
+    climate: "climate.pool_warmepumpe"
+    background: "linear-gradient(150deg,#0d5c8a,#1fa2c9)"
 smoke: "binary_sensor.gruppe_rauchmelder"
 battery_limit: 20
 battery_names:
