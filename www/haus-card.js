@@ -1,4 +1,4 @@
-// Haus-Karte – Startseite im Stil der Wetterstation (v0.7.0)
+// Haus-Karte – Startseite im Stil der Wetterstation (v0.7.1)
 const H_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const H_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const H_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -26,9 +26,9 @@ const H_CSS = `
 .hero.hasm .hin{padding-right:62px}
 /* inset: ipad – Rand für die abgerundeten iPad-Ecken, wenn kiosk-mode die Kopfzeile ausblendet */
 .wrap.pad{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
-.wrap.kiosk{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));min-height:100vh;min-height:100dvh;grid-template-rows:auto auto auto 1fr;align-content:stretch}
+.wrap.kiosk{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));height:100vh;height:100dvh;grid-template-rows:auto auto auto minmax(0,1fr);align-content:stretch;overflow:hidden}
 .wrap.kiosk .tl .t{font-size:44px}
-.wrap.kiosk .fl2 svg{max-height:200px}
+.wrap.kiosk .fl2{height:100%;padding:10px 20px;overflow:hidden}.wrap.kiosk .fl2>div:first-child{height:100%;min-height:0}.wrap.kiosk .fl2 svg{height:100%;max-height:none}.wrap.kiosk .fl2 .st{max-height:100%}
 .mnu{font:inherit;position:absolute;top:10px;right:10px;z-index:3;width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px)}
 .title{font-size:clamp(30px,5vw,44px);font-weight:650;letter-spacing:-.02em;margin:2px 0 10px}
 .wx{display:flex;align-items:center;gap:14px}
