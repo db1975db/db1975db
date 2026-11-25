@@ -1157,6 +1157,14 @@ views:
       entity: light.esstisch_lampen
       up: light.tisch_2
       down: light.tisch
+    - type: lantern
+      name: Laterne
+      entity: light.laterne
+      socket: switch.shellyplusplugs_e465b893b740
+      bulbs:
+      - light.wohnzimmer_shellyvintage_1
+      - light.wohnzimmer_shellyvintage_2
+      - light.wohnzimmer_shellyvintage_3
     scene_select: select.wohnzimmer_wohnzimmer_scenen_szene
     scene_favorites:
     - Entspannen

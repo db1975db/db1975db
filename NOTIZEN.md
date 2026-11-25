@@ -19,7 +19,7 @@
 - Hintergrund: Die Recorder-Datenbank ist bei 10 Tagen Speicherdauer schon etwa 3,7 GB groß. Deshalb wurde die Speicherdauer bewusst **nicht** erhöht.
 
 ### Dashboard „Wohnzimmer“ (`/dashboard-wohnzimmer`)
-- Eine Panel-Ansicht mit eigener Karte `custom:raum-card` (Datei `www/raum-card.js`, v1.8.0; neu: Farbtupfer unter jedem Leuchtenbild (Weißtöne + Farben, wirken auf die ganze Gruppe), langes Drücken auf eine einzelne Lampe im Bild öffnet deren Farbdialog; `fixtures[]`, `locks[]` mit `entity`, `name`, `battery` – Abschließen/Aufschließen/Öffnen, Aufschließen und Öffnen mit Rückfrage). Der frühere Tab „Klassisch“ wurde auf Wunsch entfernt.
+- Eine Panel-Ansicht mit eigener Karte `custom:raum-card` (Datei `www/raum-card.js`, v1.9.0; neu: `type: lantern` (Laterne, optional `socket` – ist die Steckdose aus, schaltet jeder Tipp erst die Steckdose ein); Farbtupfer unter jedem Leuchtenbild (Weißtöne + Farben, wirken auf die ganze Gruppe), langes Drücken auf eine einzelne Lampe im Bild öffnet deren Farbdialog; `fixtures[]`, `locks[]` mit `entity`, `name`, `battery` – Abschließen/Aufschließen/Öffnen, Aufschließen und Öffnen mit Rückfrage). Der frühere Tab „Klassisch“ wurde auf Wunsch entfernt.
 - Konfiguration: `dashboards/wohnzimmer.yaml`.
 - Bereiche: Lichtstimmung mit Thermostat-Regler, Licht, Steckdosen, Lichtszenen (Hue-Szenen über `select.wohnzimmer_wohnzimmer_scenen_szene`), Rollläden, Medien, Strom, Raumklima über 24 h, Status.
 - Laterne = Gruppe `light.laterne` (ShellyVintage 1–3). Diese Lampen hängen an der Steckdose `switch.shellyplusplugs_e465b893b740`. Ist die Steckdose aus, schaltet ein Tipp auf die Kachel die Steckdose ein.
@@ -61,6 +61,7 @@
 `media[]` (`entity`, `name`, `icon`, `sources`, `play`, `power`, `chip`), `power[]`, `windows[]`, `batteries[]`.
 
 ## Offene Punkte
+- Laterne Wohnzimmer: Die Shelly-Vintage-Birnen melden in HA nur Helligkeit (kein Kalt-/Warmweiß), daher keine Farbtupfer.
 - Esstisch (Hue Ensis): laut Gerätemodell ist `light.tisch` das Uplight und `light.tisch_2` das Downlight – die Namen in HA sagen das Gegenteil. In der Karte gilt vorerst `up: light.tisch_2`; mit Dennis prüfen.
 - Räume sind ein Erstentwurf – mit Dennis durchgehen, was raus/rein soll (Batterien stehen je Raum unter „Status“).
 - Pool: Wärmepumpe `climate.pool_warmepumpe`, Pumpe/Elektrolyse und Poollicht sind derzeit nicht erreichbar (Winter?). Das alte Pool-Dashboard nutzt teils Entitäten, die es nicht mehr gibt.
