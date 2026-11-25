@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.7.1)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.7.2)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -251,7 +251,7 @@ class RaumCard extends HTMLElement {
     el.innerHTML = tiles.join('') + this.c.switches.map(x => this.swTile(x)).join('');
     this.keyNav(el);
   }
-  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln), 'bar' (Balken mit Up- und Downlight), 'spots' (Einbaustrahler in der Decke)
+  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln), 'bar' (Balken mit Up- und Downlight), 'spots' (Einbaustrahler in der Decke), 'pendants' (Pendelleuchten an einer Deckenschiene)
   fixture(f) {
     const st = (e) => this.s(e), on = (e) => (st(e) || {}).state === 'on', col = (e) => this.lightColor(st(e)), al = (e) => on(e) ? 0.35 + 0.65 * ((st(e).attributes.brightness || 255) / 255) : 0;
     const rgba = (c, a) => `rgba(${c.join(',')},${a.toFixed(2)})`;
@@ -294,6 +294,20 @@ class RaumCard extends HTMLElement {
           <ellipse cx="${x}" cy="36" rx="19" ry="6" fill="${c ? '#fff' : '#141824'}" stroke="${c ? rgba(c, 1) : 'rgba(255,255,255,.25)'}" stroke-width="2.5"/></g>`;
       }).join('');
       svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet">${sp}</svg>`;
+    } else if (f.type === 'pendants') {
+      ents = f.bulbs || [];
+      const n = ents.length || 1, xs = ents.map((e, i) => 50 + 144 * (n > 1 ? i / (n - 1) : .5));
+      const pd = ents.map((e, i) => {
+        const x = xs[i], c = col(e), a = al(e), g = `${id}p${i}`;
+        return `<g data-act="toggle" data-e="${e}" style="cursor:pointer"><rect x="${x - 72 / n}" y="0" width="${144 / n}" height="200" fill="transparent"/>
+          ${c ? `<defs><linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${rgba(c, .8)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></linearGradient><radialGradient id="${g}r"><stop offset="0" stop-color="${rgba(c, .6)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></radialGradient></defs>
+          <path d="M${x - 9},132 L${x + 9},132 L${x + 34},198 L${x - 34},198 Z" fill="url(#${g})" opacity="${a.toFixed(2)}"/><ellipse cx="${x}" cy="193" rx="40" ry="8" fill="url(#${g}r)" opacity="${a.toFixed(2)}"/>` : ''}
+          <line x1="${x}" y1="14" x2="${x}" y2="92" stroke="#05070c" stroke-width="2"/>
+          <path d="M${x - 9},92 L${x + 9},92 L${x + 10},96 L${x + 10},128 L${x + 9},132 L${x - 9},132 L${x - 10},128 L${x - 10},96 Z" fill="#0a0c12" stroke="rgba(255,255,255,.16)"/>
+          <line x1="${x - 3}" y1="96" x2="${x - 3}" y2="128" stroke="rgba(255,255,255,.07)" stroke-width="3"/>
+          <ellipse cx="${x}" cy="132" rx="8" ry="2.2" fill="${c ? rgba(c, 1) : '#232838'}"/></g>`;
+      }).join('');
+      svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet"><rect x="${xs[0] - 22}" y="6" width="${xs[n - 1] - xs[0] + 44}" height="8" rx="2" fill="#0a0c12" stroke="rgba(255,255,255,.14)"/>${pd}</svg>`;
     } else return '';
     const g = f.entity && st(f.entity), nOn = ents.filter(on).length, gOn = g ? g.state === 'on' : nOn > 0;
     const pct = g && gOn && g.attributes.brightness ? Math.round(g.attributes.brightness / 2.55) : 0;

@@ -1255,6 +1255,29 @@ views:
     - entity: light.aqara_led_decke
       name: Kleiner Flur
       icon: mdi:ceiling-light
+    fixtures:
+    - type: spots
+      name: Deckenspots
+      entity: light.aqara_led_deckenspots
+      bulbs:
+      - light.kuche_aqara_led_decke_3
+      - light.kuche_aqara_led_decke_4
+      - light.kuche_aqara_led_decke_5
+      - light.kuche_aqara_led_decke_6
+    - type: pendants
+      name: Küchentisch
+      entity: light.aqara_kuchentisch
+      bulbs:
+      - light.kuche_aqara_kuchentisch_1
+      - light.kuche_aqara_kuchentisch_2
+      - light.kuche_aqara_kuchentisch_3
+      - light.kuche_aqara_kuchentisch_4
+    - type: spots
+      name: Kleiner Flur
+      entity: light.aqara_led_decke
+      bulbs:
+      - light.kuche_aqara_led_decke_1
+      - light.kuche_aqara_led_decke_2
     covers:
     - entity: cover.shellyplus2pm_a0a3b3ba2688_kleiner_rollladen
       name: Fenster
