@@ -549,10 +549,6 @@ views:
       name: Brunnenpumpe
       icon: mdi:water-pump
       power: sensor.shelly_1pm_gen4_leistung
-    - entity: switch.shelly1pmg4_a085e3bdd940
-      name: Brunnenpumpe (2)
-      icon: mdi:water-pump
-      power: sensor.shelly1pmg4_a085e3bdd940_power
     covers:
     - entity: cover.shellyplus2pm_e86beae5a6bc
       name: HWR

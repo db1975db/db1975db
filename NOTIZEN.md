@@ -62,7 +62,6 @@
 
 ## Offene Punkte
 - Räume sind ein Erstentwurf – mit Dennis durchgehen, was raus/rein soll (Batterien stehen je Raum unter „Status“).
-- HWR: zwei Schalter heißen „Brunnenpumpe“ (`switch.shelly_1pm_gen4` und `switch.shelly1pmg4_a085e3bdd940`) – klären, welcher richtig ist.
 - Pool: Wärmepumpe `climate.pool_warmepumpe`, Pumpe/Elektrolyse und Poollicht sind derzeit nicht erreichbar (Winter?). Das alte Pool-Dashboard nutzt teils Entitäten, die es nicht mehr gibt.
 - Eingang: Türschloss (`lock.eingang_aqara_smart_lock_u200`) wird noch nicht angezeigt – raum-card kann keine Schlösser.
 - Flur oben hat keinen Temperatursensor (große Temperatur zeigt „–“).
