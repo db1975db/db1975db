@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.3.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.4.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -8,6 +8,7 @@ const R_CSS = `
 :host{display:block;--r-surface:var(--ha-card-background,var(--card-background-color,#fff));--r-fg:var(--primary-text-color,#14191f);--r-fg2:var(--secondary-text-color,#5b6672);--r-line:var(--divider-color,rgba(0,0,0,.12));--r-acc:#3987e5;--r-warm:#ef8a3c;--r-ok:#1baf7a;--r-bad:#e34948}
 *{box-sizing:border-box}
 .wrap{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;padding:4px 0 24px}
+.wrap.pad{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
 .full{grid-column:1/-1}.half{grid-column:span 6}
 .hero{position:relative;border-radius:28px;overflow:hidden;color:#fff;min-height:300px;background:#0d1328;box-shadow:0 18px 40px rgba(0,0,0,.22)}
 .glow{position:absolute;inset:-20%;filter:blur(60px);opacity:.95;transition:opacity 1.5s}
@@ -112,7 +113,7 @@ class RaumCard extends HTMLElement {
     this._k = {};
     this.root = this.attachShadow({ mode: 'open' });
     const c = this.c;
-    this.root.innerHTML = `<style>${R_CSS}</style><div class="wrap">
+    this.root.innerHTML = `<style>${R_CSS}</style><div class="wrap ${c.inset === 'ipad' && /iPad/.test(navigator.userAgent) ? 'pad' : ''}">
       <div class="hero full" id="hero"><div class="glow" id="glow"><i></i><i></i><i></i><i></i><i></i></div><div class="shade"></div><div class="hin" id="hin"></div></div>
       ${c.lights.length || c.switches.length ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:lightbulb-group', 20)}Licht</h2><div id="lact"></div></div><div class="lights" id="lights"></div></div>` : ''}
       ${c.sockets.length ? `<div class="blk full"><div class="bh"><h2>${R_icon(c.sockets_icon || 'mdi:power-socket-de', 20)}${R_esc(c.sockets_title || 'Steckdosen')}</h2></div><div class="lights" id="sockets"></div></div>` : ''}
