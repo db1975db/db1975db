@@ -41,6 +41,8 @@ fixtures:
   bulbs:
   - light.kuche_aqara_led_decke_1
   - light.kuche_aqara_led_decke_2
+# Rollläden als Bild (raum-card v1.10): Fenster mit Blick nach draußen, Ziehen auf dem Fenster setzt die Position
+cover_style: scene
 covers:
   - entity: "cover.shellyplus2pm_a0a3b3ba2688_kleiner_rollladen"
     name: "Fenster"

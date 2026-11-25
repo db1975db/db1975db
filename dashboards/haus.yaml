@@ -1248,6 +1248,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Küche
+    cover_style: scene
     floor: Erdgeschoss
     icon: mdi:silverware-fork-knife
     temperature: sensor.bthome_sensor_28a8_temperatur
