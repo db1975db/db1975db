@@ -1,0 +1,62 @@
+# Küche – Raum-Karte (Panel-Ansicht im Dashboard "Küche", url_path dashboard-kuche)
+# Benötigt die Ressource www/raum-card.js (ab v1.2 wegen sockets_title)
+type: "custom:raum-card"
+name: "Küche"
+floor: "Erdgeschoss"
+icon: "mdi:silverware-fork-knife"
+temperature: "sensor.bthome_sensor_28a8_temperatur"
+humidity: "sensor.bthome_sensor_28a8_luftfeuchtigkeit"
+climate: "climate.shellywalldisplay_000822de33c9"
+lights:
+  - entity: "light.aqara_led_deckenspots"
+    name: "Deckenspots"
+    icon: "mdi:light-recessed"
+  - entity: "light.aqara_kuchentisch"
+    name: "Küchentisch"
+    icon: "mdi:table-chair"
+  - entity: "light.aqara_led_decke"
+    name: "Kleiner Flur"
+    icon: "mdi:ceiling-light"
+covers:
+  - entity: "cover.shellyplus2pm_a0a3b3ba2688_kleiner_rollladen"
+    name: "Fenster"
+  - entity: "cover.shellyplus2pm_e86beae5aaa4_grosser_rollladen"
+    name: "Terrassentür"
+media:
+  - entity: "media_player.sonos_era_100"
+    name: "Sonos"
+    icon: "mdi:speaker"
+    sources: true
+  - entity: "media_player.bravia_kdl_32w706b"
+    name: "Fernseher"
+    icon: "mdi:television"
+    play: false
+sockets_title: "Geräte"
+sockets_icon: "mdi:devices"
+sockets:
+  - entity: "fan.switchbot_air_purifier"
+    name: "Luftreiniger"
+    icon: "mdi:air-purifier"
+power:
+  - entity: "sensor.kuche_aqara_taster_kuche_leistung"
+    name: "Deckenlicht (Aqara Taster)"
+  - entity: "sensor.shellyplusplugs_e465b8b601f0_power"
+    name: "Kühlschrank"
+  - entity: "sensor.shelly1pmmini_543204acd164_power"
+    name: "iPad-Ladung"
+windows:
+  - entity: "binary_sensor.kuche_fensterkontakt_tur"
+    name: "Fenster"
+batteries:
+  - entity: "sensor.bthome_sensor_28a8_batterie"
+    name: "Klimasensor"
+  - entity: "sensor.kuche_aqara_presence_multisensor_fp300_batterie"
+    name: "Präsenzmelder"
+  - entity: "sensor.kuche_fensterkontakt_batterie"
+    name: "Fensterkontakt"
+  - entity: "sensor.kuche_rauchmelder_kuche_batterie"
+    name: "Rauchmelder"
+  - entity: "sensor.taster_kuche_batterie"
+    name: "Hue-Dimmer"
+  - entity: "sensor.kuche_taster_kleiner_flur_kuche_batterie"
+    name: "Taster kleiner Flur"

@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.1.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.2.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -114,7 +114,7 @@ class RaumCard extends HTMLElement {
     this.root.innerHTML = `<style>${R_CSS}</style><div class="wrap">
       <div class="hero full" id="hero"><div class="glow" id="glow"><i></i><i></i><i></i><i></i><i></i></div><div class="shade"></div><div class="hin" id="hin"></div></div>
       ${c.lights.length || c.switches.length ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:lightbulb-group', 20)}Licht</h2><div id="lact"></div></div><div class="lights" id="lights"></div></div>` : ''}
-      ${c.sockets.length ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:power-socket-de', 20)}Steckdosen</h2></div><div class="lights" id="sockets"></div></div>` : ''}
+      ${c.sockets.length ? `<div class="blk full"><div class="bh"><h2>${R_icon(c.sockets_icon || 'mdi:power-socket-de', 20)}${R_esc(c.sockets_title || 'Steckdosen')}</h2></div><div class="lights" id="sockets"></div></div>` : ''}
       ${c.scene_select ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:palette', 20)}Lichtszenen</h2><button class="btn" data-act="scmore" id="scmore"></button></div><div class="scenes" id="scenes"></div></div>` : ''}
       ${c.covers.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:window-shutter', 20)}Rollläden</h2><div style="display:flex;gap:6px"><button class="btn" data-act="covall" data-sv="open_cover">${R_icon('mdi:arrow-up', 16)}Alle auf</button><button class="btn" data-act="covall" data-sv="close_cover">${R_icon('mdi:arrow-down', 16)}Alle zu</button></div></div><div class="covers" id="covers"></div></div>` : ''}
       ${c.media.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:television-play', 20)}Medien</h2></div><div class="media" id="media"></div></div>` : ''}

@@ -24,17 +24,27 @@
 - Bereiche: Lichtstimmung mit Thermostat-Regler, Licht, Steckdosen, Lichtszenen (Hue-Szenen über `select.wohnzimmer_wohnzimmer_scenen_szene`), Rollläden, Medien, Strom, Raumklima über 24 h, Status.
 - Laterne = Gruppe `light.laterne` (ShellyVintage 1–3). Diese Lampen hängen an der Steckdose `switch.shellyplusplugs_e465b893b740`. Ist die Steckdose aus, schaltet ein Tipp auf die Kachel die Steckdose ein.
 - Steckdosen: Stern, Laterne, TV. „Alles aus“ schaltet nur die Lichter aus.
-- **Ressource:** inline, Resource-ID `1bc3365d5d504c3c9d14d27f5598de9a`.
+- **Ressource:** inline, Resource-ID `1bc3365d5d504c3c9d14d27f5598de9a` (seit 25.11.2026 v1.2, gilt für Wohnzimmer und Küche).
+
+### Dashboard „Küche“ (`/dashboard-kuche`)
+- Eine Panel-Ansicht mit `custom:raum-card`, Konfiguration: `dashboards/kueche.yaml`. Angelegt am 25.11.2026.
+- Licht: Deckenspots (`light.aqara_led_deckenspots`), Küchentisch (`light.aqara_kuchentisch`), Kleiner Flur (`light.aqara_led_decke`).
+- Klima: BTHome-Sensor 28a8 + Thermostat `climate.shellywalldisplay_000822de33c9`.
+- Rollläden: Fenster und Terrassentür. Medien: Sonos Era 100 (Quellen = Sonos-Favoriten), Fernseher Bravia.
+- Bereich „Geräte“: Luftreiniger (`fan.switchbot_air_purifier`). Kühlschrank und iPad-Ladung bewusst nur in der Stromübersicht, nicht schaltbar (Automationen steuern die iPad-Ladung).
+- Keine Hue-Szenen-Auswahl für die Küche vorhanden, deshalb kein Bereich „Lichtszenen“.
 
 ## Die Raum-Karte für weitere Räume
 `raum-card` ist allgemein gebaut. Alle Bereiche sind optional:
 `name`, `floor`, `icon`, `temperature`, `humidity`, `climate`, `lights[]` (`entity`, `name`, `icon`, optional `socket`),
-`switches[]`, `sockets[]` (`entity`, `name`, `icon`, `power`), `scene_select`, `scene_favorites[]`, `covers[]`,
+`switches[]`, `sockets[]` (`entity`, `name`, `icon`, `power`; Überschrift über `sockets_title`/`sockets_icon`, ab v1.2), `scene_select`, `scene_favorites[]`, `covers[]`,
 `media[]` (`entity`, `name`, `icon`, `sources`, `play`, `power`, `chip`), `power[]`, `windows[]`, `batteries[]`.
 
 ## Offene Punkte
 - Name bzw. Gerät für „Aqara Taster“ in der Stromübersicht klären (`sensor.wohnzimmer_aqara_taster_wohnzimmer_leistung`).
-- Raum-Karte für weitere Räume bauen, zum Beispiel Küche, Schlafzimmer, Büro.
+- Raum-Karte für weitere Räume bauen, zum Beispiel Schlafzimmer, Büro.
+- Küche: Gerät hinter `sensor.kuche_aqara_taster_kuche_leistung` klären (in der Karte vorläufig „Deckenlicht (Aqara Taster)“).
+- Küche: Terrassentür-Sensor `binary_sensor.bthome_sensor_d867_window` ist nicht erreichbar, deshalb noch nicht in der Karte.
 - Ab 2027: Vorjahresvergleich in der Wetterkarte.
 
 ## Hinweise für Änderungen
