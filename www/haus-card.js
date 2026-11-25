@@ -1,4 +1,4 @@
-// Haus-Karte – Startseite im Stil der Wetterstation (v0.7.1)
+// Haus-Karte – Startseite im Stil der Wetterstation (v0.8.0)
 const H_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const H_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const H_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -26,9 +26,9 @@ const H_CSS = `
 .hero.hasm .hin{padding-right:62px}
 /* inset: ipad – Rand für die abgerundeten iPad-Ecken, wenn kiosk-mode die Kopfzeile ausblendet */
 .wrap.pad{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
-.wrap.kiosk{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));height:100vh;height:100dvh;grid-template-rows:auto auto auto minmax(0,1fr);align-content:stretch;overflow:hidden}
-.wrap.kiosk .tl .t{font-size:44px}
-.wrap.kiosk .fl2{height:100%;padding:10px 20px;overflow:hidden}.wrap.kiosk .fl2>div:first-child{height:100%;min-height:0}.wrap.kiosk .fl2 svg{height:100%;max-height:none}.wrap.kiosk .fl2 .st{max-height:100%}
+.wrap.kiosk{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));height:100vh;height:100dvh;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.wrap.kiosk>*{flex:none}.wrap.kiosk .tl .t{font-size:44px}
+.wrap.kiosk .fl2{flex:1 1 0;min-height:0;overflow:hidden}
 .mnu{font:inherit;position:absolute;top:10px;right:10px;z-index:3;width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px)}
 .title{font-size:clamp(30px,5vw,44px);font-weight:650;letter-spacing:-.02em;margin:2px 0 10px}
 .wx{display:flex;align-items:center;gap:14px}
@@ -148,24 +148,33 @@ const H_CSS = `
 .big-rooms .rm{min-height:150px;padding:16px}
 .big-rooms .rm .t{font-size:30px}
 .big-rooms .rm.hasl>div:last-child{padding-right:50px}
-.fl2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;background:var(--h-surface);border:1px solid var(--h-line);border-radius:24px;padding:14px 20px;color:var(--h-fg);min-height:0;align-items:center}
-.fl2 svg{width:100%;height:auto;max-height:250px;display:block}
-.fl2 .nd circle.bg{fill:var(--h-surface);stroke-width:3}
-.fl2 .nd text{fill:var(--h-fg);font-weight:650;font-size:17px;text-anchor:middle;font-variant-numeric:tabular-nums}
-.fl2 .nd text.lb{fill:var(--h-fg2);font-weight:500;font-size:12.5px}
-.fl2 .ln{fill:none;stroke:var(--h-line);stroke-width:2.5}
-.fl2 .st{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 18px;align-items:center}
-.fl2 .ring{grid-row:span 3;position:relative;width:118px;height:118px}
+.hints:empty{display:none}
+.fl2{position:relative;display:grid;grid-template-columns:minmax(0,1.25fr) 150px minmax(0,1fr);gap:16px;align-items:stretch;border-radius:26px;padding:14px 20px;color:#fff;overflow:hidden;background:radial-gradient(120% 160% at 0% 0%,#22365a 0%,#121d33 55%,#0b1424 100%);box-shadow:0 14px 32px rgba(0,0,0,.22)}
+.fl2 .sun{position:absolute;left:-10%;top:-60%;width:60%;height:160%;background:radial-gradient(closest-side,rgba(255,196,60,.35),rgba(255,196,60,0));pointer-events:none;transition:opacity 2s}
+.fl2>*:not(.sun){position:relative;min-width:0;min-height:0}
+.fl2 .dg svg{width:100%;height:100%;display:block}
+.fl2 .nd circle.bg{stroke-width:2.5}
+.fl2 .nd text{fill:#fff;font-weight:650;font-size:18px;font-variant-numeric:tabular-nums}
+.fl2 .nd text.lb{fill:rgba(255,255,255,.65);font-weight:500;font-size:12px;letter-spacing:.03em;text-transform:uppercase}
+.fl2 .ln{fill:none;stroke:rgba(255,255,255,.12);stroke-width:3;stroke-linecap:round}
+.fl2 .mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.fl2 .ring{position:relative;width:118px;height:118px;flex:none;cursor:pointer}
 .fl2 .ring svg{width:118px;height:118px;transform:rotate(-90deg)}
-.fl2 .ring b{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;font-weight:650;font-variant-numeric:tabular-nums}
-.fl2 .ring b small{font-size:11.5px;font-weight:500;color:var(--h-fg2)}
-.fl2 .kv{display:flex;flex-direction:column;gap:2px;cursor:pointer}.fl2 .kv span{font-size:12px;color:var(--h-fg2);display:flex;align-items:center;gap:5px}
-.fl2 .kv b{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums}.fl2 .kv b small{font-size:12px;font-weight:500;color:var(--h-fg2);margin-left:2px}
-.fl2 .kv .mb{height:6px;border-radius:3px;background:var(--h-line);overflow:hidden;margin-top:4px}.fl2 .kv .mb i{display:block;height:100%;background:var(--h-ok)}
+.fl2 .ring b{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;font-weight:650;font-variant-numeric:tabular-nums}
+.fl2 .ring b small{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;opacity:.7;margin-top:2px}
+.fl2 .bat{width:118px;cursor:pointer}.fl2 .bat span{display:flex;justify-content:space-between;font-size:11.5px;opacity:.75;margin-bottom:4px}
+.fl2 .bat .mb{height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}.fl2 .bat .mb i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#1baf7a,#5fe0a8)}
+.fl2 .ch{display:flex;flex-direction:column;gap:6px;cursor:pointer}
+.fl2 .ch .hd{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.fl2 .ch .hd b{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;opacity:.7;margin-right:auto}
+.fl2 .ch .hd span{font-size:13px;display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}.fl2 .ch .hd span i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.fl2 .ch .pl{flex:1;min-height:0;position:relative}.fl2 .ch .pl svg{position:absolute;inset:0;width:100%;height:100%}
+.fl2 .ch .axr{display:flex;justify-content:space-between;font-size:10.5px;opacity:.55;font-variant-numeric:tabular-nums}
+.fl2 .ch .msg{opacity:.6;font-size:12.5px}
 @media (max-width:900px){.half{grid-column:1/-1}}
 @media (min-width:901px){.orb{right:auto !important;left:48% !important}}
 @media (min-width:900px) and (max-height:860px){.wrap{gap:12px;padding:0 0 8px}.hero{min-height:0}.hin{padding:14px 22px 16px;gap:16px;align-items:center}.greet{font-size:13px}.title{font-size:28px;margin:0 0 4px}.big{font-size:54px}.cond{font-size:15px}.cond div{font-size:12.5px}.sub{font-size:13px;margin-top:4px}.more{margin-top:8px;padding:4px 11px;font-size:12px}.ppl{padding:10px 16px 12px;gap:8px}.ppl .row{gap:14px}.pp{width:78px;gap:4px}.pp .av{width:58px;height:58px;font-size:24px}.pp .zb{width:24px;height:24px}.pp .nm{font-size:14px}.pp small{font-size:11px}.hint{padding:7px 12px;font-size:13px}.hint .hi{width:26px;height:26px}.tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.tl{min-height:0;padding:14px;gap:8px;border-radius:22px}.tl .hd{gap:9px}.tl .ic{width:36px;height:36px;border-radius:12px}.tl .n{font-size:17px}.tl .t{font-size:36px;margin-top:0}.tl .t small{font-size:14px}.tl .t span{display:none}.tl .ln{gap:4px}.tl .ch{font-size:11.5px;padding:3px 8px}.tl .rms{gap:4px}.tl .rd{font-size:11px;padding:1px 7px 1px 3px}.ebar{border-radius:18px}.eb{padding:8px 14px}.eb .v{font-size:18px}.eb .x{font-size:11px}}
-@media (max-width:640px){.fl2{grid-template-columns:1fr}.big-rooms .rooms{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.big-rooms .rm{min-height:132px;padding:13px}.big-rooms .rm .t{font-size:24px}.rm .lb{width:36px;height:36px;right:10px;bottom:10px}.big-rooms .rm.hasl>div:last-child{padding-right:40px}.fh{padding:16px}.fh .off{margin-left:0}.ppl{padding:12px}.ppl .row{gap:10px}.pp{width:auto;flex:1}.pp .av{width:60px;height:60px}.tiles{grid-template-columns:1fr}.tl{min-height:190px}.ebar{grid-template-columns:repeat(2,minmax(0,1fr))}.eb:nth-child(3){border-left:none}.eb:nth-child(n+3){border-top:1px solid var(--h-line)}.orb{right:5% !important;top:4% !important;transform:scale(.5);transform-origin:top right;opacity:.85}.hin{grid-template-columns:1fr;padding:20px 18px}.ppl{flex-direction:row;flex-wrap:wrap;align-items:flex-start}.blk{padding:16px 14px}.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}.en{grid-template-columns:repeat(2,minmax(0,1fr))}.en .ev:last-child{grid-column:1/-1}.rm{min-height:118px}}
+@media (max-width:640px){.fl2{grid-template-columns:1fr}.fl2 .mid{flex-direction:row;justify-content:space-around}.fl2 .ch .pl{height:140px;flex:none}.big-rooms .rooms{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.big-rooms .rm{min-height:132px;padding:13px}.big-rooms .rm .t{font-size:24px}.rm .lb{width:36px;height:36px;right:10px;bottom:10px}.big-rooms .rm.hasl>div:last-child{padding-right:40px}.fh{padding:16px}.fh .off{margin-left:0}.ppl{padding:12px}.ppl .row{gap:10px}.pp{width:auto;flex:1}.pp .av{width:60px;height:60px}.tiles{grid-template-columns:1fr}.tl{min-height:190px}.ebar{grid-template-columns:repeat(2,minmax(0,1fr))}.eb:nth-child(3){border-left:none}.eb:nth-child(n+3){border-top:1px solid var(--h-line)}.orb{right:5% !important;top:4% !important;transform:scale(.5);transform-origin:top right;opacity:.85}.hin{grid-template-columns:1fr;padding:20px 18px}.ppl{flex-direction:row;flex-wrap:wrap;align-items:flex-start}.blk{padding:16px 14px}.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}.en{grid-template-columns:repeat(2,minmax(0,1fr))}.en .ev:last-child{grid-column:1/-1}.rm{min-height:118px}}
 `;
 
 class HausCard extends HTMLElement {
@@ -307,12 +316,12 @@ class HausCard extends HTMLElement {
       if (d >= 0 && d <= (c.waste_days ?? 1)) H(d === 0 ? 'warn' : 'info', w.icon || 'mdi:trash-can-outline', `${H_esc(w.name)} ${d === 0 ? 'heute' : d === 1 ? 'morgen' : `in ${d} Tagen`}`, d === 1 ? 'Tonne heute Abend rausstellen' : 'wird heute abgeholt');
     });
     const bat = this.batteries();
-    if (bat.length) H('warn', 'mdi:battery-alert-variant-outline', `${bat.length} ${bat.length === 1 ? 'Batterie' : 'Batterien'} schwach`, bat.slice(0, 3).map(b => `${H_esc(b.name)} ${H_fmt(b.v, 0)} %`).join(' · ') + (bat.length > 3 ? ' …' : ''));
+    if (bat.length && c.hint_batteries !== false) H('warn', 'mdi:battery-alert-variant-outline', `${bat.length} ${bat.length === 1 ? 'Batterie' : 'Batterien'} schwach`, bat.slice(0, 3).map(b => `${H_esc(b.name)} ${H_fmt(b.v, 0)} %`).join(' · ') + (bat.length > 3 ? ' …' : ''));
     (c.garden || []).forEach(g => {
       const s = this.s(g.entity); if (!s) return;
       if (g.type === 'mower' && s.state === 'error') H('bad', 'mdi:robot-mower-outline', 'Mähroboter meldet Fehler', '', g.path ? `data-nav="${H_esc(g.path)}" role="button" tabindex="0"` : '');
     });
-    if (!out.length) H('ok', 'mdi:check-circle-outline', 'Alles in Ordnung', 'Keine offenen Fenster, Alarme oder schwachen Batterien');
+    if (!out.length && c.hints_ok !== false) H('ok', 'mdi:check-circle-outline', 'Alles in Ordnung', 'Keine offenen Fenster, Alarme oder schwachen Batterien');
     this.$('hints').innerHTML = out.join('');
   }
   // ---------- Räume ----------
@@ -429,43 +438,73 @@ class HausCard extends HTMLElement {
   r_flow() {
     const el = this.$('flow'), e = this.c.energy; if (!el || !e) return;
     const pv = Math.max(0, this.n(e.pv) || 0), home = Math.max(0, this.n(e.home) || 0), imp = Math.max(0, this.n(e.grid_import) || 0), exp = Math.max(0, this.n(e.grid_export) || 0);
-    const soc = this.n(e.battery_soc), bp = this.n(e.battery_power) || 0, today = this.n(e.pv_today);
+    const soc = this.n(e.battery_soc), bp = this.n(e.battery_power) || 0;
     const chg = Math.max(0, -bp), dis = Math.max(0, bp);
     const pvBat = Math.min(chg, pv), pvGrid = Math.min(exp, Math.max(0, pv - pvBat)), pvHome = Math.max(0, pv - pvBat - pvGrid);
     const fmtW = (w) => w >= 1000 ? `${H_fmt(w / 1000, 1)} kW` : `${H_fmt(w, 0)} W`;
     const self = home > 0 ? Math.min(100, Math.round(Math.max(0, home - imp) / home * 100)) : 0;
-    const C = { pv: '#f4b400', grid: '#8a94a3', bat: '#1baf7a', home: '#3987e5' };
-    // Linien: id, Pfad, Leistung, Farbe, Richtung (1 = wie gezeichnet)
+    const C = { pv: '#ffc23d', grid: '#a9b4c6', bat: '#3ddc97', home: '#5aa9ff' };
     const L = [
-      ['pvh', 'M342,52 Q356,105 520,105', pvHome, C.pv],
-      ['pvg', 'M298,52 Q284,105 120,105', pvGrid, C.pv],
-      ['pvb', 'M320,62 L320,148', pvBat, C.pv],
-      ['gh', 'M120,105 L520,105', imp, C.grid],
-      ['bh', 'M342,158 Q356,105 520,105', dis, C.bat],
+      ['pvh', 'M346,50 Q360,105 516,105', pvHome, C.pv],
+      ['pvg', 'M294,50 Q280,105 124,105', pvGrid, C.pv],
+      ['pvb', 'M320,66 L320,144', pvBat, C.pv],
+      ['gh', 'M124,105 L516,105', imp, C.grid],
+      ['bh', 'M346,160 Q360,105 516,105', dis, C.bat],
     ];
+    const lines = L.map(([id, d, w, col]) => w > 15 ? `<path d="${d}" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" opacity=".18" filter="url(#hgl)"/><path d="${d}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" opacity=".85"/>` : `<path class="ln" d="${d}"/>`).join('');
     const dots = L.filter(l => l[2] > 15).map(([id, d, w, col]) => {
       const dur = Math.max(.9, Math.min(4.5, 4.5 - Math.log10(w) * 1.1)).toFixed(2);
-      return [0, 1, 2].map(k => `<circle r="4.5" fill="${col}"><animateMotion dur="${dur}s" begin="${(k * dur / 3).toFixed(2)}s" repeatCount="indefinite" path="${d}"/></circle>`).join('');
+      return [0, 1, 2].map(k => `<circle r="5" fill="#fff" filter="url(#hgl)" opacity=".95"><animateMotion dur="${dur}s" begin="${(k * dur / 3).toFixed(2)}s" repeatCount="indefinite" path="${d}"/></circle>`).join('');
     }).join('');
-    const lines = L.map(([id, d, w, col]) => `<path class="ln" d="${d}" style="${w > 15 ? `stroke:${col};opacity:.55` : ''}"/>`).join('');
-    const node = (x, y, col, icon, val, lb, ent, active, side) => `<g class="nd" data-more="${ent}" style="cursor:pointer"><circle class="bg" cx="${x}" cy="${y}" r="30" style="stroke:${active ? col : 'var(--h-line)'}"/>
-      <foreignObject x="${x - 13}" y="${y - 13}" width="26" height="26"><div xmlns="http://www.w3.org/1999/xhtml" style="color:${active ? col : 'var(--h-fg2)'};display:flex">${H_icon(icon, 26)}</div></foreignObject>
-      ${side ? `<text x="${x + 42}" y="${y - 2}" style="text-anchor:start">${val}</text><text class="lb" x="${x + 42}" y="${y + 16}" style="text-anchor:start">${lb}</text>` : `<text x="${x}" y="${y + 52}">${val}</text><text class="lb" x="${x}" y="${y + 68}">${lb}</text>`}</g>`;
-    const gridTxt = exp > imp ? `↑ ${fmtW(exp)}` : imp > 0 ? `↓ ${fmtW(imp)}` : '0 W';
-    const batTxt = soc != null ? `${H_fmt(soc, 0)} %` : '–';
-    const svg = `<svg viewBox="0 0 640 212" preserveAspectRatio="xMidYMid meet">${lines}${dots}
-      ${node(320, 30, C.pv, 'mdi:solar-power-variant', fmtW(pv), 'Solar', e.pv, pv > 15, 1)}
-      ${node(90, 105, C.grid, 'mdi:transmission-tower', gridTxt, exp > imp ? 'Einspeisung' : 'Netz', exp > imp ? e.grid_export : e.grid_import, imp > 15 || exp > 15)}
-      ${node(550, 105, C.home, 'mdi:home-lightning-bolt-outline', fmtW(home), 'Haus', e.home, true)}
-      ${node(320, 180, C.bat, soc > 80 ? 'mdi:battery-high' : soc > 30 ? 'mdi:battery-medium' : 'mdi:battery-low', batTxt, chg > 15 ? `Batterie lädt ${fmtW(chg)}` : dis > 15 ? `Batterie gibt ${fmtW(dis)}` : 'Batterie', e.battery_soc, chg > 15 || dis > 15, 1)}</svg>`;
-    const R = 50, U = 2 * Math.PI * R, sc = self >= 60 ? 'var(--h-ok)' : self >= 25 ? 'var(--h-sun)' : 'var(--h-bad)';
-    el.innerHTML = `<div style="min-width:0">${svg}</div>
-      <div class="st">
-        <div class="ring"><svg viewBox="0 0 118 118"><circle cx="59" cy="59" r="${R}" fill="none" stroke="var(--h-line)" stroke-width="11"/><circle cx="59" cy="59" r="${R}" fill="none" stroke="${sc}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${(U * self / 100).toFixed(1)} ${U.toFixed(1)}" style="display:${self > 0 ? '' : 'none'}"/></svg><b>${self} %<small>Autarkie</small></b></div>
-        <div class="kv" data-more="${e.pv_today || e.pv}"><span>${H_icon('mdi:white-balance-sunny', 14)}Solar heute</span><b>${H_fmt(today)}<small>kWh</small></b></div>
-        <div class="kv" data-more="${e.home}"><span>${H_icon('mdi:home-lightning-bolt-outline', 14)}Verbrauch jetzt</span><b>${fmtW(home).replace(/ (k?W)/, '<small>$1</small>')}</b></div>
-        <div class="kv" data-more="${e.battery_soc}"><span>${H_icon('mdi:home-battery-outline', 14)}Hausbatterie ${H_fmt(soc, 0)} %</span><div class="mb"><i style="width:${Math.min(100, soc || 0)}%"></i></div></div>
-      </div>`;
+    const node = (x, y, col, icon, val, lb, ent, active, side) => `<g class="nd" data-more="${ent}" style="cursor:pointer">
+      ${active ? `<circle cx="${x}" cy="${y}" r="36" fill="${col}" opacity=".22" filter="url(#hgl)"/>` : ''}
+      <circle class="bg" cx="${x}" cy="${y}" r="31" fill="${active ? col + '33' : 'rgba(255,255,255,.06)'}" stroke="${active ? col : 'rgba(255,255,255,.22)'}"/>
+      <foreignObject x="${x - 14}" y="${y - 14}" width="28" height="28"><div xmlns="http://www.w3.org/1999/xhtml" style="color:${active ? col : 'rgba(255,255,255,.55)'};display:flex">${H_icon(icon, 28)}</div></foreignObject>
+      ${side ? `<text x="${x + 44}" y="${y + 1}">${val}</text><text class="lb" x="${x + 44}" y="${y + 18}">${lb}</text>` : `<text x="${x}" y="${y + 54}" text-anchor="middle">${val}</text><text class="lb" x="${x}" y="${y + 70}" text-anchor="middle">${lb}</text>`}</g>`;
+    const gridTxt = exp > imp ? fmtW(exp) : fmtW(imp);
+    const svg = `<svg viewBox="0 0 640 212" preserveAspectRatio="xMidYMid meet"><defs><filter id="hgl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs>${lines}${dots}
+      ${node(320, 32, C.pv, 'mdi:solar-power-variant', fmtW(pv), 'Solar', e.pv, pv > 15, 1)}
+      ${node(92, 105, C.grid, 'mdi:transmission-tower', gridTxt, exp > imp ? 'Einspeisung' : imp > 15 ? 'Netzbezug' : 'Netz', exp > imp ? e.grid_export : e.grid_import, imp > 15 || exp > 15)}
+      ${node(548, 105, C.home, 'mdi:home-lightning-bolt-outline', fmtW(home), 'Haus', e.home, true)}
+      ${node(320, 178, C.bat, soc > 80 ? 'mdi:battery-high' : soc > 30 ? 'mdi:battery-medium' : 'mdi:battery-low', chg > 15 ? `+${fmtW(chg)}` : dis > 15 ? `−${fmtW(dis)}` : `${H_fmt(soc, 0)} %`, chg > 15 ? 'Batterie lädt' : dis > 15 ? 'Batterie gibt ab' : 'Batterie', e.battery_soc, chg > 15 || dis > 15, 1)}</svg>`;
+    const R = 50, U = 2 * Math.PI * R;
+    el.innerHTML = `<div class="sun" style="opacity:${pv > 15 ? Math.min(1, .35 + pv / 4000) : 0}"></div>
+      <div class="dg">${svg}</div>
+      <div class="mid">
+        <div class="ring" data-more="${e.home}"><svg viewBox="0 0 118 118"><defs><linearGradient id="hrg" x1="0" x2="1"><stop offset="0" stop-color="#ffc23d"/><stop offset="1" stop-color="#3ddc97"/></linearGradient></defs><circle cx="59" cy="59" r="${R}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="10"/><circle cx="59" cy="59" r="${R}" fill="none" stroke="url(#hrg)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(U * self / 100).toFixed(1)} ${U.toFixed(1)}" style="display:${self > 0 ? '' : 'none'}"/></svg><b>${self} %<small>Autarkie</small></b></div>
+        <div class="bat" data-more="${e.battery_soc}"><span><em style="font-style:normal">Hausbatterie</em><em style="font-style:normal">${H_fmt(soc, 0)} %</em></span><div class="mb"><i style="width:${Math.min(100, soc || 0)}%"></i></div></div>
+      </div>
+      <div class="ch" data-more="${e.pv}" id="fch"></div>`;
+    this.r_fchart();
+    if (!this._fAt || Date.now() - this._fAt > 10 * 60e3) this.loadFlowHist();
+  }
+  async loadFlowHist() {
+    const e = this.c.energy; this._fAt = Date.now();
+    try {
+      const st = new Date(); st.setHours(0, 0, 0, 0);
+      const r = await this._hass.callWS({ type: 'recorder/statistics_during_period', start_time: st.toISOString(), end_time: new Date().toISOString(), statistic_ids: [e.pv, e.home], period: '5minute', types: ['mean'], units: { power: 'W' } });
+      const conv = (a) => (a || []).map(x => [typeof x.start === 'number' ? x.start : Date.parse(x.start), x.mean]).filter(x => x[1] != null);
+      this._fh = { pv: conv(r[e.pv]), home: conv(r[e.home]), from: st.getTime() };
+    } catch (err) { this._fh = { err: true }; }
+    this.r_fchart();
+  }
+  r_fchart() {
+    const el = this.$('fch'); if (!el) return;
+    const H = this._fh, today = this.n(this.c.energy.pv_today);
+    const kwh = (pts) => pts.reduce((a, p) => a + p[1] * 5 / 60 / 1000, 0);
+    const hd = `<div class="hd"><b>Heute</b><span><i style="background:#ffc23d"></i>Solar ${H_fmt(today ?? (H && H.pv ? kwh(H.pv) : null))} kWh</span>${H && H.home ? `<span><i style="background:#5aa9ff"></i>Verbrauch ${H_fmt(kwh(H.home))} kWh</span>` : ''}</div>`;
+    if (!H || H.err || !H.pv) { el.innerHTML = hd + `<div class="pl"><div class="msg">${H && H.err ? 'Verlauf nicht verfügbar' : 'Lade Verlauf …'}</div></div>`; return; }
+    const W = 400, HT = 150, B = 2, from = H.from, to = from + 864e5;
+    const mx = Math.max(500, ...H.pv.map(p => p[1]), ...H.home.map(p => p[1])) * 1.08;
+    const x = (t) => ((t - from) / (to - from) * W).toFixed(1), y = (v) => (HT - B - v / mx * (HT - B - 6)).toFixed(1);
+    const area = H.pv.length ? `M${x(H.pv[0][0])},${HT - B}` + H.pv.map(p => `L${x(p[0])},${y(p[1])}`).join('') + `L${x(H.pv[H.pv.length - 1][0])},${HT - B}Z` : '';
+    const line = H.home.length ? 'M' + H.home.map(p => `${x(p[0])},${y(p[1])}`).join('L') : '';
+    const now = x(Date.now());
+    const ax = `<div class="axr">${[0, 6, 12, 18, 24].map(h => `<span>${String(h).padStart(2, '0')}</span>`).join('')}</div>`;
+    el.innerHTML = hd + `<div class="pl"><svg viewBox="0 0 ${W} ${HT}" preserveAspectRatio="none"><defs><linearGradient id="hsg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffc23d" stop-opacity=".75"/><stop offset="1" stop-color="#ffc23d" stop-opacity=".05"/></linearGradient></defs>
+      <line x1="0" x2="${W}" y1="${HT - B}" y2="${HT - B}" stroke="rgba(255,255,255,.15)"/>
+      <path d="${area}" fill="url(#hsg)"/><path d="${line}" fill="none" stroke="#5aa9ff" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <line x1="${now}" x2="${now}" y1="4" y2="${HT - B}" stroke="rgba(255,255,255,.35)" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/></svg></div>${ax}`;
   }
   // ---------- Energie-Leiste ----------
   r_ebar() {

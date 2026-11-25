@@ -6,6 +6,8 @@ base_path: "/dashboard-haus"
 # Startseite: Wetter, Hinweise, vier große Kacheln, Energie-Leiste
 sections: ["hero", "hints", "tiles", "flow"]
 tile_rooms: false   # keine Raumliste in den Startseiten-Kacheln (steht in der Etagen-Ansicht)
+hint_batteries: false   # schwache Batterien nicht auf der Startseite (gehören in den Raum)
+hints_ok: false   # keine „Alles in Ordnung“-Zeile – Hinweise erscheinen nur, wenn etwas ist
 menu_button: "ipad"   # ☰-Knopf nur auf dem iPad (dort blendet kiosk-mode die Kopfzeile aus)
 tiles:
   - name: "Erdgeschoss"
