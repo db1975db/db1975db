@@ -1,4 +1,4 @@
-// Haus-Karte – Startseite im Stil der Wetterstation (v0.4.0)
+// Haus-Karte – Startseite im Stil der Wetterstation (v0.5.0)
 const H_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const H_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const H_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -24,6 +24,8 @@ const H_CSS = `
 .hin{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;padding:24px 26px 22px;align-items:end}
 .greet{font-size:15px;opacity:.92;font-weight:500}
 .hero.hasm .hin{padding-right:62px}
+.wrap.kiosk{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));min-height:100vh;min-height:100dvh;grid-template-rows:auto auto 1fr auto;align-content:stretch}
+.wrap.kiosk .tl .t{font-size:44px}
 .mnu{font:inherit;position:absolute;top:10px;right:10px;z-index:3;width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px)}
 .title{font-size:clamp(30px,5vw,44px);font-weight:650;letter-spacing:-.02em;margin:2px 0 10px}
 .wx{display:flex;align-items:center;gap:14px}
@@ -171,7 +173,7 @@ class HausCard extends HTMLElement {
     this._k = {};
     this.root = this.attachShadow({ mode: 'open' });
     const c = this.c, S = this.sec;
-    this.root.innerHTML = `<style>${H_CSS}</style><div class="wrap">
+    this.root.innerHTML = `<style>${H_CSS}</style><div class="wrap ${this.showMenu() && S.has('tiles') ? 'kiosk' : ''}">
       ${S.has('hero') ? `<div class="hero full ${this.showMenu() ? 'hasm' : ''}" id="hero" role="link" tabindex="0" ${c.weather && c.weather.path ? `data-nav="${H_esc(c.weather.path)}"` : ''}><div class="sky" id="sky"></div><div class="shade"></div>${this.showMenu() ? `<button class="mnu" data-act="menu" aria-label="Menü">${H_icon('mdi:menu', 20)}</button>` : ''}<div class="hin" id="hin"></div></div>` : ''}
       ${S.has('header') ? `<div class="full fh" id="fh"></div>` : ''}
       ${S.has('hints') ? `<div class="full hints" id="hints"></div>` : ''}
