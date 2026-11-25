@@ -1,4 +1,4 @@
-// Wetterstation Garten – eigene Lovelace-Karte (v1.2.0)
+// Wetterstation Garten – eigene Lovelace-Karte (v1.3.0)
 const DEF = {
   temp: 'sensor.garden_wetterstation_temperatur',
   tmax24: 'sensor.garten_wetterstation_temperatur_max_24h',
@@ -107,6 +107,8 @@ const CSS = `
 .hero canvas{position:absolute;inset:0;width:100%;height:100%}
 .hin{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:24px 26px 22px}
 .loc{font-size:14px;opacity:.9;font-weight:500;letter-spacing:.02em}
+.back{font:inherit;display:inline-flex;align-items:center;gap:2px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:5px 13px 5px 6px;font-size:13.5px;font-weight:600;cursor:pointer;backdrop-filter:blur(6px);margin-bottom:10px}
+.wrap.pad{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
 .big{font-size:clamp(64px,11vw,112px);font-weight:200;line-height:1;letter-spacing:-.04em;margin:6px 0 2px;font-variant-numeric:tabular-nums}
 .big small{font-size:.32em;font-weight:400;letter-spacing:0;opacity:.85;margin-left:6px;vertical-align:.95em}
 .sub{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:15px;opacity:.95;align-items:center}
@@ -190,7 +192,7 @@ class WetterstationGartenCard extends HTMLElement {
   }
   build() {
     this.root = this.attachShadow({ mode: 'open' });
-    this.root.innerHTML = `<style>${CSS}</style><div class="wrap">
+    this.root.innerHTML = `<style>${CSS}</style><div class="wrap ${this.cfg.inset === 'ipad' && /iPad/.test(navigator.userAgent) ? 'pad' : ''}">
       <div class="hero" id="hero"><canvas id="sky"></canvas><div class="hin" id="hin"></div></div>
       <div class="blk"><div class="bh"><h2>Windrose</h2><div class="seg" id="roseseg"><button data-h="24">24 h</button><button data-h="72">3 Tage</button><button data-h="168" class="on">7 Tage</button><button data-h="240">10 Tage</button><button data-h="m">Monat</button><button data-h="y">Jahr</button><button data-h="all">Gesamt</button></div></div><div id="rose"><div class="msg">Lade Windverlauf …</div></div></div>
       <div class="blk"><div class="bh"><h2>Das Jahr in Farben</h2><p id="bandsub">Jeder Streifen ein Tag, gefärbt nach der Tagesmitteltemperatur</p></div><div id="band"><div class="msg">Lade Statistik …</div></div></div>
@@ -218,7 +220,7 @@ class WetterstationGartenCard extends HTMLElement {
       const b = ev.target.closest('button[data-h]'); if (!b) return;
       this._roseH = isNaN(+b.dataset.h) ? b.dataset.h : +b.dataset.h; this.$('roseseg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); this.renderRose();
     });
-    this.$('hero').addEventListener('click', () => this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: this.e.temp } })));
+    this.$('hero').addEventListener('click', (ev) => { if (ev.target.closest('[data-back]')) { const b = this.cfg.back, p = b.startsWith('/') ? b : `${this.cfg.base_path || ''}/${b}`; history.pushState(null, '', p); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); return; } this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: this.e.temp } })); });
     this.sky.start();
   }
   renderHero() {
@@ -245,6 +247,7 @@ class WetterstationGartenCard extends HTMLElement {
     const now = new Date();
     this.$('hin').innerHTML = `
       <div>
+        ${this.cfg.back ? `<button class="back" data-back="1"><ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:20px;width:20px;height:20px"></ha-icon>${this.cfg.back_label || 'Zurück'}</button>` : ''}
         <div class="loc">Garten · ${now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })} · ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</div>
         <div class="big">${fmt(t)}<small>°C</small></div>
         <div class="sub">
