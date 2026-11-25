@@ -34,6 +34,17 @@
 - Bereich „Geräte“: Luftreiniger (`fan.switchbot_air_purifier`). Kühlschrank und iPad-Ladung bewusst nur in der Stromübersicht, nicht schaltbar (Automationen steuern die iPad-Ladung).
 - Keine Hue-Szenen-Auswahl für die Küche vorhanden, deshalb kein Bereich „Lichtszenen“.
 
+### Dashboard „Zuhause“ (`/dashboard-haus`) – im Aufbau
+- Ziel: EIN Dashboard mit mehreren Ansichten statt vieler einzelner Dashboards. Schritt für Schritt, Dennis will jede Ansicht vorher als Vorschau sehen und gibt dann sein Ok.
+- Ist noch **nicht in der Seitenleiste** (zum Testen auf dem iPad mini in der Küche direkt aufrufen).
+- Ansicht „Start“ (Panel) mit `custom:haus-card` (Datei `www/haus-card.js`, Konfiguration `dashboards/haus-start.yaml`).
+  Inhalt: Wetter mit animiertem Himmel, Personen mit Fotos (grüner Ring = zu Hause), Hinweise (Rauch, offene Fenster, Müll morgen, schwache Batterien),
+  vier große Kacheln Erdgeschoss / Obergeschoss / Garten / Pool, Energie-Leiste mit Hausbatterie.
+- **Ressource:** inline, Resource-ID `0e363120356147f5a4a40e85bcafc8be`.
+- Hausbatterie `sensor.varta_battery_power_signed`: negativ = lädt, positiv = entlädt (aus dem Verlauf geprüft). Abends leer, nachts 0 % ist normal.
+- Geplante Ansichten (Pfade sind in der Startseite schon verlinkt): `erdgeschoss`, `obergeschoss`, `garten`, `pool`, `wetter`, `maehroboter`, `bewaesserung`, plus Räume `wohnzimmer`, `kueche` usw.
+- Danach sollen die Einzel-Dashboards (Wohnzimmer, Küche, Wetterstation, Mähroboter, Hunter-Bewässerung) überflüssig werden – erst löschen, wenn Dennis das will.
+
 ## Die Raum-Karte für weitere Räume
 `raum-card` ist allgemein gebaut. Alle Bereiche sind optional:
 `name`, `floor`, `icon`, `temperature`, `humidity`, `climate`, `lights[]` (`entity`, `name`, `icon`, optional `socket`),
