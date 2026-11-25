@@ -5,7 +5,7 @@
 ## Was in Home Assistant eingerichtet ist
 
 ### Dashboard „Wetterstation“ (`/wetter-station`)
-- **Tab „Wetter“:** eigene Karte `custom:wetterstation-garten-card` (Datei `www/wetterstation-garten-card.js`, v1.2).
+- **Tab „Wetter“:** eigene Karte `custom:wetterstation-garten-card` (Datei `www/wetterstation-garten-card.js`, v1.3; optional `back`, `back_label`, `base_path`, `inset` – genutzt in „Zuhause (neu)“).
   Animierter Himmel, Kompass, Windrose (24 h / 3 / 7 / 10 Tage mit Windstärke-Klassen, Monat / Jahr / Gesamt aus der Langzeitstatistik),
   „Das Jahr in Farben“, Monatsvergleich, Monatsbilanz, Rekorde. Die Sensornamen stehen fest im Code (`DEF` oben in der Datei),
   sie lassen sich über `entities:` in der Karten-Konfiguration überschreiben.
@@ -38,8 +38,8 @@
 - Ziel: EIN Dashboard mit mehreren Ansichten statt vieler einzelner Dashboards. Schritt für Schritt, Dennis will jede Ansicht vorher als Vorschau sehen und gibt dann sein Ok.
 - Steht vorläufig als **„Zuhause (neu)“** in der Seitenleiste (Symbol Haus mit Herz), damit es nicht mit dem alten „Zuhause“ (`/dashboard-g1`) verwechselt wird.
 - Komplette Konfiguration: `dashboards/haus.yaml` (wird aus `haus-start.yaml`, `wohnzimmer.yaml`, `kueche.yaml` erzeugt).
-- Ansichten: `start` (Startseite), Unteransichten `erdgeschoss`, `obergeschoss`, `wohnzimmer`, `kueche`.
-  Fehlen noch: `garten`, `pool`, `wetter`, `maehroboter`, `bewaesserung` und die übrigen Räume. Deren Links sind in `haus-start.yaml` auskommentiert („Ansicht folgt“), damit man ohne Kopfzeile nicht auf einer leeren Seite landet.
+- Ansichten: `start` (Startseite), Unteransichten `wetter`, `erdgeschoss`, `obergeschoss`, `wohnzimmer`, `kueche`.
+  Fehlen noch: `garten`, `pool`, `maehroboter`, `bewaesserung` und die übrigen Räume. Deren Links sind in `haus-start.yaml` auskommentiert („Ansicht folgt“), damit man ohne Kopfzeile nicht auf einer leeren Seite landet.
 - Startseite (`custom:haus-card`, `www/haus-card.js`): Wetter, Personen mit Fotos, Hinweise, 4 Kacheln, Energie-Leiste. Im Querformat bis 860 px Höhe kompakt (4 Kacheln nebeneinander), damit das iPad mini (1133×744) nicht scrollen muss.
 - Etagen-Ansicht: `haus-card` mit `sections: [header, rooms]` und `floor: …`; Kopf mit „‹ Übersicht“, „Alle Lichter aus“ und Lichtschalter auf jeder Raum-Kachel.
 - Raum-Ansichten: `raum-card` mit `back`, `back_label`, `base_path` (Zurück-Knopf, ab raum-card v1.3).

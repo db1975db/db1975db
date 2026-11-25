@@ -53,7 +53,7 @@ weather:
   wind: "sensor.garden_wetterstation_geschwindigkeit"
   rain_day: "sensor.garten_wetterstation_niederschlag_heute"
   humidity: "sensor.garden_wetterstation_luftfeuchtigkeit"
-  # path: "wetter"   # Ansicht folgt
+  path: "wetter"
 persons:
   - entity: "person.smattex"
     name: "Dennis"
