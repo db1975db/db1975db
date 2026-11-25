@@ -27,6 +27,10 @@ eingang:
     name: Außenbeleuchtung
     icon: mdi:outdoor-lamp
     power: sensor.shelly1pmmini_348518df06e4_power
+  locks:
+  - entity: lock.eingang_aqara_smart_lock_u200
+    name: Haustür
+    battery: sensor.eingang_aqara_smart_lock_u200_batterie
   covers:
   - entity: cover.shellyplus2pm_e86beae58e64_rollladen
     name: Eingang

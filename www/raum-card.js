@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.5.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.6.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -60,6 +60,11 @@ const R_CSS = `
 .cv .n{font-weight:650}.cv .s{font-size:12.5px;color:var(--r-fg2);margin-bottom:8px}
 .cv .row{display:flex;gap:6px;margin-top:8px}
 .cv input[type=range]{width:100%;accent-color:var(--r-acc)}
+.locks{display:flex;flex-direction:column;gap:12px}
+.lk{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;align-items:center}
+.lk .lki{width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;color:#fff;background:var(--lk);box-shadow:0 8px 22px color-mix(in srgb,var(--lk) 45%,transparent);cursor:pointer}
+.lk .n{font-weight:650}.lk .v{font-size:22px;font-weight:650;color:var(--lk)}.lk .s{font-size:12.5px;color:var(--r-fg2);display:flex;align-items:center;gap:3px}
+.lk .lkb{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
 .media{display:flex;flex-direction:column;gap:10px}
 .md{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--r-line);border-radius:18px;padding:10px 12px}
 .md .ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--r-line)}
@@ -90,7 +95,7 @@ const R_CSS = `
 class RaumCard extends HTMLElement {
   setConfig(c) {
     if (!c) throw new Error('Konfiguration fehlt');
-    this.c = { lights: [], switches: [], sockets: [], covers: [], media: [], power: [], windows: [], batteries: [], ...c };
+    this.c = { lights: [], switches: [], sockets: [], covers: [], media: [], power: [], windows: [], batteries: [], locks: [], ...c };
   }
   getCardSize() { return 16; }
   getGridOptions() { return { columns: 'full', rows: 'auto' }; }
@@ -100,7 +105,7 @@ class RaumCard extends HTMLElement {
   set hass(h) {
     this._hass = h;
     if (!this.root) this.build();
-    const parts = { hero: this.kHero(), lights: this.kLights(), sockets: this.kSockets(), scenes: this.kScenes(), covers: this.kCovers(), media: this.kMedia(), power: this.kPower(), status: this.kStatus() };
+    const parts = { hero: this.kHero(), locks: this.kLocks(), lights: this.kLights(), sockets: this.kSockets(), scenes: this.kScenes(), covers: this.kCovers(), media: this.kMedia(), power: this.kPower(), status: this.kStatus() };
     for (const [k, v] of Object.entries(parts)) {
       if (this._k[k] === v) continue;
       if (this._busy === k) { this._dirty = true; continue; }
@@ -118,6 +123,7 @@ class RaumCard extends HTMLElement {
       ${c.lights.length || c.switches.length ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:lightbulb-group', 20)}Licht</h2><div id="lact"></div></div><div class="lights" id="lights"></div></div>` : ''}
       ${c.sockets.length ? `<div class="blk full"><div class="bh"><h2>${R_icon(c.sockets_icon || 'mdi:power-socket-de', 20)}${R_esc(c.sockets_title || 'Steckdosen')}</h2></div><div class="lights" id="sockets"></div></div>` : ''}
       ${c.scene_select ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:palette', 20)}Lichtszenen</h2><button class="btn" data-act="scmore" id="scmore"></button></div><div class="scenes" id="scenes"></div></div>` : ''}
+      ${c.locks.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:lock-smart', 20)}Türschloss</h2></div><div class="locks" id="locks"></div></div>` : ''}
       ${c.covers.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:window-shutter', 20)}Rollläden</h2><div style="display:flex;gap:6px"><button class="btn" data-act="covall" data-sv="open_cover">${R_icon('mdi:arrow-up', 16)}Alle auf</button><button class="btn" data-act="covall" data-sv="close_cover">${R_icon('mdi:arrow-down', 16)}Alle zu</button></div></div><div class="covers" id="covers"></div></div>` : ''}
       ${c.media.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:television-play', 20)}Medien</h2></div><div class="media" id="media"></div></div>` : ''}
       ${c.power.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:lightning-bolt', 20)}Strom jetzt</h2><p>Leistung der Messsteckdosen</p></div><div class="pw" id="power"></div></div>` : ''}
@@ -143,6 +149,7 @@ class RaumCard extends HTMLElement {
     else if (a === 'alloff') this.call('homeassistant', 'turn_off', { entity_id: [...this.c.lights.map(x => x.entity), ...this.c.switches.filter(x => !x.keep).map(x => x.entity)] });
     else if (a === 'scene') this.call('select', 'select_option', { entity_id: this.c.scene_select, option: t.dataset.o });
     else if (a === 'scmore') { this._scAll = !this._scAll; this.r_scenes(); }
+    else if (a === 'lock') { const sv = t.dataset.sv; if (sv !== 'lock' && !window.confirm(sv === 'open' ? 'Tür wirklich öffnen?' : 'Tür wirklich aufschließen?')) return; this.call('lock', sv, { entity_id: e }); }
     else if (a === 'cov') this.call('cover', t.dataset.sv, { entity_id: e });
     else if (a === 'covall') this.call('cover', t.dataset.sv, { entity_id: this.c.covers.map(x => x.entity) });
     else if (a === 'temp') { const s = this.s(this.c.climate), st = s.attributes.target_temp_step || 0.5; const v = Math.round(((this._tgt ?? s.attributes.temperature) + st * +t.dataset.d) * 2) / 2; this._tgt = Math.min(s.attributes.max_temp, Math.max(s.attributes.min_temp, v)); this.r_hero(); clearTimeout(this._tt); this._tt = setTimeout(() => { this.call('climate', 'set_temperature', { entity_id: this.c.climate, temperature: this._tgt }); setTimeout(() => { this._tgt = null; }, 4000); }, 900); }
@@ -180,6 +187,7 @@ class RaumCard extends HTMLElement {
     const onL = c.lights.filter(x => (this.s(x.entity) || {}).state === 'on').length;
     if (c.lights.length) ch(onL ? 'mdi:lightbulb-on' : 'mdi:lightbulb-off-outline', onL ? `${onL} von ${c.lights.length} Lichtern an` : 'Licht aus');
     const sc = this.s(c.scene_select); if (sc && onL) ch('mdi:palette', R_esc(sc.state));
+    c.locks.forEach(l => { const s = this.s(l.entity); if (s && ['unlocked', 'open', 'jammed'].includes(s.state)) ch(s.state === 'jammed' ? 'mdi:lock-alert' : 'mdi:lock-open-variant', `${l.name || 'Tür'} ${s.state === 'jammed' ? 'klemmt' : s.state === 'open' ? 'offen' : 'aufgeschlossen'}`, 'warn'); });
     const open = c.windows.filter(w => (this.s(w.entity) || {}).state === 'on'); if (open.length) ch('mdi:window-open-variant', open.map(w => w.name).join(', ') + ' offen', 'warn');
     if (cl && cl.attributes.hvac_action === 'heating') ch('mdi:fire', 'heizt', 'heat');
     c.media.forEach(m => { const s = this.s(m.entity); if (s && ['on', 'playing'].includes(s.state) && m.chip !== false) ch(m.icon || 'mdi:play', `${m.name} ${s.state === 'playing' ? 'spielt' : 'an'}`); });
@@ -254,6 +262,18 @@ class RaumCard extends HTMLElement {
     el.innerHTML = list.map(o => { const h = R_hue(o); return `<button class="sc ${o === s.state ? 'on' : ''}" data-act="scene" data-o="${R_esc(o)}"><i style="background:conic-gradient(from 40deg,hsl(${h} 75% 62%),hsl(${(h + 70) % 360} 80% 60%),hsl(${(h + 150) % 360} 70% 55%),hsl(${h} 75% 62%))"></i>${R_esc(o)}</button>`; }).join('');
   }
   // ---------- Rollläden ----------
+  kLocks() { return this.ks([...this.c.locks.map(x => x.entity), ...this.c.locks.map(x => x.battery)]); }
+  r_locks() {
+    const el = this.$('locks'); if (!el) return;
+    const ST = { locked: ['verriegelt', 'mdi:lock', '#1baf7a'], unlocked: ['entriegelt', 'mdi:lock-open-variant', '#ef8a3c'], open: ['offen', 'mdi:door-open', '#ef8a3c'], opening: ['öffnet …', 'mdi:door-open', '#ef8a3c'], locking: ['verriegelt …', 'mdi:lock-clock', '#3987e5'], unlocking: ['entriegelt …', 'mdi:lock-clock', '#3987e5'], jammed: ['klemmt!', 'mdi:lock-alert', '#e34948'], unavailable: ['nicht erreichbar', 'mdi:lock-off-outline', '#8a94a3'] };
+    el.innerHTML = this.c.locks.map(x => {
+      const s = this.s(x.entity); if (!s) return '';
+      const [txt, ic, col] = ST[s.state] || [s.state, 'mdi:lock-question', '#8a94a3'], b = this.n(x.battery), canOpen = (s.attributes.supported_features || 0) & 1;
+      return `<div class="lk" style="--lk:${col}"><div class="lki" data-act="more" data-e="${x.entity}">${R_icon(ic, 34)}</div>
+        <div class="lkt"><div class="n">${R_esc(x.name || s.attributes.friendly_name)}</div><div class="v">${txt}</div>${b != null ? `<div class="s">${R_icon(b > 20 ? 'mdi:battery' : 'mdi:battery-alert', 14)} ${R_fmt(b, 0)} %</div>` : ''}</div>
+        <div class="lkb"><button class="btn" data-act="lock" data-sv="lock" data-e="${x.entity}">${R_icon('mdi:lock', 16)}Abschließen</button><button class="btn" data-act="lock" data-sv="unlock" data-e="${x.entity}">${R_icon('mdi:lock-open-variant', 16)}Aufschließen</button>${canOpen ? `<button class="btn" data-act="lock" data-sv="open" data-e="${x.entity}">${R_icon('mdi:door-open', 16)}Öffnen</button>` : ''}</div></div>`;
+    }).join('');
+  }
   kCovers() { return this.ks(this.c.covers.map(x => x.entity)); }
   r_covers() {
     const el = this.$('covers'); if (!el) return;
