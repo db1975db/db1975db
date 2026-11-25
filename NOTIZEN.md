@@ -38,11 +38,12 @@
 - Ziel: EIN Dashboard mit mehreren Ansichten statt vieler einzelner Dashboards. Schritt für Schritt, Dennis will jede Ansicht vorher als Vorschau sehen und gibt dann sein Ok.
 - Steht vorläufig als **„Zuhause (neu)“** in der Seitenleiste (Symbol Haus mit Herz), damit es nicht mit dem alten „Zuhause“ (`/dashboard-g1`) verwechselt wird.
 - Komplette Konfiguration: `dashboards/haus.yaml` (wird aus `haus-start.yaml`, `wohnzimmer.yaml`, `kueche.yaml` erzeugt).
-- Ansichten: `start` (Startseite), Unteransichten `erdgeschoss`, `wohnzimmer`, `kueche`.
-  Fehlen noch: `obergeschoss`, `garten`, `pool`, `wetter`, `maehroboter`, `bewaesserung` und die übrigen Räume. Deren Links sind in `haus-start.yaml` auskommentiert („Ansicht folgt“), damit man ohne Kopfzeile nicht auf einer leeren Seite landet.
+- Ansichten: `start` (Startseite), Unteransichten `erdgeschoss`, `obergeschoss`, `wohnzimmer`, `kueche`.
+  Fehlen noch: `garten`, `pool`, `wetter`, `maehroboter`, `bewaesserung` und die übrigen Räume. Deren Links sind in `haus-start.yaml` auskommentiert („Ansicht folgt“), damit man ohne Kopfzeile nicht auf einer leeren Seite landet.
 - Startseite (`custom:haus-card`, `www/haus-card.js`): Wetter, Personen mit Fotos, Hinweise, 4 Kacheln, Energie-Leiste. Im Querformat bis 860 px Höhe kompakt (4 Kacheln nebeneinander), damit das iPad mini (1133×744) nicht scrollen muss.
 - Etagen-Ansicht: `haus-card` mit `sections: [header, rooms]` und `floor: …`; Kopf mit „‹ Übersicht“, „Alle Lichter aus“ und Lichtschalter auf jeder Raum-Kachel.
 - Raum-Ansichten: `raum-card` mit `back`, `back_label`, `base_path` (Zurück-Knopf, ab raum-card v1.3).
+- `inset: ipad` (haus-card ab v0.6, raum-card ab v1.4): Rand für die abgerundeten iPad-Ecken in allen Unteransichten.
 - **kiosk-mode** (v16) im Dashboard: `hide_header: '{{ "iPad" in user_agent }}'` → nur auf dem iPad keine Kopfzeile.
   Auf dem iPad öffnet der kleine ☰-Knopf oben rechts in der Startseite (`menu_button: ipad`) die Seitenleiste. Notausgang: `?disable_km` an die Adresse hängen.
 - iPad mini Küche: browser_mod-Browser „iPad mini“, angemeldet als Dennis (wie das iPhone) – deshalb Unterscheidung über die Browserkennung, nicht über den Benutzer.

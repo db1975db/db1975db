@@ -15,7 +15,7 @@ tiles:
   - name: "Obergeschoss"
     icon: "mdi:home-floor-1"
     floor: "Obergeschoss"
-    # path: "obergeschoss"   # Ansicht folgt
+    path: "obergeschoss"
     background: "linear-gradient(150deg,#3b3f78,#6a63b5)"
   - name: "Garten"
     icon: "mdi:flower"

@@ -26,6 +26,7 @@ views:
     - name: Obergeschoss
       icon: mdi:home-floor-1
       floor: Obergeschoss
+      path: obergeschoss
       background: linear-gradient(150deg,#3b3f78,#6a63b5)
     - name: Garten
       icon: mdi:flower
@@ -302,9 +303,29 @@ views:
     icon: mdi:home-floor-0
     back: start
     base_path: /dashboard-haus
+    inset: ipad
     background: linear-gradient(150deg,#7a4a2e,#c27a45)
     floors: *id001
   back_path: /dashboard-haus/start
+- title: Obergeschoss
+  path: obergeschoss
+  icon: mdi:home-floor-1
+  type: panel
+  subview: true
+  back_path: /dashboard-haus/start
+  cards:
+  - type: custom:haus-card
+    sections:
+    - header
+    - rooms
+    floor: Obergeschoss
+    title: Obergeschoss
+    icon: mdi:home-floor-1
+    back: start
+    base_path: /dashboard-haus
+    inset: ipad
+    background: linear-gradient(150deg,#3b3f78,#6a63b5)
+    floors: *id001
 - title: Wohnzimmer
   path: wohnzimmer
   icon: mdi:sofa
@@ -406,6 +427,7 @@ views:
     back: erdgeschoss
     back_label: Erdgeschoss
     base_path: /dashboard-haus
+    inset: ipad
 - title: Küche
   path: kueche
   icon: mdi:silverware-fork-knife
@@ -476,3 +498,4 @@ views:
     back: erdgeschoss
     back_label: Erdgeschoss
     base_path: /dashboard-haus
+    inset: ipad
