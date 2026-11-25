@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.6.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.7.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -46,6 +46,13 @@ const R_CSS = `
 .lt .ic{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--r-line)}
 .lt.on .ic{background:rgba(255,255,255,.55)}
 .lt .n{font-weight:650;font-size:14.5px}.lt .s{font-size:12.5px;opacity:.75}
+.fx{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:12px}.fx:empty{display:none}
+.fxi{border-radius:22px;overflow:hidden;background:radial-gradient(130% 100% at 50% 0%,#1d2438 0%,#0d111c 70%);color:#fff;display:flex;flex-direction:column;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+.fxs{height:190px;padding:0 10px}.fxs svg{width:100%;height:100%;display:block}
+.fxb{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 14px 14px}
+.fxt{cursor:pointer}.fxt .n{font-weight:650;font-size:15px}.fxt .s{font-size:12.5px;opacity:.7;white-space:nowrap}
+.fxb input[type=range]{width:100%;margin:0;accent-color:#ffd27a;cursor:pointer}.fxi:not(.on) .fxb input[type=range]{accent-color:#6b7385}
+.fxp{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}.fxi.on .fxp{background:#ffd27a;color:#2a1a05;border-color:transparent}
 .lt input[type=range]{width:100%;margin:0;accent-color:#fff;cursor:pointer}
 .lt:not(.on) input[type=range]{accent-color:var(--r-fg2)}
 .scenes{display:flex;flex-wrap:wrap;gap:8px}
@@ -95,7 +102,7 @@ const R_CSS = `
 class RaumCard extends HTMLElement {
   setConfig(c) {
     if (!c) throw new Error('Konfiguration fehlt');
-    this.c = { lights: [], switches: [], sockets: [], covers: [], media: [], power: [], windows: [], batteries: [], locks: [], ...c };
+    this.c = { lights: [], switches: [], sockets: [], covers: [], media: [], power: [], windows: [], batteries: [], locks: [], fixtures: [], ...c };
   }
   getCardSize() { return 16; }
   getGridOptions() { return { columns: 'full', rows: 'auto' }; }
@@ -120,7 +127,7 @@ class RaumCard extends HTMLElement {
     const c = this.c;
     this.root.innerHTML = `<style>${R_CSS}</style><div class="wrap ${c.inset === 'ipad' && /iPad/.test(navigator.userAgent) ? 'pad' : ''}">
       <div class="hero full" id="hero"><div class="glow" id="glow"><i></i><i></i><i></i><i></i><i></i></div><div class="shade"></div><div class="hin" id="hin"></div></div>
-      ${c.lights.length || c.switches.length ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:lightbulb-group', 20)}Licht</h2><div id="lact"></div></div><div class="lights" id="lights"></div></div>` : ''}
+      ${c.lights.length || c.switches.length ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:lightbulb-group', 20)}Licht</h2><div id="lact"></div></div><div class="fx" id="fixtures"></div><div class="lights" id="lights"></div></div>` : ''}
       ${c.sockets.length ? `<div class="blk full"><div class="bh"><h2>${R_icon(c.sockets_icon || 'mdi:power-socket-de', 20)}${R_esc(c.sockets_title || 'Steckdosen')}</h2></div><div class="lights" id="sockets"></div></div>` : ''}
       ${c.scene_select ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:palette', 20)}Lichtszenen</h2><button class="btn" data-act="scmore" id="scmore"></button></div><div class="scenes" id="scenes"></div></div>` : ''}
       ${c.locks.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:lock-smart', 20)}Türschloss</h2></div><div class="locks" id="locks"></div></div>` : ''}
@@ -218,15 +225,17 @@ class RaumCard extends HTMLElement {
       <div class="chips">${chips.join('')}</div></div>${dial}`;
   }
   // ---------- Licht ----------
-  kLights() { return this.ks([...this.c.lights.map(x => x.entity), ...this.c.lights.map(x => x.socket), ...this.c.switches.map(x => x.entity), ...this.c.switches.map(x => x.power)]); }
+  kLights() { return this.ks([...this.c.fixtures.flatMap(f => [f.entity, f.up, f.down, ...(f.bulbs || [])]), ...this.c.lights.map(x => x.entity), ...this.c.lights.map(x => x.socket), ...this.c.switches.map(x => x.entity), ...this.c.switches.map(x => x.power)]); }
   kSockets() { return this.ks([...this.c.sockets.map(x => x.entity), ...this.c.sockets.map(x => x.power)]); }
   r_sockets() { const el = this.$('sockets'); if (!el) return; el.innerHTML = this.c.sockets.map(x => this.swTile(x)).join(''); this.keyNav(el); }
   r_lights() {
     const el = this.$('lights'); if (!el) return;
     const any = [...this.c.lights, ...this.c.switches.filter(x => !x.keep)].some(x => (this.s(x.entity) || {}).state === 'on');
     this.$('lact').innerHTML = any ? `<button class="btn" data-act="alloff">${R_icon('mdi:power', 16)}Alles aus</button>` : '';
+    const fxE = new Set(this.c.fixtures.flatMap(f => [f.entity, f.up, f.down, ...(f.bulbs || [])]).filter(Boolean));
+    const fxEl = this.$('fixtures'); if (fxEl) fxEl.innerHTML = this.c.fixtures.map(f => this.fixture(f)).join('');
     const tiles = this.c.lights.map(x => {
-      const s = this.s(x.entity); if (!s) return '';
+      const s = this.s(x.entity); if (!s || fxE.has(x.entity)) return '';
       const so = x.socket && this.s(x.socket);
       if (so && so.state !== 'on') return `<div class="lt" data-act="toggle" data-e="${x.socket}" role="button" tabindex="0" aria-pressed="false">
         <div class="ic">${R_icon(x.icon || 'mdi:lightbulb-outline', 22)}</div>
@@ -241,6 +250,47 @@ class RaumCard extends HTMLElement {
     });
     el.innerHTML = tiles.join('') + this.c.switches.map(x => this.swTile(x)).join('');
     this.keyNav(el);
+  }
+  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln, je Kugel eine Lampe) und 'bar' (Balken mit Up- und Downlight)
+  fixture(f) {
+    const st = (e) => this.s(e), on = (e) => (st(e) || {}).state === 'on', col = (e) => this.lightColor(st(e)), al = (e) => on(e) ? 0.35 + 0.65 * ((st(e).attributes.brightness || 255) / 255) : 0;
+    const rgba = (c, a) => `rgba(${c.join(',')},${a.toFixed(2)})`;
+    const id = (f.entity || f.up || 'fx').replace(/\W/g, '');
+    let svg = '', ents = [];
+    if (f.type === 'globes') {
+      ents = f.bulbs || [];
+      const P = [[72, 128], [122, 84], [172, 150], [222, 110], [22, 100]];
+      const gl = ents.map((e, i) => {
+        const [x, y] = P[i % P.length], c = col(e), a = al(e), g = `${id}g${i}`;
+        return `<g data-act="toggle" data-e="${e}" style="cursor:pointer">
+          <line x1="${x}" y1="0" x2="${x}" y2="${y - 30}" stroke="#05070c" stroke-width="2.5"/><rect x="${x - 6}" y="${y - 34}" width="12" height="7" rx="2" fill="#2a1d16"/>
+          ${c ? `<circle cx="${x}" cy="${y}" r="62" fill="url(#${g}h)" opacity="${a.toFixed(2)}"/>` : ''}
+          <defs><radialGradient id="${g}h"><stop offset="0" stop-color="${c ? rgba(c, .75) : '#000'}"/><stop offset="1" stop-color="${c ? rgba(c, 0) : '#000'}"/></radialGradient>
+          <radialGradient id="${g}f" cx=".5" cy=".62" r=".6"><stop offset="0" stop-color="${c ? '#fff' : '#3a4152'}"/><stop offset=".28" stop-color="${c ? rgba(c, 1) : '#262c3a'}"/><stop offset="1" stop-color="${c ? rgba(c.map(v => v * .55), .85) : '#161b26'}"/></radialGradient></defs>
+          <circle cx="${x}" cy="${y}" r="28" fill="url(#${g}f)" stroke="${c ? rgba(c, .9) : 'rgba(255,255,255,.18)'}" stroke-width="1.5"/>
+          <ellipse cx="${x - 9}" cy="${y - 11}" rx="8" ry="5" fill="#fff" opacity=".22" transform="rotate(-30 ${x - 9} ${y - 11})"/></g>`;
+      }).join('');
+      svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet">${gl}</svg>`;
+    } else if (f.type === 'bar') {
+      ents = [f.up, f.down].filter(Boolean);
+      const cu = col(f.up), cd = col(f.down), au = al(f.up), ad = al(f.down);
+      svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet"><defs>
+        <linearGradient id="${id}u" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${cu ? rgba(cu, .85) : '#000'}"/><stop offset="1" stop-color="${cu ? rgba(cu, 0) : '#000'}"/></linearGradient>
+        <linearGradient id="${id}d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${cd ? rgba(cd, .9) : '#000'}"/><stop offset="1" stop-color="${cd ? rgba(cd, 0) : '#000'}"/></linearGradient></defs>
+        <g data-act="toggle" data-e="${f.up}" style="cursor:pointer"><rect x="0" y="0" width="244" height="104" fill="transparent"/>${cu ? `<path d="M14,104 L230,104 L244,0 L0,0 Z" fill="url(#${id}u)" opacity="${au.toFixed(2)}"/>` : ''}</g>
+        <g data-act="toggle" data-e="${f.down}" style="cursor:pointer"><rect x="0" y="126" width="244" height="74" fill="transparent"/>${cd ? `<path d="M26,126 L218,126 L244,200 L0,200 Z" fill="url(#${id}d)" opacity="${ad.toFixed(2)}"/>` : ''}</g>
+        <line x1="70" y1="0" x2="70" y2="104" stroke="${cu ? rgba(cu, .9) : '#0a0d14'}" stroke-width="1.5"/><line x1="174" y1="0" x2="174" y2="104" stroke="${cu ? rgba(cu, .9) : '#0a0d14'}" stroke-width="1.5"/>
+        <rect x="16" y="104" width="212" height="22" rx="11" fill="#0b0e16" stroke="rgba(255,255,255,.12)"/>
+        <rect x="24" y="103" width="196" height="3" rx="1.5" fill="${cu ? rgba(cu, 1) : '#2a3040'}"/>
+        <rect x="24" y="124" width="196" height="3" rx="1.5" fill="${cd ? rgba(cd, 1) : '#2a3040'}"/></svg>`;
+    } else return '';
+    const g = f.entity && st(f.entity), nOn = ents.filter(on).length, gOn = g ? g.state === 'on' : nOn > 0;
+    const pct = g && gOn && g.attributes.brightness ? Math.round(g.attributes.brightness / 2.55) : 0;
+    const sub = f.type === 'bar' ? [on(f.up) && 'oben', on(f.down) && 'unten'].filter(Boolean).join(' + ') || 'aus' : nOn ? `${nOn} von ${ents.length} an` : 'aus';
+    return `<div class="fxi ${gOn ? 'on' : ''}"><div class="fxs">${svg}</div>
+      <div class="fxb"><div class="fxt" data-act="toggle" data-e="${f.entity || ents[0]}" role="button" tabindex="0"><div class="n">${R_esc(f.name || '')}</div><div class="s" id="lv-${id}">${sub}${pct ? ` · ${pct} %` : ''}</div></div>
+      ${g ? `<input type="range" min="1" max="100" value="${pct || 1}" data-act="bri" data-e="${f.entity}" data-busy="lights" aria-label="Helligkeit ${R_esc(f.name || '')}">` : ''}
+      <button class="fxp" data-act="toggle" data-e="${f.entity || ents[0]}" aria-label="${R_esc(f.name || '')} schalten">${R_icon('mdi:power', 20)}</button></div></div>`;
   }
   keyNav(el) { el.querySelectorAll('.lt[role=button]').forEach(n => n.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); n.click(); } })); }
   swTile(x) {

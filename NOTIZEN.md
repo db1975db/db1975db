@@ -19,7 +19,7 @@
 - Hintergrund: Die Recorder-Datenbank ist bei 10 Tagen Speicherdauer schon etwa 3,7 GB groß. Deshalb wurde die Speicherdauer bewusst **nicht** erhöht.
 
 ### Dashboard „Wohnzimmer“ (`/dashboard-wohnzimmer`)
-- Eine Panel-Ansicht mit eigener Karte `custom:raum-card` (Datei `www/raum-card.js`, v1.6; neu: `locks[]` mit `entity`, `name`, `battery` – Abschließen/Aufschließen/Öffnen, Aufschließen und Öffnen mit Rückfrage). Der frühere Tab „Klassisch“ wurde auf Wunsch entfernt.
+- Eine Panel-Ansicht mit eigener Karte `custom:raum-card` (Datei `www/raum-card.js`, v1.7; neu: `fixtures[]`, `locks[]` mit `entity`, `name`, `battery` – Abschließen/Aufschließen/Öffnen, Aufschließen und Öffnen mit Rückfrage). Der frühere Tab „Klassisch“ wurde auf Wunsch entfernt.
 - Konfiguration: `dashboards/wohnzimmer.yaml`.
 - Bereiche: Lichtstimmung mit Thermostat-Regler, Licht, Steckdosen, Lichtszenen (Hue-Szenen über `select.wohnzimmer_wohnzimmer_scenen_szene`), Rollläden, Medien, Strom, Raumklima über 24 h, Status.
 - Laterne = Gruppe `light.laterne` (ShellyVintage 1–3). Diese Lampen hängen an der Steckdose `switch.shellyplusplugs_e465b893b740`. Ist die Steckdose aus, schaltet ein Tipp auf die Kachel die Steckdose ein.
@@ -57,10 +57,11 @@
 ## Die Raum-Karte für weitere Räume
 `raum-card` ist allgemein gebaut. Alle Bereiche sind optional:
 `name`, `floor`, `icon`, `temperature`, `humidity`, `climate`, `lights[]` (`entity`, `name`, `icon`, optional `socket`),
-`switches[]`, `locks[]`, `sockets[]` (`entity`, `name`, `icon`, `power`; Überschrift über `sockets_title`/`sockets_icon`, ab v1.2), `scene_select`, `scene_favorites[]`, `covers[]`,
+`switches[]`, `locks[]`, `fixtures[]` (ab v1.7: Leuchten als Bild – `type: globes` mit `entity` + `bulbs[]`, `type: bar` mit `entity`, `up`, `down`; diese Lampen fallen aus den Licht-Kacheln heraus), `sockets[]` (`entity`, `name`, `icon`, `power`; Überschrift über `sockets_title`/`sockets_icon`, ab v1.2), `scene_select`, `scene_favorites[]`, `covers[]`,
 `media[]` (`entity`, `name`, `icon`, `sources`, `play`, `power`, `chip`), `power[]`, `windows[]`, `batteries[]`.
 
 ## Offene Punkte
+- Esstisch (Hue Ensis): laut Gerätemodell ist `light.tisch` das Uplight und `light.tisch_2` das Downlight – die Namen in HA sagen das Gegenteil. In der Karte gilt vorerst `up: light.tisch_2`; mit Dennis prüfen.
 - Räume sind ein Erstentwurf – mit Dennis durchgehen, was raus/rein soll (Batterien stehen je Raum unter „Status“).
 - Pool: Wärmepumpe `climate.pool_warmepumpe`, Pumpe/Elektrolyse und Poollicht sind derzeit nicht erreichbar (Winter?). Das alte Pool-Dashboard nutzt teils Entitäten, die es nicht mehr gibt.
 - Flur oben hat keinen Temperatursensor (große Temperatur zeigt „–“).

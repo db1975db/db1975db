@@ -21,6 +21,20 @@ lights:
     name: "Laterne"
     icon: "mdi:coach-lamp"
     socket: "switch.shellyplusplugs_e465b893b740"
+# Leuchten als Bild (raum-card v1.7): Glaskugel-Pendel am Sofa, Hue Ensis am Esstisch
+fixtures:
+- type: globes
+  name: Sofa
+  entity: light.sofa
+  bulbs:
+  - light.hue_color_lamp_1
+  - light.hue_color_lamp_2
+  - light.hue_color_lamp_3
+- type: bar
+  name: Esstisch
+  entity: light.esstisch_lampen
+  up: light.tisch_2
+  down: light.tisch
 scene_select: "select.wohnzimmer_wohnzimmer_scenen_szene"
 scene_favorites:
   - "Entspannen"
