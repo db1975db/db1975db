@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.7.2)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.8.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -52,6 +52,11 @@ const R_CSS = `
 .fxb{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 14px 14px}
 .fxt{cursor:pointer}.fxt .n{font-weight:650;font-size:15px}.fxt .s{font-size:12.5px;opacity:.7;white-space:nowrap}
 .fxb input[type=range]{width:100%;margin:0;accent-color:#ffd27a;cursor:pointer}.fxi:not(.on) .fxb input[type=range]{accent-color:#6b7385}
+.sw{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:0 14px 14px}
+.swb{width:25px;height:25px;border-radius:50%;border:2px solid rgba(255,255,255,.25);cursor:pointer;padding:0;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.swb.on{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.swd{width:1px;height:20px;background:rgba(255,255,255,.18);margin:0 2px}
+.fxs{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
 .fxp{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}.fxi.on .fxp{background:#ffd27a;color:#2a1a05;border-color:transparent}
 .lt input[type=range]{width:100%;margin:0;accent-color:#fff;cursor:pointer}
 .lt:not(.on) input[type=range]{accent-color:var(--r-fg2)}
@@ -141,6 +146,16 @@ class RaumCard extends HTMLElement {
     const R = this.root;
     R.addEventListener('click', (ev) => this.onClick(ev));
     R.addEventListener('pointerdown', (ev) => { const t = ev.target.closest('[data-busy]'); if (t) this._busy = t.dataset.busy; });
+    // Langes Drücken auf eine Kugel, einen Spot oder eine Pendelleuchte öffnet den Farbdialog genau dieser Lampe
+    const lpEnd = () => { clearTimeout(this._lpT); this._lpT = null; };
+    R.addEventListener('pointerdown', (ev) => {
+      const g = ev.target.closest('.fxs [data-act=toggle]'); if (!g) return;
+      const x0 = ev.clientX, y0 = ev.clientY; this._lpXY = [x0, y0]; lpEnd();
+      this._lpT = setTimeout(() => { this._lpT = null; this._lp = Date.now(); if (navigator.vibrate) navigator.vibrate(15); this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: g.dataset.e } })); }, 550);
+    });
+    R.addEventListener('pointermove', (ev) => { if (this._lpT && this._lpXY && Math.hypot(ev.clientX - this._lpXY[0], ev.clientY - this._lpXY[1]) > 10) lpEnd(); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => R.addEventListener(n, lpEnd));
+    R.addEventListener('contextmenu', (ev) => { if (ev.target.closest('.fxs')) ev.preventDefault(); });
     R.addEventListener('input', (ev) => { const t = ev.target; if (t.dataset.live) { const o = R.getElementById(t.dataset.live); if (o) o.textContent = t.value + (t.dataset.unit || ''); } });
     R.addEventListener('change', (ev) => this.onChange(ev));
     const ro = new ResizeObserver(() => { const el = this.$('spark'); if (el && this._hist && Math.abs(el.clientWidth - (this._sw || 0)) > 8) this.r_hist(); });
@@ -152,7 +167,9 @@ class RaumCard extends HTMLElement {
     if (ev.target.closest('input,select')) return;
     const a = t.dataset.act, e = t.dataset.e;
     if (a === 'back') { const p = this.c.back.startsWith('/') ? this.c.back : `${this.c.base_path || ''}/${this.c.back}`; history.pushState(null, '', p); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); return; }
+    if (this._lp && Date.now() - this._lp < 800) { this._lp = 0; return; }
     if (a === 'toggle') this.call(e.split('.')[0], 'toggle', { entity_id: e });
+    else if (a === 'color') this.call('light', 'turn_on', t.dataset.k ? { entity_id: e, color_temp_kelvin: +t.dataset.k } : { entity_id: e, rgb_color: t.dataset.rgb.split(',').map(Number) });
     else if (a === 'alloff') this.call('homeassistant', 'turn_off', { entity_id: [...this.c.lights.map(x => x.entity), ...this.c.switches.filter(x => !x.keep).map(x => x.entity)] });
     else if (a === 'scene') this.call('select', 'select_option', { entity_id: this.c.scene_select, option: t.dataset.o });
     else if (a === 'scmore') { this._scAll = !this._scAll; this.r_scenes(); }
@@ -315,7 +332,18 @@ class RaumCard extends HTMLElement {
     return `<div class="fxi ${gOn ? 'on' : ''}"><div class="fxs">${svg}</div>
       <div class="fxb"><div class="fxt" data-act="toggle" data-e="${f.entity || ents[0]}" role="button" tabindex="0"><div class="n">${R_esc(f.name || '')}</div><div class="s" id="lv-${id}">${sub}${pct ? ` · ${pct} %` : ''}</div></div>
       ${g ? `<input type="range" min="1" max="100" value="${pct || 1}" data-act="bri" data-e="${f.entity}" data-busy="lights" aria-label="Helligkeit ${R_esc(f.name || '')}">` : ''}
-      <button class="fxp" data-act="toggle" data-e="${f.entity || ents[0]}" aria-label="${R_esc(f.name || '')} schalten">${R_icon('mdi:power', 20)}</button></div></div>`;
+      <button class="fxp" data-act="toggle" data-e="${f.entity || ents[0]}" aria-label="${R_esc(f.name || '')} schalten">${R_icon('mdi:power', 20)}</button></div>${this.swatches(f.entity, g)}</div>`;
+  }
+  // Farbtupfer für eine Lampengruppe: Weißtöne (Farbtemperatur) und Farben, je nachdem was die Lampe kann
+  swatches(e, s) {
+    if (!e || !s) return '';
+    const m = s.attributes.supported_color_modes || [], ct = m.includes('color_temp'), col = m.some(x => ['hs', 'xy', 'rgb', 'rgbw', 'rgbww'].includes(x));
+    if (!ct && !col) return '';
+    const cur = s.state === 'on' ? (s.attributes.color_mode === 'color_temp' ? 'k' + Math.round((s.attributes.color_temp_kelvin || 0) / 100) : (s.attributes.rgb_color || []).join(',')) : '';
+    const W = ct ? [[2700, '#ffc98a', 'Warmweiß'], [4000, '#fff1dc', 'Neutralweiß'], [6000, '#e6efff', 'Tageslicht']] : [];
+    const C = col ? [[[255, 120, 40], 'Orange'], [[255, 40, 40], 'Rot'], [[255, 60, 160], 'Pink'], [[150, 70, 255], 'Lila'], [[40, 90, 255], 'Blau'], [[40, 220, 90], 'Grün']] : [];
+    const near = (k) => cur === 'k' + Math.round(k / 100);
+    return `<div class="sw">${W.map(([k, c, n]) => `<button class="swb ${near(k) ? 'on' : ''}" style="background:${c}" data-act="color" data-e="${e}" data-k="${k}" title="${n}" aria-label="${n}"></button>`).join('')}${W.length && C.length ? '<i class="swd"></i>' : ''}${C.map(([c, n]) => `<button class="swb" style="background:rgb(${c.join(',')})" data-act="color" data-e="${e}" data-rgb="${c.join(',')}" title="${n}" aria-label="${n}"></button>`).join('')}</div>`;
   }
   keyNav(el) { el.querySelectorAll('.lt[role=button]').forEach(n => n.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); n.click(); } })); }
   swTile(x) {
