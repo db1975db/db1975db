@@ -1,4 +1,4 @@
-// Haus-Karte – Startseite im Stil der Wetterstation (v0.2.0, Entwurf)
+// Haus-Karte – Startseite im Stil der Wetterstation (v0.3.0, Entwurf)
 const H_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const H_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const H_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -122,9 +122,28 @@ const H_CSS = `
 .eb .v{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums}.eb .v small{font-size:12px;font-weight:500;color:var(--h-fg2);margin-left:2px}
 .eb .x{font-size:11.5px;color:var(--h-fg2)}
 .eb .mb{height:5px;border-radius:3px;background:var(--h-line);overflow:hidden;margin-top:3px}.eb .mb i{display:block;height:100%;background:var(--h-ok)}
+.fh{position:relative;border-radius:28px;overflow:hidden;color:#fff;padding:18px 22px 20px;box-shadow:0 14px 32px rgba(0,0,0,.18)}
+.fh .gl{position:absolute;inset:-25%;filter:blur(40px);opacity:.8;pointer-events:none}
+.fh>*:not(.bgx):not(.gl){position:relative}
+.fh .bgx{position:absolute;inset:0}
+.fh .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.fh .back{font:inherit;display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:6px 14px 6px 8px;font-size:14px;font-weight:600;cursor:pointer;backdrop-filter:blur(6px)}
+.fh .ttl{font-size:clamp(26px,4.5vw,36px);font-weight:650;letter-spacing:-.02em;flex:1;display:flex;align-items:center;gap:10px}
+.fh .t{font-size:clamp(40px,7vw,58px);font-weight:200;letter-spacing:-.03em;line-height:1;margin-top:12px}.fh .t small{font-size:.32em;font-weight:400;opacity:.85;margin-left:4px;vertical-align:1em}
+.fh .t span{font-size:14px;font-weight:500;opacity:.85;letter-spacing:0;margin-left:10px}
+.fh .ln{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.fh .ch{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:600;backdrop-filter:blur(6px)}
+.fh .ch.bad{background:rgba(227,73,72,.75);border-color:transparent}.fh .ch.heat{background:rgba(239,138,60,.7);border-color:transparent}
+.fh .off{font:inherit;margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:999px;padding:7px 14px;font-size:13.5px;font-weight:600;cursor:pointer}
+.rm .lb{font:inherit;position:absolute;right:12px;bottom:12px;width:40px;height:40px;border-radius:14px;border:1px solid var(--h-line);background:var(--h-surface);color:var(--h-fg2);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.rm.lit .lb{background:rgba(255,255,255,.75);color:#7a4a10;border-color:transparent;box-shadow:0 4px 14px rgba(246,169,74,.45)}
+.big-rooms .rooms{grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
+.big-rooms .rm{min-height:150px;padding:16px}
+.big-rooms .rm .t{font-size:30px}
+.big-rooms .rm.hasl>div:last-child{padding-right:50px}
 @media (max-width:900px){.half{grid-column:1/-1}}
 @media (min-width:901px){.orb{right:auto !important;left:48% !important}}
-@media (max-width:640px){.ppl{padding:12px}.ppl .row{gap:10px}.pp{width:auto;flex:1}.pp .av{width:60px;height:60px}.tiles{grid-template-columns:1fr}.tl{min-height:190px}.ebar{grid-template-columns:repeat(2,minmax(0,1fr))}.eb:nth-child(3){border-left:none}.eb:nth-child(n+3){border-top:1px solid var(--h-line)}.orb{right:5% !important;top:4% !important;transform:scale(.5);transform-origin:top right;opacity:.85}.hin{grid-template-columns:1fr;padding:20px 18px}.ppl{flex-direction:row;flex-wrap:wrap;align-items:flex-start}.blk{padding:16px 14px}.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}.en{grid-template-columns:repeat(2,minmax(0,1fr))}.en .ev:last-child{grid-column:1/-1}.rm{min-height:118px}}
+@media (max-width:640px){.big-rooms .rooms{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.big-rooms .rm{min-height:132px;padding:13px}.big-rooms .rm .t{font-size:24px}.rm .lb{width:36px;height:36px;right:10px;bottom:10px}.big-rooms .rm.hasl>div:last-child{padding-right:40px}.fh{padding:16px}.fh .off{margin-left:0}.ppl{padding:12px}.ppl .row{gap:10px}.pp{width:auto;flex:1}.pp .av{width:60px;height:60px}.tiles{grid-template-columns:1fr}.tl{min-height:190px}.ebar{grid-template-columns:repeat(2,minmax(0,1fr))}.eb:nth-child(3){border-left:none}.eb:nth-child(n+3){border-top:1px solid var(--h-line)}.orb{right:5% !important;top:4% !important;transform:scale(.5);transform-origin:top right;opacity:.85}.hin{grid-template-columns:1fr;padding:20px 18px}.ppl{flex-direction:row;flex-wrap:wrap;align-items:flex-start}.blk{padding:16px 14px}.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}.en{grid-template-columns:repeat(2,minmax(0,1fr))}.en .ev:last-child{grid-column:1/-1}.rm{min-height:118px}}
 `;
 
 class HausCard extends HTMLElement {
@@ -132,6 +151,7 @@ class HausCard extends HTMLElement {
     if (!c) throw new Error('Konfiguration fehlt');
     this.c = { persons: [], floors: [], garden: [], waste: [], battery_exclude: [], battery_names: {}, tiles: [], ...c };
     this.sec = new Set(this.c.sections || ['hero', 'hints', 'rooms', 'energy', 'garden']);
+    this.flo = this.c.floor ? this.c.floors.filter(f => f.name === this.c.floor) : this.c.floors;
   }
   getCardSize() { return 20; }
   getGridOptions() { return { columns: 'full', rows: 'auto' }; }
@@ -140,8 +160,8 @@ class HausCard extends HTMLElement {
   set hass(h) {
     this._hass = h;
     if (!this.root) this.build();
-    const parts = { hero: this.kHero(), hints: this.kHints(), rooms: this.kRooms(), energy: this.kEnergy(), garden: this.kGarden(), tiles: this.kTiles(), ebar: this.kEnergy() };
-    for (const [k, v] of Object.entries(parts)) { if (!this.sec.has(k) || this._k[k] === v) continue; this._k[k] = v; this['r_' + k](); }
+    const parts = { hero: this.kHero(), hints: this.kHints(), rooms: this.kRooms(), energy: this.kEnergy(), garden: this.kGarden(), tiles: this.kTiles(), ebar: this.kEnergy(), fh: this.kRooms() };
+    for (const [k, v] of Object.entries(parts)) { if (!this.sec.has(k === 'fh' ? 'header' : k) || this._k[k] === v) continue; this._k[k] = v; this['r_' + k](); }
   }
   ks(list) { return list.filter(Boolean).map(e => { const s = this.s(e); return s ? s.state + JSON.stringify(s.attributes) : '-'; }).join('|'); }
   build() {
@@ -150,15 +170,17 @@ class HausCard extends HTMLElement {
     const c = this.c, S = this.sec;
     this.root.innerHTML = `<style>${H_CSS}</style><div class="wrap">
       ${S.has('hero') ? `<div class="hero full" id="hero" role="link" tabindex="0" ${c.weather && c.weather.path ? `data-nav="${H_esc(c.weather.path)}"` : ''}><div class="sky" id="sky"></div><div class="shade"></div><div class="hin" id="hin"></div></div>` : ''}
+      ${S.has('header') ? `<div class="full fh" id="fh"></div>` : ''}
       ${S.has('hints') ? `<div class="full hints" id="hints"></div>` : ''}
       ${S.has('tiles') ? `<div class="full tiles" id="tiles"></div>` : ''}
       ${S.has('ebar') && c.energy ? `<div class="full ebar" id="ebar"></div>` : ''}
-      ${S.has('rooms') && c.floors.length ? `<div class="blk full"><div class="bh"><h2>${H_icon('mdi:home-floor-g', 20)}Räume</h2><p id="rsum"></p></div><div id="rooms"></div></div>` : ''}
+      ${S.has('rooms') && c.floors.length ? `<div class="blk full ${c.floor ? 'big-rooms' : ''}">${c.floor ? '' : `<div class="bh"><h2>${H_icon('mdi:home-floor-g', 20)}Räume</h2><p id="rsum"></p></div>`}<div id="rooms"></div></div>` : ''}
       ${S.has('energy') && c.energy ? `<div class="blk half"><div class="bh"><h2>${H_icon('mdi:solar-power-variant', 20)}Energie jetzt</h2><p id="esum"></p></div><div id="energy"></div></div>` : ''}
       ${S.has('garden') && c.garden.length ? `<div class="blk half"><div class="bh"><h2>${H_icon('mdi:flower', 20)}Garten</h2></div><div class="gd" id="garden"></div></div>` : ''}
     </div>`;
     this.$ = (id) => this.root.getElementById(id);
     this.root.addEventListener('click', (ev) => {
+      const a = ev.target.closest('[data-act]'); if (a) { ev.stopPropagation(); return this.act(a); }
       const m = ev.target.closest('[data-more]'); if (m) { ev.stopPropagation(); return this.more(m.dataset.more); }
       const t = ev.target.closest('[data-nav]'); if (t) this.nav(t.dataset.nav);
     });
@@ -171,6 +193,12 @@ class HausCard extends HTMLElement {
     const path = p.startsWith('/') ? p : `${base}/${p}`;
     history.pushState(null, '', path);
     window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } }));
+  }
+  act(el) {
+    const ids = (el.dataset.e || '').split(',').filter(Boolean); if (!ids.length) return;
+    const on = ids.filter(e => (this.s(e) || {}).state === 'on');
+    if (el.dataset.act === 'off' || on.length) this._hass.callService('homeassistant', 'turn_off', { entity_id: on.length ? on : ids });
+    else this._hass.callService('homeassistant', 'turn_on', { entity_id: ids });
   }
   more(e) { this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: e } })); }
   // ---------- Hero / Himmel ----------
@@ -263,7 +291,7 @@ class HausCard extends HTMLElement {
     this.$('hints').innerHTML = out.join('');
   }
   // ---------- Räume ----------
-  kRooms() { return this.ks(this.c.floors.flatMap(f => f.rooms.flatMap(r => [r.temperature, r.humidity, r.climate, ...(r.lights || []), ...(r.windows || []).map(w => w.entity || w)]))); }
+  kRooms() { return this.ks(this.flo.flatMap(f => f.rooms.flatMap(r => [r.temperature, r.humidity, r.climate, ...(r.lights || []), ...(r.windows || []).map(w => w.entity || w)]))); }
   lightRgb(s) {
     const a = s.attributes; if (a.rgb_color) return a.rgb_color;
     if (a.color_temp_kelvin) { const k = a.color_temp_kelvin; return k < 3000 ? [255, 180, 107] : k < 4500 ? [255, 214, 170] : [235, 240, 255]; }
@@ -272,7 +300,7 @@ class HausCard extends HTMLElement {
   r_rooms() {
     const el = this.$('rooms'); if (!el) return;
     let totOn = 0;
-    el.innerHTML = this.c.floors.map(f => `<div class="floor"><h3>${H_esc(f.name)}</h3><div class="rooms">${f.rooms.map(r => {
+    el.innerHTML = this.flo.map(f => `<div class="floor">${this.c.floor ? '' : `<h3>${H_esc(f.name)}</h3>`}<div class="rooms">${f.rooms.map(r => {
       const lights = (r.lights || []).map(e => this.s(e)).filter(Boolean), on = lights.filter(s => s.state === 'on');
       totOn += on.length;
       const t = this.n(r.temperature), hum = this.n(r.humidity), cl = this.s(r.climate);
@@ -284,13 +312,34 @@ class HausCard extends HTMLElement {
         gl = `<div class="gl" style="background:${cols.map((c, i) => `radial-gradient(circle at ${pos[i]},rgba(${c.join(',')},.75),rgba(${c.join(',')},0) 55%)`).join(',')}"></div>`;
       }
       const link = !!r.path;
-      return `<div class="rm ${on.length ? 'lit' : ''} ${link ? '' : 'nolink'}" ${link ? `data-nav="${H_esc(r.path)}" role="link" tabindex="0"` : ''} aria-label="${H_esc(r.name)}">${gl}
+      return `<div class="rm ${on.length ? 'lit' : ''} ${link ? '' : 'nolink'} ${lights.length && this.c.floor ? 'hasl' : ''}" ${link ? `data-nav="${H_esc(r.path)}" role="link" tabindex="0"` : ''} aria-label="${H_esc(r.name)}">${gl}
         <div class="top"><div class="ic">${H_icon(r.icon || 'mdi:door', 20)}</div>${t != null ? `<div class="t">${H_fmt(t)}<small>°</small></div>` : ''}</div>
+        ${lights.length && this.c.floor ? `<button class="lb" data-act="toggle" data-e="${(r.lights || []).join(',')}" aria-label="Licht ${H_esc(r.name)} ${on.length ? 'aus' : 'an'}">${H_icon(on.length ? 'mdi:lightbulb-on' : 'mdi:lightbulb-outline', 22)}</button>` : ''}
         <div><div class="n">${H_esc(r.name)}${link ? `<span class="go">${H_icon('mdi:chevron-right', 16)}</span>` : ''}</div>
         <div class="s">${lights.length ? `<span>${H_icon(on.length ? 'mdi:lightbulb-on' : 'mdi:lightbulb-outline', 14)}${on.length ? `${on.length} an` : 'aus'}</span>` : ''}${hum != null ? `<span>${H_icon('mdi:water-percent', 14)}${H_fmt(hum, 0)} %</span>` : ''}</div>
         ${open.length || heat ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${open.length ? `<span class="badge bad">${H_icon('mdi:window-open-variant', 13)}offen</span>` : ''}${heat ? `<span class="badge heat">${H_icon('mdi:fire', 13)}heizt</span>` : ''}</div>` : ''}</div></div>`;
     }).join('')}</div></div>`).join('');
-    this.$('rsum').textContent = totOn ? `${totOn} ${totOn === 1 ? 'Licht' : 'Lichter'} an` : 'Alle Lichter aus';
+    if (this.$('rsum')) this.$('rsum').textContent = totOn ? `${totOn} ${totOn === 1 ? 'Licht' : 'Lichter'} an` : 'Alle Lichter aus';
+  }
+  // ---------- Etagen-Kopf ----------
+  r_fh() {
+    const el = this.$('fh'); if (!el) return;
+    const c = this.c, rooms = this.flo.flatMap(f => f.rooms);
+    const temps = rooms.map(r => this.n(r.temperature)).filter(v => v != null), tt = temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : null;
+    const hums = rooms.map(r => this.n(r.humidity)).filter(v => v != null), hh = hums.length ? hums.reduce((a, b) => a + b, 0) / hums.length : null;
+    const allL = rooms.flatMap(r => r.lights || []), onL = allL.map(e => this.s(e)).filter(s => s && s.state === 'on');
+    const heat = rooms.filter(r => { const x = this.s(r.climate); return x && x.attributes.hvac_action === 'heating'; }).length;
+    const open = rooms.filter(r => (r.windows || []).some(w => (this.s(w.entity || w) || {}).state === 'on')).map(r => r.name);
+    const chips = [], H = (k, i, x) => chips.push(`<span class="ch ${k}">${H_icon(i, 15)}${x}</span>`);
+    H('', onL.length ? 'mdi:lightbulb-on' : 'mdi:lightbulb-off-outline', onL.length ? `${onL.length} ${onL.length === 1 ? 'Licht' : 'Lichter'} an` : 'Alle Lichter aus');
+    if (heat) H('heat', 'mdi:fire', `${heat} ${heat === 1 ? 'Raum heizt' : 'Räume heizen'}`);
+    if (open.length) H('bad', 'mdi:window-open-variant', `offen: ${open.map(H_esc).join(', ')}`);
+    else if (rooms.some(r => (r.windows || []).length)) H('', 'mdi:window-closed-variant', 'Alle Fenster zu');
+    const lit = onL.slice(0, 4).map(s => this.lightRgb(s)), pos = ['15% 20%', '85% 25%', '30% 90%', '80% 85%'];
+    el.innerHTML = `<div class="bgx" style="background:${c.background || 'linear-gradient(150deg,#2b3a67,#4a5d8f)'}"></div>${lit.length ? `<div class="gl" style="background:${lit.map((x, i) => `radial-gradient(circle at ${pos[i]},rgba(${x.join(',')},.65),rgba(${x.join(',')},0) 50%)`).join(',')}"></div>` : ''}
+      <div class="top">${c.back ? `<button class="back" data-nav="${H_esc(c.back)}">${H_icon('mdi:chevron-left', 20)}Übersicht</button>` : ''}<div class="ttl">${H_icon(c.icon || 'mdi:home', 30)}${H_esc(c.title || c.floor || '')}</div></div>
+      <div class="t">${H_fmt(tt)}<small>°C</small><span>Ø ${rooms.length} Räume${hh != null ? ` · ${H_fmt(hh, 0)} % Feuchte` : ''}</span></div>
+      <div class="ln">${chips.join('')}${onL.length ? `<button class="off" data-act="off" data-e="${allL.join(',')}">${H_icon('mdi:power', 16)}Alle Lichter aus</button>` : ''}</div>`;
   }
   // ---------- Energie ----------
   kEnergy() { const e = this.c.energy || {}; return this.ks([e.pv, e.home, e.grid_import, e.grid_export, e.battery_soc, e.battery_power, e.pv_today]); }
