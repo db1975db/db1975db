@@ -17,6 +17,8 @@ views:
     - tiles
     - flow
     tile_rooms: false
+    hint_batteries: false
+    hints_ok: false
     menu_button: ipad
     tiles:
     - name: Erdgeschoss

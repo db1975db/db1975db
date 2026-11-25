@@ -40,7 +40,7 @@
 - Komplette Konfiguration: `dashboards/haus.yaml` (wird aus `haus-start.yaml`, `wohnzimmer.yaml`, `kueche.yaml` erzeugt).
 - Ansichten: `start` (Startseite), Unteransichten `wetter`, `erdgeschoss`, `obergeschoss`, `wohnzimmer`, `kueche`.
   Fehlen noch: `garten`, `pool`, `maehroboter`, `bewaesserung` und die übrigen Räume. Deren Links sind in `haus-start.yaml` auskommentiert („Ansicht folgt“), damit man ohne Kopfzeile nicht auf einer leeren Seite landet.
-- Startseite (`custom:haus-card`, `www/haus-card.js`, v0.7): Wetter, Personen mit Fotos, Hinweise, 4 Kacheln ohne Raumliste (`tile_rooms: false`), Energiefluss (`sections: flow`) mit Autarkie-Ring. Im Querformat bis 860 px Höhe kompakt (4 Kacheln nebeneinander), damit das iPad mini (1133×744) nicht scrollen muss.
+- Startseite (`custom:haus-card`, `www/haus-card.js`, v0.8; Energiebereich dunkel mit Tagesverlauf aus der 5-Minuten-Statistik, Batterie-Hinweise aus: `hint_batteries: false`, keine „Alles in Ordnung“-Zeile: `hints_ok: false`): Wetter, Personen mit Fotos, Hinweise, 4 Kacheln ohne Raumliste (`tile_rooms: false`), Energiefluss (`sections: flow`) mit Autarkie-Ring. Im Querformat bis 860 px Höhe kompakt (4 Kacheln nebeneinander), damit das iPad mini (1133×744) nicht scrollen muss.
 - Etagen-Ansicht: `haus-card` mit `sections: [header, rooms]` und `floor: …`; Kopf mit „‹ Übersicht“, „Alle Lichter aus“ und Lichtschalter auf jeder Raum-Kachel.
 - Raum-Ansichten: `raum-card` mit `back`, `back_label`, `base_path` (Zurück-Knopf, ab raum-card v1.3).
 - `inset: ipad` (haus-card ab v0.6, raum-card ab v1.4): Rand für die abgerundeten iPad-Ecken in allen Unteransichten.
@@ -59,6 +59,7 @@
 `media[]` (`entity`, `name`, `icon`, `sources`, `play`, `power`, `chip`), `power[]`, `windows[]`, `batteries[]`.
 
 ## Offene Punkte
+- Schwache Batterien je Raum in den Raum-Ansichten zeigen (auf der Startseite bewusst entfernt).
 - Name bzw. Gerät für „Aqara Taster“ in der Stromübersicht klären (`sensor.wohnzimmer_aqara_taster_wohnzimmer_leistung`).
 - Raum-Karte für weitere Räume bauen, zum Beispiel Schlafzimmer, Büro.
 - Küche: Gerät hinter `sensor.kuche_aqara_taster_kuche_leistung` klären (in der Karte vorläufig „Deckenlicht (Aqara Taster)“).
