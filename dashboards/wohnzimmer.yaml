@@ -51,6 +51,7 @@ scene_favorites:
   - "Energie tanken"
   - "Nachtlicht"
   - "Sonnenuntergang"
+cover_style: scene
 covers:
   - entity: "cover.shellyplus2pm_30c9228035fc_kleiner_rollladen"
     name: "Kleines Fenster"

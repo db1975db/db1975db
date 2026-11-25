@@ -388,6 +388,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Eingang
+    cover_style: scene
     floor: Erdgeschoss
     icon: mdi:door
     back: erdgeschoss
@@ -447,6 +448,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Flur unten
+    cover_style: scene
     floor: Erdgeschoss
     icon: mdi:floor-plan
     back: erdgeschoss
@@ -490,6 +492,7 @@ views:
   cards:
   - type: custom:raum-card
     name: WC
+    cover_style: scene
     floor: Erdgeschoss
     icon: mdi:toilet
     back: erdgeschoss
@@ -528,6 +531,7 @@ views:
   cards:
   - type: custom:raum-card
     name: HWR
+    cover_style: scene
     floor: Erdgeschoss
     icon: mdi:washing-machine
     back: erdgeschoss
@@ -591,6 +595,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Speisekammer
+    cover_style: scene
     floor: Erdgeschoss
     icon: mdi:fridge-outline
     back: erdgeschoss
@@ -620,6 +625,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Schlafzimmer
+    cover_style: scene
     floor: Obergeschoss
     icon: mdi:bed-king-outline
     back: obergeschoss
@@ -701,6 +707,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Kinderzimmer
+    cover_style: scene
     floor: Obergeschoss
     icon: mdi:teddy-bear
     back: obergeschoss
@@ -782,6 +789,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Büro
+    cover_style: scene
     floor: Obergeschoss
     icon: mdi:desk
     back: obergeschoss
@@ -843,6 +851,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Badezimmer
+    cover_style: scene
     floor: Obergeschoss
     icon: mdi:shower-head
     back: obergeschoss
@@ -902,6 +911,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Flur oben
+    cover_style: scene
     floor: Obergeschoss
     icon: mdi:stairs
     back: obergeschoss
@@ -1125,6 +1135,7 @@ views:
   cards:
   - type: custom:raum-card
     name: Wohnzimmer
+    cover_style: scene
     floor: Erdgeschoss
     icon: mdi:sofa
     temperature: sensor.bthome_sensor_86a9_temperatur

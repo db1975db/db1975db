@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.10.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.10.1)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -67,7 +67,7 @@ const R_CSS = `
 .covers{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
 .covers.scene{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .cvs{display:grid;grid-template-columns:112px minmax(0,1fr) auto;gap:14px;align-items:center;border-radius:22px;padding:14px;background:radial-gradient(130% 100% at 50% 0%,#1d2438 0%,#0d111c 70%);color:#fff;box-shadow:0 10px 26px rgba(0,0,0,.18)}
-.cvw{position:relative;cursor:ns-resize;touch-action:none;-webkit-user-select:none;user-select:none}.cvw svg{width:100%;height:auto;max-height:170px;display:block}
+.cvw{position:relative;cursor:ns-resize;touch-action:none;-webkit-user-select:none;user-select:none}.cvw.np{cursor:default;touch-action:auto}.cvw svg{width:100%;height:auto;max-height:170px;display:block}
 .cvp{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:rgba(10,14,24,.75);backdrop-filter:blur(6px);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700;white-space:nowrap;pointer-events:none}
 .cvi .n{font-weight:650;font-size:15px}.cvi .s{font-size:12.5px;opacity:.7;margin-bottom:10px}
 .cvq{display:flex;flex-wrap:wrap;gap:6px}.chq{font:inherit;font-size:12px;font-weight:600;border-radius:999px;padding:5px 10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer}
@@ -423,11 +423,12 @@ class RaumCard extends HTMLElement {
   // Rollladen als Bild: Fenster/Tür mit Blick nach draußen (Tag/Nacht), Panzer mit Lamellen; auf dem Fenster ziehen setzt die Position
   coverScene(x, s, p) {
     const door = x.kind ? x.kind === 'door' : /tür/i.test(x.name || ''), day = (this.s('sun.sun') || {}).state !== 'below_horizon';
+    const canPos = ((s.attributes.supported_features || 0) & 4) > 0;
     const W = 120, H = door ? 176 : 128, gy = 16, gh = H - gy - 6, id = x.entity.replace(/\W/g, ''), sh = Math.round(gh * (100 - p) / 100);
-    const mv = s.state === 'opening' ? 'fährt hoch' : s.state === 'closing' ? 'fährt runter' : p >= 99 ? 'offen' : p <= 1 ? 'geschlossen' : 'teilweise offen';
+    const mv = s.state === 'opening' ? 'fährt hoch' : s.state === 'closing' ? 'fährt runter' : s.state === 'unavailable' ? 'nicht erreichbar' : p >= 99 ? 'offen' : p <= 1 ? 'geschlossen' : 'teilweise offen';
     const stars = day ? '' : [[20, 30], [44, 22], [88, 34], [70, 48], [100, 24], [30, 56]].map(([a, b]) => `<circle cx="${a}" cy="${b + gy}" r="1" fill="#fff" opacity=".8"/>`).join('');
     const sl = Array.from({ length: Math.ceil(gh / 6) }, (_, i) => `<rect x="6" y="${gy + i * 6}" width="${W - 12}" height="5" fill="${day ? '#9aa4b2' : '#4a5263'}"/>`).join('');
-    const svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" class="cvsvg" data-e="${x.entity}" data-gy="${gy}" data-gh="${gh}">
+    const svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" class="${canPos ? 'cvsvg' : 'cvsvg0'}" data-e="${x.entity}" data-gy="${gy}" data-gh="${gh}">
       <defs><linearGradient id="${id}sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${day ? '#6fb8ff' : '#0a1230'}"/><stop offset="1" stop-color="${day ? '#dff0ff' : '#2a3a6a'}"/></linearGradient><clipPath id="${id}cl"><rect x="6" y="${gy}" width="${W - 12}" height="${gh}"/></clipPath></defs>
       <rect x="0" y="0" width="${W}" height="${H}" rx="6" fill="#2a2f3b"/>
       <g clip-path="url(#${id}cl)"><rect x="6" y="${gy}" width="${W - 12}" height="${gh}" fill="url(#${id}sky)"/>${stars}
@@ -438,9 +439,9 @@ class RaumCard extends HTMLElement {
         <g class="cvsh" style="transition:transform .9s" transform="translate(0 ${sh - gh})"><rect x="6" y="${gy}" width="${W - 12}" height="${gh}" fill="${day ? '#6c7686' : '#2b313d'}"/>${sl}<rect x="6" y="${gy + gh - 4}" width="${W - 12}" height="4" fill="#3a4150"/></g></g>
       <rect x="0" y="0" width="${W}" height="${gy}" rx="6" fill="#1b1f29"/><rect x="0" y="${gy - 3}" width="${W}" height="3" fill="#11141b"/>
       <rect x="6" y="${gy}" width="${W - 12}" height="${gh}" fill="none" stroke="#e9edf2" stroke-width="2.5"/></svg>`;
-    return `<div class="cvs"><div class="cvw" title="Ziehen zum Verstellen">${svg}<div class="cvp" id="cvp-${id}">${p >= 99 ? 'offen' : p <= 1 ? 'zu' : p + ' %'}</div></div>
+    return `<div class="cvs"><div class="cvw ${canPos ? '' : 'np'}" title="${canPos ? 'Ziehen zum Verstellen' : ''}">${svg}<div class="cvp" id="cvp-${id}">${p >= 99 ? 'offen' : p <= 1 ? 'zu' : p + ' %'}</div></div>
       <div class="cvi"><div class="n">${R_esc(x.name)}</div><div class="s">${mv}</div>
-        <div class="cvq"><button class="chq" data-act="covp" data-e="${x.entity}" data-p="100">Auf</button><button class="chq" data-act="covp" data-e="${x.entity}" data-p="50">Halb</button><button class="chq" data-act="covp" data-e="${x.entity}" data-p="20">Schlitze</button><button class="chq" data-act="covp" data-e="${x.entity}" data-p="0">Zu</button></div></div>
+        ${canPos ? `<div class="cvq"><button class="chq" data-act="covp" data-e="${x.entity}" data-p="100">Auf</button><button class="chq" data-act="covp" data-e="${x.entity}" data-p="50">Halb</button><button class="chq" data-act="covp" data-e="${x.entity}" data-p="20">Schlitze</button><button class="chq" data-act="covp" data-e="${x.entity}" data-p="0">Zu</button></div>` : '<div class="s">ohne Positionsangabe – nur hoch, runter, stopp</div>'}</div>
       <div class="cvb"><button class="ib2 ${s.state === 'opening' ? 'mv' : ''}" data-act="cov" data-sv="open_cover" data-e="${x.entity}" aria-label="Öffnen">${R_icon('mdi:arrow-up', 20)}</button><button class="ib2" data-act="cov" data-sv="stop_cover" data-e="${x.entity}" aria-label="Stopp">${R_icon('mdi:stop', 20)}</button><button class="ib2 ${s.state === 'closing' ? 'mv' : ''}" data-act="cov" data-sv="close_cover" data-e="${x.entity}" aria-label="Schließen">${R_icon('mdi:arrow-down', 20)}</button></div></div>`;
   }
   r_covers() {

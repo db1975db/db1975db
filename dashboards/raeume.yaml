@@ -31,6 +31,7 @@ eingang:
   - entity: lock.eingang_aqara_smart_lock_u200
     name: Haustür
     battery: sensor.eingang_aqara_smart_lock_u200_batterie
+  cover_style: scene
   covers:
   - entity: cover.shellyplus2pm_e86beae58e64_rollladen
     name: Eingang
@@ -82,6 +83,7 @@ flur-unten:
     name: Deckenspots
     icon: mdi:light-recessed
     power: sensor.shelly1pmmini_6055f99a1348_taster_flur_power
+  cover_style: scene
   covers:
   - entity: cover.shellyplus2pm_b8d61a8abd40_rollladen_treppe
     name: Treppe
@@ -107,6 +109,7 @@ wc:
     name: Beleuchtung
     icon: mdi:ceiling-light
     power: sensor.shellyplus1pm_d4d4da7cb368_power
+  cover_style: scene
   covers:
   - entity: cover.shellyplus2pm_e86beae708b0
     name: WC
@@ -151,6 +154,7 @@ hwr:
     name: Brunnenpumpe
     icon: mdi:water-pump
     power: sensor.shelly_1pm_gen4_leistung
+  cover_style: scene
   covers:
   - entity: cover.shellyplus2pm_e86beae5a6bc
     name: HWR
@@ -194,6 +198,7 @@ speisekammer:
   - entity: light.licht
     name: Licht
     icon: mdi:ceiling-light
+  cover_style: scene
   covers:
   - entity: cover.shellyplus2pm_d48afc777a40
     name: Speisekammer
@@ -233,6 +238,7 @@ schlafzimmer:
     icon: mdi:ceiling-light
     power: sensor.shellyplus1pm_90380c37bf1c_deckenlampe_power
   scene_select: select.schlafzimmer_schlafzimmer_scenen_szene
+  cover_style: scene
   covers:
   - entity: cover.rollladen_gross_schlafzimmer_grosser_rollladen
     name: Großes Fenster
@@ -298,6 +304,7 @@ kinderzimmer:
     name: Taster-Beleuchtung
     icon: mdi:light-switch
     power: sensor.shellyplus1pm_d4d4da097f98_power
+  cover_style: scene
   covers:
   - entity: cover.shellyplus2pm_b48a0a2223ec_grosser_rollladen
     name: Großes Fenster
@@ -377,6 +384,7 @@ buero:
     icon: mdi:light-switch
     power: sensor.shelly1pmminig3_84fce6391768_power
   scene_select: select.buro_buro_scenen_szene
+  cover_style: scene
   covers:
   - entity: cover.shellyplus2pm_b48a0a224fe8_rollladen
     name: Büro
@@ -438,6 +446,7 @@ badezimmer:
     icon: mdi:light-switch
     power: sensor.shelly1pmmini_543204aa8fbc_power
   scene_select: select.badezimmer_scenen_badezimmer_szene
+  cover_style: scene
   covers:
   - entity: cover.shelly2pmg3_28372f203808
     name: Bad
@@ -484,6 +493,7 @@ flur-oben:
     name: Treppenlicht
     icon: mdi:stairs
     power: sensor.shelly1pmg3_dcda0ce02460_power
+  cover_style: scene
   covers:
   - entity: cover.shelly2pmg3_b08184e878ec
     name: Flur oben
