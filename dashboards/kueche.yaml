@@ -52,7 +52,7 @@ media:
   - entity: "media_player.sonos_era_100"
     name: "Sonos"
     icon: "mdi:speaker"
-    sources: true
+    style: player   # "Jetzt läuft" mit Cover und Favoriten (raum-card v1.11)
   - entity: "media_player.bravia_kdl_32w706b"
     name: "Fernseher"
     icon: "mdi:television"
