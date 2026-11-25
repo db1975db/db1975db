@@ -61,6 +61,9 @@
 `media[]` (`entity`, `name`, `icon`, `sources`, `play`, `power`, `chip`), `power[]`, `windows[]`, `batteries[]`.
 
 ## Offene Punkte
+- Stand 25.11. abends: Rückmeldung vom iPad noch offen zu langem Drücken (Farbrad), Ziehen am Rollladen-Bild, Sonos-Cover (Küche) und Sky-Q-Sendungsbild (Wohnzimmer).
+- Rollläden Treppe, Flur oben und Eingang „Alle (Zentral)“ melden keine Position – Shellys in der Shelly-App kalibrieren, dann gehen Ziehen und Schnellwahl automatisch.
+- Leuchten als Bild bisher nur Wohnzimmer und Küche – weitere Räume nach Fotos von Dennis.
 - Laterne Wohnzimmer: Die Shelly-Vintage-Birnen melden in HA nur Helligkeit (kein Kalt-/Warmweiß), daher keine Farbtupfer.
 - Esstisch (Hue Ensis): laut Gerätemodell ist `light.tisch` das Uplight und `light.tisch_2` das Downlight – die Namen in HA sagen das Gegenteil. In der Karte gilt vorerst `up: light.tisch_2`; mit Dennis prüfen.
 - Räume sind ein Erstentwurf – mit Dennis durchgehen, was raus/rein soll (Batterien stehen je Raum unter „Status“).
@@ -69,7 +72,6 @@
 - Mähroboter-Ansicht im neuen Stil bauen, sobald die Dreame-Integration wieder Entitäten liefert.
 - Später: „Zuhause (neu)“ umbenennen/als Standard setzen, alte Einzel-Dashboards löschen – nur nach Rückfrage.
 - Name bzw. Gerät für „Aqara Taster“ in der Stromübersicht klären (`sensor.wohnzimmer_aqara_taster_wohnzimmer_leistung`).
-- Raum-Karte für weitere Räume bauen, zum Beispiel Schlafzimmer, Büro.
 - Küche: Gerät hinter `sensor.kuche_aqara_taster_kuche_leistung` klären (in der Karte vorläufig „Deckenlicht (Aqara Taster)“).
 - Küche: Terrassentür-Sensor `binary_sensor.bthome_sensor_d867_window` ist nicht erreichbar, deshalb noch nicht in der Karte.
 - Ab 2027: Vorjahresvergleich in der Wetterkarte.
