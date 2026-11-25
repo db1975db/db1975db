@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.10.1)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.11.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -86,6 +86,26 @@ const R_CSS = `
 .lk .n{font-weight:650}.lk .v{font-size:22px;font-weight:650;color:var(--lk)}.lk .s{font-size:12.5px;color:var(--r-fg2);display:flex;align-items:center;gap:3px}
 .lk .lkb{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
 .media{display:flex;flex-direction:column;gap:10px}
+.ply{position:relative;border-radius:22px;overflow:hidden;color:#fff;background:#141826;box-shadow:0 12px 30px rgba(0,0,0,.22)}
+.pbg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(28px) saturate(1.4);opacity:.75;transform:scale(1.1)}
+.psh{position:absolute;inset:0;background:linear-gradient(160deg,rgba(14,18,30,.35),rgba(14,18,30,.85))}
+.ply>*:not(.pbg):not(.psh){position:relative}
+.pin{display:grid;grid-template-columns:128px minmax(0,1fr);gap:18px;padding:18px 18px 10px;align-items:center}
+.pcv{position:relative;width:128px;height:128px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,#3a4a8a,#8a3a7a);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(0,0,0,.4)}
+.pcv img{width:100%;height:100%;object-fit:cover}
+.plb{font-size:12px;opacity:.75;display:flex;align-items:center;gap:5px;text-transform:none}
+.pti{font-size:22px;font-weight:700;line-height:1.15;margin-top:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.par{font-size:14px;opacity:.8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ppg{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11.5px;opacity:.85;font-variant-numeric:tabular-nums}.pgb{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}.pgb i{display:block;height:100%;background:#fff;border-radius:3px}
+.plive{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.14);border-radius:999px;padding:3px 10px}.plive i{width:7px;height:7px;border-radius:50%;background:#ff5a5a}.ply.plyon .plive i{animation:cvpl 1.2s infinite}
+.pct{display:flex;align-items:center;gap:10px;margin-top:12px}
+.pb{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}.pb.big{width:58px;height:58px;background:#fff;color:#141826}.pb.act{background:#ffd27a;color:#2a1a05}.pb.sm{width:34px;height:34px;background:transparent}
+.pvo{display:flex;align-items:center;gap:8px;padding:4px 18px 8px}.pvo input{flex:1;accent-color:#fff}.pvo span{font-size:12px;opacity:.8;min-width:38px;text-align:right;font-variant-numeric:tabular-nums}
+.pfv{display:flex;gap:8px;overflow-x:auto;padding:4px 18px 16px;scrollbar-width:none}.pfv::-webkit-scrollbar{display:none}
+.pfc{flex:none;font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 13px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;cursor:pointer}.pfc.on{background:#fff;color:#141826;border-color:transparent}
+.eq{position:absolute;right:8px;bottom:8px;display:flex;gap:2px;align-items:flex-end;height:16px;padding:3px 4px;border-radius:6px;background:rgba(0,0,0,.45)}.eq b{width:3px;background:#fff;border-radius:1px;animation:eqb 1s infinite ease-in-out}.eq b:nth-child(2){animation-delay:-.4s}.eq b:nth-child(3){animation-delay:-.7s}.eq b:nth-child(4){animation-delay:-.2s}
+.eq.sm{position:static;background:none;padding:0;height:12px}.eq.sm b{background:#141826}
+@keyframes eqb{0%,100%{height:25%}50%{height:100%}}
 .md{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--r-line);border-radius:18px;padding:10px 12px}
 .md .ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--r-line)}
 .md.on .ic{background:var(--r-acc);color:#fff}
@@ -199,7 +219,8 @@ class RaumCard extends HTMLElement {
     else if (a === 'covall') this.call('cover', t.dataset.sv, { entity_id: this.c.covers.map(x => x.entity) });
     else if (a === 'temp') { const s = this.s(this.c.climate), st = s.attributes.target_temp_step || 0.5; const v = Math.round(((this._tgt ?? s.attributes.temperature) + st * +t.dataset.d) * 2) / 2; this._tgt = Math.min(s.attributes.max_temp, Math.max(s.attributes.min_temp, v)); this.r_hero(); clearTimeout(this._tt); this._tt = setTimeout(() => { this.call('climate', 'set_temperature', { entity_id: this.c.climate, temperature: this._tgt }); setTimeout(() => { this._tgt = null; }, 4000); }, 900); }
     else if (a === 'hvac') { const s = this.s(this.c.climate); this.call('climate', 'set_hvac_mode', { entity_id: this.c.climate, hvac_mode: s.state === 'off' ? (s.attributes.hvac_modes.find(m => m !== 'off') || 'heat') : 'off' }); }
-    else if (a === 'mp') this.call('media_player', t.dataset.sv, { entity_id: e });
+    else if (a === 'mp') { const sv = t.dataset.sv, A = (this.s(e) || { attributes: {} }).attributes; this.call('media_player', sv, sv === 'shuffle_set' ? { entity_id: e, shuffle: !A.shuffle } : sv === 'repeat_set' ? { entity_id: e, repeat: A.repeat === 'off' ? 'all' : A.repeat === 'all' ? 'one' : 'off' } : sv === 'volume_mute' ? { entity_id: e, is_volume_muted: !A.is_volume_muted } : { entity_id: e }); }
+    else if (a === 'srcb') this.call('media_player', 'select_source', { entity_id: e, source: t.dataset.o });
     else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: e } }));
   }
   onChange(ev) {
@@ -462,6 +483,7 @@ class RaumCard extends HTMLElement {
     const el = this.$('media'); if (!el) return;
     el.innerHTML = this.c.media.map(x => {
       const s = this.s(x.entity); if (!s) return '';
+      if (x.style === 'player') return this.player(x, s);
       const A = s.attributes, on = !['off', 'standby', 'unavailable', 'unknown'].includes(s.state), pl = s.state === 'playing';
       const st = { on: 'an', off: 'aus', playing: 'spielt', paused: 'pausiert', idle: 'bereit', standby: 'Standby', unavailable: 'nicht erreichbar' }[s.state] || s.state;
       const info = [st, A.media_title, A.source].filter(Boolean).map(R_esc).join(' · ');
@@ -472,6 +494,26 @@ class RaumCard extends HTMLElement {
         ${on && (vol != null || (x.sources && A.source_list)) ? `<div class="x">${vol != null ? `${R_icon('mdi:volume-medium', 18)}<input type="range" min="0" max="100" value="${vol}" data-act="vol" data-e="${x.entity}" data-busy="media" data-live="${id}" data-unit=" %" aria-label="Lautstärke ${R_esc(x.name)}"><span id="${id}" class="s" style="min-width:42px">${vol} %</span>` : ''}
           ${x.sources && A.source_list ? `<select data-act="src" data-e="${x.entity}" data-busy="media" aria-label="Quelle">${['', ...(x.sources === true ? A.source_list : x.sources)].map(o => `<option ${o === A.source ? 'selected' : ''} value="${R_esc(o)}">${o ? R_esc(o) : 'Quelle …'}</option>`).join('')}</select>` : ''}</div>` : ''}</div>`;
     }).join('');
+  }
+  // Musik-Player im Stil "Jetzt läuft": Cover, Titel, Fortschritt, Steuerung, Lautstärke, Favoriten
+  player(x, s) {
+    const A = s.attributes, F = A.supported_features || 0, on = !['off', 'standby', 'unavailable', 'unknown'].includes(s.state), pl = s.state === 'playing';
+    const st = { playing: 'spielt', paused: 'pausiert', idle: 'bereit', off: 'aus', standby: 'Standby', unavailable: 'nicht erreichbar' }[s.state] || s.state;
+    const pic = A.entity_picture, title = A.media_title || A.source || (on ? 'Bereit' : 'Aus'), sub = [A.media_artist, A.media_album_name].filter(Boolean).join(' · ') || (A.media_channel && A.media_channel !== title ? A.media_channel : '');
+    const vol = A.volume_level != null ? Math.round(A.volume_level * 100) : null, id = 'mv-' + x.entity.replace(/\W/g, ''), e = x.entity;
+    const dur = A.media_duration, pos = A.media_position != null ? A.media_position + (pl && A.media_position_updated_at ? (Date.now() - new Date(A.media_position_updated_at)) / 1000 : 0) : null;
+    const t = (v) => `${Math.floor(v / 60)}:${String(Math.floor(v % 60)).padStart(2, '0')}`;
+    const radio = /radio|stream|x-rincon-mp3radio|tunein/i.test(A.media_content_id || '') || (!dur && A.media_channel);
+    const favs = x.sources === false ? [] : (Array.isArray(x.sources) ? x.sources : A.source_list || []);
+    const b = (sv, ic, lb, cls = '') => `<button class="pb ${cls}" data-act="mp" data-sv="${sv}" data-e="${e}" aria-label="${lb}">${R_icon(ic, cls.includes('big') ? 30 : 22)}</button>`;
+    return `<div class="ply ${pl ? 'plyon' : ''}">${pic ? `<div class="pbg" style="background-image:url('${pic}')"></div>` : ''}<div class="psh"></div>
+      <div class="pin"><div class="pcv">${pic ? `<img src="${pic}" alt="">` : R_icon(x.icon || 'mdi:speaker', 44)}${pl ? '<i class="eq"><b></b><b></b><b></b><b></b></i>' : ''}</div>
+        <div class="pmt"><div class="plb">${R_icon(x.icon || 'mdi:speaker', 14)}${R_esc(x.name)} · ${radio ? 'Radio' : st}${radio && on ? ` · ${st}` : ''}</div>
+          <div class="pti">${R_esc(title)}</div>${sub ? `<div class="par">${R_esc(sub)}</div>` : ''}
+          ${dur ? `<div class="ppg"><span>${t(Math.min(pos || 0, dur))}</span><div class="pgb" data-pos="${pos || 0}" data-dur="${dur}" data-at="${pl ? Date.now() : 0}"><i style="width:${Math.min(100, (pos || 0) / dur * 100)}%"></i></div><span>${t(dur)}</span></div>` : radio && on ? '<div class="plive"><i></i>Live</div>' : ''}
+          <div class="pct">${F & 32768 && !radio ? b('shuffle_set', 'mdi:shuffle-variant', 'Zufall', A.shuffle ? 'act' : '') : ''}${F & 16 && !radio ? b('media_previous_track', 'mdi:skip-previous', 'Zurück') : ''}${b('media_play_pause', pl ? 'mdi:pause' : 'mdi:play', 'Play/Pause', 'big')}${F & 32 && !radio ? b('media_next_track', 'mdi:skip-next', 'Weiter') : ''}${F & 262144 && !radio ? b('repeat_set', A.repeat === 'one' ? 'mdi:repeat-once' : 'mdi:repeat', 'Wiederholen', A.repeat && A.repeat !== 'off' ? 'act' : '') : ''}</div></div></div>
+      ${vol != null ? `<div class="pvo"><button class="pb sm" data-act="mp" data-sv="volume_mute" data-e="${e}" aria-label="Stumm">${R_icon(A.is_volume_muted ? 'mdi:volume-off' : vol < 30 ? 'mdi:volume-low' : vol < 70 ? 'mdi:volume-medium' : 'mdi:volume-high', 18)}</button><input type="range" min="0" max="100" value="${vol}" data-act="vol" data-e="${e}" data-busy="media" data-live="${id}" data-unit=" %" aria-label="Lautstärke ${R_esc(x.name)}"><span id="${id}">${vol} %</span></div>` : ''}
+      ${favs.length ? `<div class="pfv">${favs.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${o === A.source && pl ? '<i class="eq sm"><b></b><b></b><b></b></i>' : R_icon('mdi:radio', 14)}${R_esc(o)}</button>`).join('')}</div>` : ''}</div>`;
   }
   // ---------- Strom ----------
   kPower() { return this.ks(this.c.power.map(x => x.entity)); }
