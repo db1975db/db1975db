@@ -58,26 +58,23 @@ covers:
   - entity: "cover.shellyplus2pm_30c922817678_grosser_rollladen"
     name: "Terrassentür"
 media:
+  # Fernseher mit Sky-Q-Sendungsbild (raum-card v1.12, style: tv)
   - entity: "media_player.samsung"
     name: "Fernseher"
     icon: "mdi:television"
+    style: tv
+    sky: "media_player.sky_q"
     sources:
       - "TV"
       - "HDMI"
+      - "Sky Q"
       - "Netflix"
       - "Prime Video"
       - "Disney+"
       - "YouTube"
       - "ARD Mediathek – Streaming für alle"
       - "ZDF"
-      - "Sky Q"
       - "Spotify – Musik und Podcasts"
-    play: false
-  - entity: "media_player.sky_q"
-    name: "Sky Q"
-    icon: "mdi:satellite-variant"
-    chip: false
-    power: false
   - entity: "media_player.wohnzimmer_wohnzimmer"
     name: "HomePod"
     icon: "mdi:speaker"
