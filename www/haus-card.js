@@ -31,13 +31,18 @@ const H_CSS = `
 .sub{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:14px;opacity:.95;margin-top:10px}
 .sub span{display:inline-flex;align-items:center;gap:4px}
 .more{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;margin-top:14px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.26);border-radius:999px;padding:5px 12px;backdrop-filter:blur(6px)}
-.ppl{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
-.pp{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.24);border-radius:999px;padding:4px 14px 4px 4px;backdrop-filter:blur(6px);font-size:13.5px;font-weight:600;cursor:pointer}
-.pp .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;background-size:cover;background-position:center;position:relative}
-.pp .av:after{content:"";position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;border:2px solid rgba(20,25,40,.9);background:#8a94a3}
-.pp.home .av:after{background:#3ddc84}
-.pp small{display:block;font-weight:400;font-size:11.5px;opacity:.85}
-.pp.away{opacity:.8}
+.ppl{align-self:stretch;display:flex;flex-direction:column;justify-content:center;gap:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:24px;padding:14px 18px 16px;backdrop-filter:blur(10px);min-width:0}
+.ppl .ph{font-size:13px;font-weight:600;opacity:.92;display:flex;align-items:center;gap:6px}
+.ppl .row{display:flex;gap:18px;justify-content:center}
+.pp{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;width:86px;text-align:center}
+.pp .av{position:relative;width:76px;height:76px;border-radius:50%;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;transition:filter .6s,opacity .6s}
+.pp.home .av{box-shadow:0 0 0 3px #3ddc84,0 0 22px rgba(61,220,132,.65)}
+.pp.away .av{filter:grayscale(1) brightness(.85);opacity:.6;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.pp .zb{position:absolute;right:-4px;bottom:-4px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2.5px solid rgba(25,30,52,.95);color:#fff}
+.pp.home .zb{background:#22b864}.pp.away .zb{background:#7b8494}
+.pp .nm{font-size:15px;font-weight:650;line-height:1.1}
+.pp small{display:block;font-size:11.5px;opacity:.85;line-height:1.25;margin-top:2px}
+.pp.away .nm,.pp.away small{opacity:.75}
 .hints{display:flex;flex-wrap:wrap;gap:8px}
 .hint{display:inline-flex;align-items:center;gap:8px;border-radius:16px;padding:10px 14px;font-size:13.5px;font-weight:600;border:1px solid var(--h-line);background:var(--h-surface);color:var(--h-fg);cursor:default}
 .hint[data-nav],.hint[data-more]{cursor:pointer}
@@ -118,7 +123,8 @@ const H_CSS = `
 .eb .x{font-size:11.5px;color:var(--h-fg2)}
 .eb .mb{height:5px;border-radius:3px;background:var(--h-line);overflow:hidden;margin-top:3px}.eb .mb i{display:block;height:100%;background:var(--h-ok)}
 @media (max-width:900px){.half{grid-column:1/-1}}
-@media (max-width:640px){.tiles{grid-template-columns:1fr}.tl{min-height:190px}.ebar{grid-template-columns:repeat(2,minmax(0,1fr))}.eb:nth-child(3){border-left:none}.eb:nth-child(n+3){border-top:1px solid var(--h-line)}.orb{right:5% !important;top:4% !important;transform:scale(.5);transform-origin:top right;opacity:.85}.hin{grid-template-columns:1fr;padding:20px 18px}.ppl{flex-direction:row;flex-wrap:wrap;align-items:flex-start}.blk{padding:16px 14px}.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}.en{grid-template-columns:repeat(2,minmax(0,1fr))}.en .ev:last-child{grid-column:1/-1}.rm{min-height:118px}}
+@media (min-width:901px){.orb{right:auto !important;left:48% !important}}
+@media (max-width:640px){.ppl{padding:12px}.ppl .row{gap:10px}.pp{width:auto;flex:1}.pp .av{width:60px;height:60px}.tiles{grid-template-columns:1fr}.tl{min-height:190px}.ebar{grid-template-columns:repeat(2,minmax(0,1fr))}.eb:nth-child(3){border-left:none}.eb:nth-child(n+3){border-top:1px solid var(--h-line)}.orb{right:5% !important;top:4% !important;transform:scale(.5);transform-origin:top right;opacity:.85}.hin{grid-template-columns:1fr;padding:20px 18px}.ppl{flex-direction:row;flex-wrap:wrap;align-items:flex-start}.blk{padding:16px 14px}.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}.en{grid-template-columns:repeat(2,minmax(0,1fr))}.en .ev:last-child{grid-column:1/-1}.rm{min-height:118px}}
 `;
 
 class HausCard extends HTMLElement {
@@ -200,12 +206,17 @@ class HausCard extends HTMLElement {
     const date = now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
     const t = this.n(w.temperature) ?? (ws && ws.attributes.temperature);
     const mx = this.n(w.max), mn = this.n(w.min), wind = this.n(w.wind), rd = this.n(w.rain_day), hum = this.n(w.humidity);
-    const ppl = c.persons.map(p => {
+    const zi = (st) => st === 'home' ? 'mdi:home' : /arbeit|work|büro/i.test(st) ? 'mdi:briefcase' : /schule|school/i.test(st) ? 'mdi:school' : st === 'not_home' ? 'mdi:map-marker-outline' : 'mdi:map-marker';
+    const since = (s) => { const d = new Date(s.last_changed), t = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); return d.toDateString() === new Date().toDateString() ? `seit ${t}` : `seit ${d.toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric' })}`; };
+    let nHome = 0;
+    const pp = c.persons.map(p => {
       const e = p.entity || p, s = this.s(e); if (!s) return '';
       const home = s.state === 'home', nm = p.name || s.attributes.friendly_name || e, pic = s.attributes.entity_picture;
+      if (home) nHome++;
       const where = home ? 'zu Hause' : s.state === 'not_home' ? 'unterwegs' : s.state;
-      return `<div class="pp ${home ? 'home' : 'away'}" data-more="${e}" role="button" tabindex="0"><div class="av" style="${pic ? `background-image:url('${H_esc(pic)}')` : `background:hsl(${(nm.charCodeAt(0) * 47) % 360} 55% 55%)`}">${pic ? '' : H_esc(nm[0])}</div><div>${H_esc(nm)}<small>${H_esc(where)}</small></div></div>`;
+      return `<div class="pp ${home ? 'home' : 'away'}" data-more="${e}" role="button" tabindex="0" aria-label="${H_esc(nm)}: ${H_esc(where)}"><div class="av" style="${pic ? `background-image:url('${H_esc(pic)}')` : `background:hsl(${(nm.charCodeAt(0) * 47) % 360} 55% 50%)`}">${pic ? '' : H_esc(nm[0])}<span class="zb">${H_icon(zi(s.state), 15)}</span></div><div><div class="nm">${H_esc(nm)}</div><small>${H_esc(where)}<br>${since(s)}</small></div></div>`;
     }).join('');
+    const ppl = c.persons.length ? `<div class="ph">${H_icon('mdi:home-account', 16)}${nHome === c.persons.length ? 'Alle zu Hause' : nHome ? `${nHome} von ${c.persons.length} zu Hause` : 'Niemand zu Hause'}</div><div class="row">${pp}</div>` : '';
     this.$('hin').innerHTML = `<div>
       <div class="greet">${greet} · ${date}</div>
       <div class="title">${H_esc(c.title || 'Zuhause')}</div>
