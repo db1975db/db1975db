@@ -1,5 +1,6 @@
-// Haus-Karte – Startseite im Stil der Wetterstation (v0.8.4)
+// Haus-Karte – Startseite im Stil der Wetterstation (v0.8.5)
 const H_FI = {"solar-power-variant":"M3.33 16H11V13H4L3.33 16M13 16H20.67L20 13H13V16M21.11 18H13V22H22L21.11 18M2 22H11V18H2.89L2 22M11 8H13V11H11V8M15.76 7.21L17.18 5.79L19.3 7.91L17.89 9.33L15.76 7.21M4.71 7.91L6.83 5.79L8.24 7.21L6.12 9.33L4.71 7.91M3 2H6V4H3V2M18 2H21V4H18V2M12 7C14.76 7 17 4.76 17 2H7C7 4.76 9.24 7 12 7Z","transmission-tower":"M8.28,5.45L6.5,4.55L7.76,2H16.23L17.5,4.55L15.72,5.44L15,4H9L8.28,5.45M18.62,8H14.09L13.3,5H10.7L9.91,8H5.38L4.1,10.55L5.89,11.44L6.62,10H17.38L18.1,11.45L19.89,10.56L18.62,8M17.77,22H15.7L15.46,21.1L12,15.9L8.53,21.1L8.3,22H6.23L9.12,11H11.19L10.83,12.35L12,14.1L13.16,12.35L12.81,11H14.88L17.77,22M11.4,15L10.5,13.65L9.32,18.13L11.4,15M14.68,18.12L13.5,13.64L12.6,15L14.68,18.12Z","home-lightning-bolt-outline":"M5 20V12H2L12 3L22 12H19V20H5M12 5.69L7 10.19V18H17V10.19L12 5.69M11.5 18V14H9L12.5 7V11H15L11.5 18Z","battery-high":"M16 20H8V6H16M16.67 4H15V2H9V4H7.33C6.6 4 6 4.6 6 5.33V20.67C6 21.4 6.6 22 7.33 22H16.67C17.41 22 18 21.41 18 20.67V5.33C18 4.6 17.4 4 16.67 4M15 16H9V19H15V16M15 7H9V10H15V7M15 11.5H9V14.5H15V11.5Z","battery-medium":"M16 20H8V6H16M16.67 4H15V2H9V4H7.33C6.6 4 6 4.6 6 5.33V20.67C6 21.4 6.6 22 7.33 22H16.67C17.41 22 18 21.41 18 20.67V5.33C18 4.6 17.4 4 16.67 4M15 16H9V19H15V16M15 11.5H9V14.5H15V11.5Z","battery-low":"M16 20H8V6H16M16.67 4H15V2H9V4H7.33C6.6 4 6 4.6 6 5.33V20.67C6 21.4 6.6 22 7.33 22H16.67C17.41 22 18 21.41 18 20.67V5.33C18 4.6 17.4 4 16.67 4M15 16H9V19H15V16"}; // MDI-Pfade für das Energie-SVG (Safari verschiebt foreignObject)
+const H_bz = (a, u) => a.length === 4 ? [a[0] + (a[2] - a[0]) * u, a[1] + (a[3] - a[1]) * u] : [(1 - u) * (1 - u) * a[0] + 2 * (1 - u) * u * a[2] + u * u * a[4], (1 - u) * (1 - u) * a[1] + 2 * (1 - u) * u * a[3] + u * u * a[5]];
 const H_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const H_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const H_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -457,7 +458,8 @@ class HausCard extends HTMLElement {
     const lines = L.map(([id, d, w, col]) => w > 15 ? `<path d="${d}" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" opacity=".18" filter="url(#hgl)"/><path d="${d}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" opacity=".85"/>` : `<path class="ln" d="${d}"/>`).join('');
     const dots = L.filter(l => l[2] > 15).map(([id, d, w, col]) => {
       const dur = Math.max(.9, Math.min(4.5, 4.5 - Math.log10(w) * 1.1)).toFixed(2);
-      return [0, 1, 2].map(k => `<circle r="5" fill="#fff" filter="url(#hgl)" opacity=".95"><animateMotion dur="${dur}s" begin="-${(k * dur / 3).toFixed(2)}s" repeatCount="indefinite" path="${d}"/></circle>`).join('');
+      const a = d.match(/-?[\d.]+/g).map(Number);
+      return [0, 1, 2].map(k => { const [x, y] = H_bz(a, k / 3); return `<circle class="fd" r="5" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" data-a="${a.join(' ')}" data-dur="${dur}" data-off="${(k / 3).toFixed(3)}" fill="#fff" filter="url(#hgl)" opacity=".95"/>`; }).join('');
     }).join('');
     const node = (x, y, col, icon, val, lb, ent, active, side) => `<g class="nd" data-more="${ent}" style="cursor:pointer">
       ${active ? `<circle cx="${x}" cy="${y}" r="36" fill="${col}" opacity=".22" filter="url(#hgl)"/>` : ''}
@@ -478,8 +480,21 @@ class HausCard extends HTMLElement {
         <div class="bat" data-more="${e.battery_soc}"><span><em style="font-style:normal">Hausbatterie</em><em style="font-style:normal">${H_fmt(soc, 0)} %</em></span><div class="mb"><i style="width:${Math.min(100, soc || 0)}%"></i></div></div>
       </div>
       <div class="ch" data-more="${e.pv}" id="fch"></div>`;
+    this._fd = [...el.querySelectorAll('circle.fd')].map(c => ({ el: c, a: c.dataset.a.split(' ').map(Number), dur: +c.dataset.dur, off: +c.dataset.off }));
+    this.flowAnim();
     this.r_fchart();
     if (!this._fAt || Date.now() - this._fAt > 10 * 60e3) this.loadFlowHist();
+  }
+  // Fluss-Punkte per JS bewegen (SMIL animateMotion läuft in Safari nach innerHTML nicht zuverlässig)
+  flowAnim() {
+    if (this._raf || !this._fd || !this._fd.length) return;
+    const step = () => {
+      if (!this.isConnected || !this._fd || !this._fd.length) { this._raf = null; return; }
+      const t = performance.now() / 1000;
+      for (const f of this._fd) { const [x, y] = H_bz(f.a, (t / f.dur + f.off) % 1); f.el.setAttribute('cx', x.toFixed(1)); f.el.setAttribute('cy', y.toFixed(1)); }
+      this._raf = requestAnimationFrame(step);
+    };
+    this._raf = requestAnimationFrame(step);
   }
   async loadFlowHist() {
     const e = this.c.energy; this._fAt = Date.now();
