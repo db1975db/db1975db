@@ -4,7 +4,8 @@ type: "custom:haus-card"
 title: "Zuhause"
 base_path: "/dashboard-haus"
 # Startseite: Wetter, Hinweise, vier große Kacheln, Energie-Leiste
-sections: ["hero", "hints", "tiles", "ebar"]
+sections: ["hero", "hints", "tiles", "flow"]
+tile_rooms: false   # keine Raumliste in den Startseiten-Kacheln (steht in der Etagen-Ansicht)
 menu_button: "ipad"   # ☰-Knopf nur auf dem iPad (dort blendet kiosk-mode die Kopfzeile aus)
 tiles:
   - name: "Erdgeschoss"

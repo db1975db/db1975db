@@ -1,4 +1,4 @@
-// Haus-Karte – Startseite im Stil der Wetterstation (v0.6.0)
+// Haus-Karte – Startseite im Stil der Wetterstation (v0.7.0)
 const H_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const H_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const H_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -26,8 +26,9 @@ const H_CSS = `
 .hero.hasm .hin{padding-right:62px}
 /* inset: ipad – Rand für die abgerundeten iPad-Ecken, wenn kiosk-mode die Kopfzeile ausblendet */
 .wrap.pad{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
-.wrap.kiosk{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));min-height:100vh;min-height:100dvh;grid-template-rows:auto auto 1fr auto;align-content:stretch}
+.wrap.kiosk{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));min-height:100vh;min-height:100dvh;grid-template-rows:auto auto auto 1fr;align-content:stretch}
 .wrap.kiosk .tl .t{font-size:44px}
+.wrap.kiosk .fl2 svg{max-height:200px}
 .mnu{font:inherit;position:absolute;top:10px;right:10px;z-index:3;width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px)}
 .title{font-size:clamp(30px,5vw,44px);font-weight:650;letter-spacing:-.02em;margin:2px 0 10px}
 .wx{display:flex;align-items:center;gap:14px}
@@ -147,10 +148,24 @@ const H_CSS = `
 .big-rooms .rm{min-height:150px;padding:16px}
 .big-rooms .rm .t{font-size:30px}
 .big-rooms .rm.hasl>div:last-child{padding-right:50px}
+.fl2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;background:var(--h-surface);border:1px solid var(--h-line);border-radius:24px;padding:14px 20px;color:var(--h-fg);min-height:0;align-items:center}
+.fl2 svg{width:100%;height:auto;max-height:250px;display:block}
+.fl2 .nd circle.bg{fill:var(--h-surface);stroke-width:3}
+.fl2 .nd text{fill:var(--h-fg);font-weight:650;font-size:17px;text-anchor:middle;font-variant-numeric:tabular-nums}
+.fl2 .nd text.lb{fill:var(--h-fg2);font-weight:500;font-size:12.5px}
+.fl2 .ln{fill:none;stroke:var(--h-line);stroke-width:2.5}
+.fl2 .st{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 18px;align-items:center}
+.fl2 .ring{grid-row:span 3;position:relative;width:118px;height:118px}
+.fl2 .ring svg{width:118px;height:118px;transform:rotate(-90deg)}
+.fl2 .ring b{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;font-weight:650;font-variant-numeric:tabular-nums}
+.fl2 .ring b small{font-size:11.5px;font-weight:500;color:var(--h-fg2)}
+.fl2 .kv{display:flex;flex-direction:column;gap:2px;cursor:pointer}.fl2 .kv span{font-size:12px;color:var(--h-fg2);display:flex;align-items:center;gap:5px}
+.fl2 .kv b{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums}.fl2 .kv b small{font-size:12px;font-weight:500;color:var(--h-fg2);margin-left:2px}
+.fl2 .kv .mb{height:6px;border-radius:3px;background:var(--h-line);overflow:hidden;margin-top:4px}.fl2 .kv .mb i{display:block;height:100%;background:var(--h-ok)}
 @media (max-width:900px){.half{grid-column:1/-1}}
 @media (min-width:901px){.orb{right:auto !important;left:48% !important}}
 @media (min-width:900px) and (max-height:860px){.wrap{gap:12px;padding:0 0 8px}.hero{min-height:0}.hin{padding:14px 22px 16px;gap:16px;align-items:center}.greet{font-size:13px}.title{font-size:28px;margin:0 0 4px}.big{font-size:54px}.cond{font-size:15px}.cond div{font-size:12.5px}.sub{font-size:13px;margin-top:4px}.more{margin-top:8px;padding:4px 11px;font-size:12px}.ppl{padding:10px 16px 12px;gap:8px}.ppl .row{gap:14px}.pp{width:78px;gap:4px}.pp .av{width:58px;height:58px;font-size:24px}.pp .zb{width:24px;height:24px}.pp .nm{font-size:14px}.pp small{font-size:11px}.hint{padding:7px 12px;font-size:13px}.hint .hi{width:26px;height:26px}.tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.tl{min-height:0;padding:14px;gap:8px;border-radius:22px}.tl .hd{gap:9px}.tl .ic{width:36px;height:36px;border-radius:12px}.tl .n{font-size:17px}.tl .t{font-size:36px;margin-top:0}.tl .t small{font-size:14px}.tl .t span{display:none}.tl .ln{gap:4px}.tl .ch{font-size:11.5px;padding:3px 8px}.tl .rms{gap:4px}.tl .rd{font-size:11px;padding:1px 7px 1px 3px}.ebar{border-radius:18px}.eb{padding:8px 14px}.eb .v{font-size:18px}.eb .x{font-size:11px}}
-@media (max-width:640px){.big-rooms .rooms{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.big-rooms .rm{min-height:132px;padding:13px}.big-rooms .rm .t{font-size:24px}.rm .lb{width:36px;height:36px;right:10px;bottom:10px}.big-rooms .rm.hasl>div:last-child{padding-right:40px}.fh{padding:16px}.fh .off{margin-left:0}.ppl{padding:12px}.ppl .row{gap:10px}.pp{width:auto;flex:1}.pp .av{width:60px;height:60px}.tiles{grid-template-columns:1fr}.tl{min-height:190px}.ebar{grid-template-columns:repeat(2,minmax(0,1fr))}.eb:nth-child(3){border-left:none}.eb:nth-child(n+3){border-top:1px solid var(--h-line)}.orb{right:5% !important;top:4% !important;transform:scale(.5);transform-origin:top right;opacity:.85}.hin{grid-template-columns:1fr;padding:20px 18px}.ppl{flex-direction:row;flex-wrap:wrap;align-items:flex-start}.blk{padding:16px 14px}.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}.en{grid-template-columns:repeat(2,minmax(0,1fr))}.en .ev:last-child{grid-column:1/-1}.rm{min-height:118px}}
+@media (max-width:640px){.fl2{grid-template-columns:1fr}.big-rooms .rooms{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.big-rooms .rm{min-height:132px;padding:13px}.big-rooms .rm .t{font-size:24px}.rm .lb{width:36px;height:36px;right:10px;bottom:10px}.big-rooms .rm.hasl>div:last-child{padding-right:40px}.fh{padding:16px}.fh .off{margin-left:0}.ppl{padding:12px}.ppl .row{gap:10px}.pp{width:auto;flex:1}.pp .av{width:60px;height:60px}.tiles{grid-template-columns:1fr}.tl{min-height:190px}.ebar{grid-template-columns:repeat(2,minmax(0,1fr))}.eb:nth-child(3){border-left:none}.eb:nth-child(n+3){border-top:1px solid var(--h-line)}.orb{right:5% !important;top:4% !important;transform:scale(.5);transform-origin:top right;opacity:.85}.hin{grid-template-columns:1fr;padding:20px 18px}.ppl{flex-direction:row;flex-wrap:wrap;align-items:flex-start}.blk{padding:16px 14px}.rooms{grid-template-columns:repeat(2,minmax(0,1fr))}.en{grid-template-columns:repeat(2,minmax(0,1fr))}.en .ev:last-child{grid-column:1/-1}.rm{min-height:118px}}
 `;
 
 class HausCard extends HTMLElement {
@@ -167,7 +182,7 @@ class HausCard extends HTMLElement {
   set hass(h) {
     this._hass = h;
     if (!this.root) this.build();
-    const parts = { hero: this.kHero(), hints: this.kHints(), rooms: this.kRooms(), energy: this.kEnergy(), garden: this.kGarden(), tiles: this.kTiles(), ebar: this.kEnergy(), fh: this.kRooms() };
+    const parts = { hero: this.kHero(), hints: this.kHints(), rooms: this.kRooms(), energy: this.kEnergy(), garden: this.kGarden(), tiles: this.kTiles(), ebar: this.kEnergy(), flow: this.kEnergy(), fh: this.kRooms() };
     for (const [k, v] of Object.entries(parts)) { if (!this.sec.has(k === 'fh' ? 'header' : k) || this._k[k] === v) continue; this._k[k] = v; this['r_' + k](); }
   }
   ks(list) { return list.filter(Boolean).map(e => { const s = this.s(e); return s ? s.state + JSON.stringify(s.attributes) : '-'; }).join('|'); }
@@ -181,6 +196,7 @@ class HausCard extends HTMLElement {
       ${S.has('hints') ? `<div class="full hints" id="hints"></div>` : ''}
       ${S.has('tiles') ? `<div class="full tiles" id="tiles"></div>` : ''}
       ${S.has('ebar') && c.energy ? `<div class="full ebar" id="ebar"></div>` : ''}
+      ${S.has('flow') && c.energy ? `<div class="full fl2" id="flow"></div>` : ''}
       ${S.has('rooms') && c.floors.length ? `<div class="blk full ${c.floor ? 'big-rooms' : ''}">${c.floor ? '' : `<div class="bh"><h2>${H_icon('mdi:home-floor-g', 20)}Räume</h2><p id="rsum"></p></div>`}<div id="rooms"></div></div>` : ''}
       ${S.has('energy') && c.energy ? `<div class="blk half"><div class="bh"><h2>${H_icon('mdi:solar-power-variant', 20)}Energie jetzt</h2><p id="esum"></p></div><div id="energy"></div></div>` : ''}
       ${S.has('garden') && c.garden.length ? `<div class="blk half"><div class="bh"><h2>${H_icon('mdi:flower', 20)}Garten</h2></div><div class="gd" id="garden"></div></div>` : ''}
@@ -406,8 +422,50 @@ class HausCard extends HTMLElement {
         <div class="hd"><div class="ic">${H_icon(t.icon || 'mdi:home', 26)}</div><div class="n">${H_esc(t.name)}</div>${t.path ? H_icon('mdi:chevron-right', 24) : ''}</div>
         <div class="t">${H_fmt(tt)}<small>°C</small>${f && !t.temperature ? '<span>Ø Räume</span>' : ''}</div>
         <div class="ln">${chips.join('')}</div>
-        ${dots.length ? `<div class="rms">${dots.join('')}</div>` : ''}</div>`;
+        ${dots.length && this.c.tile_rooms !== false ? `<div class="rms">${dots.join('')}</div>` : ''}</div>`;
     }).join('');
+  }
+  // ---------- Energiefluss ----------
+  r_flow() {
+    const el = this.$('flow'), e = this.c.energy; if (!el || !e) return;
+    const pv = Math.max(0, this.n(e.pv) || 0), home = Math.max(0, this.n(e.home) || 0), imp = Math.max(0, this.n(e.grid_import) || 0), exp = Math.max(0, this.n(e.grid_export) || 0);
+    const soc = this.n(e.battery_soc), bp = this.n(e.battery_power) || 0, today = this.n(e.pv_today);
+    const chg = Math.max(0, -bp), dis = Math.max(0, bp);
+    const pvBat = Math.min(chg, pv), pvGrid = Math.min(exp, Math.max(0, pv - pvBat)), pvHome = Math.max(0, pv - pvBat - pvGrid);
+    const fmtW = (w) => w >= 1000 ? `${H_fmt(w / 1000, 1)} kW` : `${H_fmt(w, 0)} W`;
+    const self = home > 0 ? Math.min(100, Math.round(Math.max(0, home - imp) / home * 100)) : 0;
+    const C = { pv: '#f4b400', grid: '#8a94a3', bat: '#1baf7a', home: '#3987e5' };
+    // Linien: id, Pfad, Leistung, Farbe, Richtung (1 = wie gezeichnet)
+    const L = [
+      ['pvh', 'M342,52 Q356,105 520,105', pvHome, C.pv],
+      ['pvg', 'M298,52 Q284,105 120,105', pvGrid, C.pv],
+      ['pvb', 'M320,62 L320,148', pvBat, C.pv],
+      ['gh', 'M120,105 L520,105', imp, C.grid],
+      ['bh', 'M342,158 Q356,105 520,105', dis, C.bat],
+    ];
+    const dots = L.filter(l => l[2] > 15).map(([id, d, w, col]) => {
+      const dur = Math.max(.9, Math.min(4.5, 4.5 - Math.log10(w) * 1.1)).toFixed(2);
+      return [0, 1, 2].map(k => `<circle r="4.5" fill="${col}"><animateMotion dur="${dur}s" begin="${(k * dur / 3).toFixed(2)}s" repeatCount="indefinite" path="${d}"/></circle>`).join('');
+    }).join('');
+    const lines = L.map(([id, d, w, col]) => `<path class="ln" d="${d}" style="${w > 15 ? `stroke:${col};opacity:.55` : ''}"/>`).join('');
+    const node = (x, y, col, icon, val, lb, ent, active, side) => `<g class="nd" data-more="${ent}" style="cursor:pointer"><circle class="bg" cx="${x}" cy="${y}" r="30" style="stroke:${active ? col : 'var(--h-line)'}"/>
+      <foreignObject x="${x - 13}" y="${y - 13}" width="26" height="26"><div xmlns="http://www.w3.org/1999/xhtml" style="color:${active ? col : 'var(--h-fg2)'};display:flex">${H_icon(icon, 26)}</div></foreignObject>
+      ${side ? `<text x="${x + 42}" y="${y - 2}" style="text-anchor:start">${val}</text><text class="lb" x="${x + 42}" y="${y + 16}" style="text-anchor:start">${lb}</text>` : `<text x="${x}" y="${y + 52}">${val}</text><text class="lb" x="${x}" y="${y + 68}">${lb}</text>`}</g>`;
+    const gridTxt = exp > imp ? `↑ ${fmtW(exp)}` : imp > 0 ? `↓ ${fmtW(imp)}` : '0 W';
+    const batTxt = soc != null ? `${H_fmt(soc, 0)} %` : '–';
+    const svg = `<svg viewBox="0 0 640 212" preserveAspectRatio="xMidYMid meet">${lines}${dots}
+      ${node(320, 30, C.pv, 'mdi:solar-power-variant', fmtW(pv), 'Solar', e.pv, pv > 15, 1)}
+      ${node(90, 105, C.grid, 'mdi:transmission-tower', gridTxt, exp > imp ? 'Einspeisung' : 'Netz', exp > imp ? e.grid_export : e.grid_import, imp > 15 || exp > 15)}
+      ${node(550, 105, C.home, 'mdi:home-lightning-bolt-outline', fmtW(home), 'Haus', e.home, true)}
+      ${node(320, 180, C.bat, soc > 80 ? 'mdi:battery-high' : soc > 30 ? 'mdi:battery-medium' : 'mdi:battery-low', batTxt, chg > 15 ? `Batterie lädt ${fmtW(chg)}` : dis > 15 ? `Batterie gibt ${fmtW(dis)}` : 'Batterie', e.battery_soc, chg > 15 || dis > 15, 1)}</svg>`;
+    const R = 50, U = 2 * Math.PI * R, sc = self >= 60 ? 'var(--h-ok)' : self >= 25 ? 'var(--h-sun)' : 'var(--h-bad)';
+    el.innerHTML = `<div style="min-width:0">${svg}</div>
+      <div class="st">
+        <div class="ring"><svg viewBox="0 0 118 118"><circle cx="59" cy="59" r="${R}" fill="none" stroke="var(--h-line)" stroke-width="11"/><circle cx="59" cy="59" r="${R}" fill="none" stroke="${sc}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${(U * self / 100).toFixed(1)} ${U.toFixed(1)}" style="display:${self > 0 ? '' : 'none'}"/></svg><b>${self} %<small>Autarkie</small></b></div>
+        <div class="kv" data-more="${e.pv_today || e.pv}"><span>${H_icon('mdi:white-balance-sunny', 14)}Solar heute</span><b>${H_fmt(today)}<small>kWh</small></b></div>
+        <div class="kv" data-more="${e.home}"><span>${H_icon('mdi:home-lightning-bolt-outline', 14)}Verbrauch jetzt</span><b>${fmtW(home).replace(/ (k?W)/, '<small>$1</small>')}</b></div>
+        <div class="kv" data-more="${e.battery_soc}"><span>${H_icon('mdi:home-battery-outline', 14)}Hausbatterie ${H_fmt(soc, 0)} %</span><div class="mb"><i style="width:${Math.min(100, soc || 0)}%"></i></div></div>
+      </div>`;
   }
   // ---------- Energie-Leiste ----------
   r_ebar() {
