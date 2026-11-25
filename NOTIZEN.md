@@ -47,7 +47,7 @@
 - Raum-Ansichten: `raum-card` mit `back`, `back_label`, `base_path` (Zurück-Knopf, ab raum-card v1.3).
 - `inset: ipad` (haus-card ab v0.6, raum-card ab v1.4): Rand für die abgerundeten iPad-Ecken in allen Unteransichten.
 - **kiosk-mode** (v16) im Dashboard: `hide_header: '{{ "iPad" in user_agent }}'` → nur auf dem iPad keine Kopfzeile.
-  Auf dem iPad öffnet der kleine ☰-Knopf oben rechts in der Startseite (`menu_button: ipad`) die Seitenleiste. Notausgang: `?disable_km` an die Adresse hängen.
+  Der ☰-Knopf auf der Startseite ist auf Wunsch entfernt (`menu_button: false`); das randlose Layout ohne Scrollen kommt jetzt über `kiosk: ipad` (haus-card v0.8.2). Die Personen sitzen oben rechts in der Ecke. Seitenleiste auf dem iPad nur noch über den Notausgang: `?disable_km` an die Adresse hängen (oder `menu_button: ipad` wieder setzen).
 - iPad mini Küche: browser_mod-Browser „iPad mini“, angemeldet als Dennis (wie das iPhone) – deshalb Unterscheidung über die Browserkennung, nicht über den Benutzer.
 - **Ressourcen:** haus-card inline `0e363120356147f5a4a40e85bcafc8be`; raum-card `1bc3365d5d504c3c9d14d27f5598de9a` (beide exakt = Repo, per SHA-256 geprüft).
 - Hausbatterie `sensor.varta_battery_power_signed`: negativ = lädt, positiv = entlädt (aus dem Verlauf geprüft). Abends leer, nachts 0 % ist normal.

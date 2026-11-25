@@ -19,7 +19,8 @@ views:
     tile_rooms: false
     hint_batteries: false
     hints_ok: false
-    menu_button: ipad
+    menu_button: false
+    kiosk: ipad
     tiles:
     - name: Erdgeschoss
       icon: mdi:home-floor-0

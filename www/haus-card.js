@@ -1,4 +1,4 @@
-// Haus-Karte – Startseite im Stil der Wetterstation (v0.8.1)
+// Haus-Karte – Startseite im Stil der Wetterstation (v0.8.2)
 const H_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const H_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const H_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -24,6 +24,7 @@ const H_CSS = `
 .hin{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;padding:24px 26px 22px;align-items:end}
 .greet{font-size:15px;opacity:.92;font-weight:500}
 .hero.hasm .hin{padding-right:62px}
+@media (min-width:641px){.hero:not(.hasm) .ppl{align-self:start;margin:-8px -14px 0 0}}
 /* inset: ipad – Rand für die abgerundeten iPad-Ecken, wenn kiosk-mode die Kopfzeile ausblendet */
 .wrap.pad{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
 .wrap.kiosk{padding:max(16px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));height:100vh;height:100dvh;display:flex;flex-direction:column;gap:12px;overflow:hidden}
@@ -199,7 +200,7 @@ class HausCard extends HTMLElement {
     this._k = {};
     this.root = this.attachShadow({ mode: 'open' });
     const c = this.c, S = this.sec;
-    this.root.innerHTML = `<style>${H_CSS}</style><div class="wrap ${this.showMenu() && S.has('tiles') ? 'kiosk' : ''} ${this.c.inset === 'ipad' && /iPad/.test(navigator.userAgent) ? 'pad' : ''}">
+    this.root.innerHTML = `<style>${H_CSS}</style><div class="wrap ${(this.showMenu() || this.isKiosk()) && S.has('tiles') ? 'kiosk' : ''} ${this.c.inset === 'ipad' && /iPad/.test(navigator.userAgent) ? 'pad' : ''}">
       ${S.has('hero') ? `<div class="hero full ${this.showMenu() ? 'hasm' : ''}" id="hero" role="link" tabindex="0" ${c.weather && c.weather.path ? `data-nav="${H_esc(c.weather.path)}"` : ''}><div class="sky" id="sky"></div><div class="shade"></div>${this.showMenu() ? `<button class="mnu" data-act="menu" aria-label="Menü">${H_icon('mdi:menu', 20)}</button>` : ''}<div class="hin" id="hin"></div></div>` : ''}
       ${S.has('header') ? `<div class="full fh" id="fh"></div>` : ''}
       ${S.has('hints') ? `<div class="full hints" id="hints"></div>` : ''}
@@ -226,6 +227,7 @@ class HausCard extends HTMLElement {
     history.pushState(null, '', path);
     window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } }));
   }
+  isKiosk() { const k = this.c.kiosk; return k === true || (k === 'ipad' && /iPad/.test(navigator.userAgent)); }
   showMenu() { const m = this.c.menu_button; return m === true || (m === 'ipad' && /iPad/.test(navigator.userAgent)); }
   act(el) {
     if (el.dataset.act === 'menu') { this.dispatchEvent(new CustomEvent('hass-toggle-menu', { bubbles: true, composed: true, detail: { open: true } })); return; }
