@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.9.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.10.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -65,6 +65,14 @@ const R_CSS = `
 .sc i{width:22px;height:22px;border-radius:50%;flex:none}
 .sc.on{background:var(--r-fg);color:var(--r-surface);border-color:transparent}
 .covers{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.covers.scene{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.cvs{display:grid;grid-template-columns:112px minmax(0,1fr) auto;gap:14px;align-items:center;border-radius:22px;padding:14px;background:radial-gradient(130% 100% at 50% 0%,#1d2438 0%,#0d111c 70%);color:#fff;box-shadow:0 10px 26px rgba(0,0,0,.18)}
+.cvw{position:relative;cursor:ns-resize;touch-action:none;-webkit-user-select:none;user-select:none}.cvw svg{width:100%;height:auto;max-height:170px;display:block}
+.cvp{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:rgba(10,14,24,.75);backdrop-filter:blur(6px);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700;white-space:nowrap;pointer-events:none}
+.cvi .n{font-weight:650;font-size:15px}.cvi .s{font-size:12.5px;opacity:.7;margin-bottom:10px}
+.cvq{display:flex;flex-wrap:wrap;gap:6px}.chq{font:inherit;font-size:12px;font-weight:600;border-radius:999px;padding:5px 10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer}
+.cvb{display:flex;flex-direction:column;gap:8px}.ib2{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}.ib2.mv{background:#ffd27a;color:#2a1a05;border-color:transparent;animation:cvpl 1s infinite}
+@keyframes cvpl{50%{opacity:.55}}
 .cv{display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;align-items:center}
 .win{position:relative;height:118px;border-radius:12px;border:3px solid var(--r-fg2);overflow:hidden;background:linear-gradient(180deg,#9ad0ff,#e8f4ff)}
 .win:after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid var(--r-fg2);opacity:.6}
@@ -156,6 +164,18 @@ class RaumCard extends HTMLElement {
     R.addEventListener('pointermove', (ev) => { if (this._lpT && this._lpXY && Math.hypot(ev.clientX - this._lpXY[0], ev.clientY - this._lpXY[1]) > 10) lpEnd(); });
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => R.addEventListener(n, lpEnd));
     R.addEventListener('contextmenu', (ev) => { if (ev.target.closest('.fxs')) ev.preventDefault(); });
+    // Rollladen-Bild: senkrecht ziehen setzt die Position, beim Loslassen wird sie gesendet
+    R.addEventListener('pointerdown', (ev) => {
+      const sv = ev.target.closest('.cvsvg'); if (!sv) return;
+      ev.preventDefault(); this._busy = 'covers'; const r = sv.getBoundingClientRect(), vb = sv.viewBox.baseVal, k = r.height / vb.height, gy = +sv.dataset.gy, gh = +sv.dataset.gh;
+      const lab = sv.parentElement.querySelector('.cvp'), shg = sv.querySelector('.cvsh');
+      const pos = (y) => Math.max(0, Math.min(100, Math.round((100 - ((y - r.top) / k - gy) / gh * 100) / 5) * 5));
+      const draw = (p) => { lab.textContent = p >= 99 ? 'offen' : p <= 1 ? 'zu' : p + ' %'; shg.style.transition = 'none'; shg.setAttribute('transform', `translate(0 ${Math.round(gh * (100 - p) / 100) - gh})`); };
+      let p = pos(ev.clientY); draw(p);
+      const mvh = (e2) => { p = pos(e2.clientY); draw(p); };
+      const up = () => { window.removeEventListener('pointermove', mvh); window.removeEventListener('pointerup', up); this.call('cover', 'set_cover_position', { entity_id: sv.dataset.e, position: p }); setTimeout(() => this.release(), 600); };
+      window.addEventListener('pointermove', mvh); window.addEventListener('pointerup', up);
+    });
     R.addEventListener('input', (ev) => { const t = ev.target; if (t.dataset.live) { const o = R.getElementById(t.dataset.live); if (o) o.textContent = t.value + (t.dataset.unit || ''); } });
     R.addEventListener('change', (ev) => this.onChange(ev));
     const ro = new ResizeObserver(() => { const el = this.$('spark'); if (el && this._hist && Math.abs(el.clientWidth - (this._sw || 0)) > 8) this.r_hist(); });
@@ -175,6 +195,7 @@ class RaumCard extends HTMLElement {
     else if (a === 'scmore') { this._scAll = !this._scAll; this.r_scenes(); }
     else if (a === 'lock') { const sv = t.dataset.sv; if (sv !== 'lock' && !window.confirm(sv === 'open' ? 'Tür wirklich öffnen?' : 'Tür wirklich aufschließen?')) return; this.call('lock', sv, { entity_id: e }); }
     else if (a === 'cov') this.call('cover', t.dataset.sv, { entity_id: e });
+    else if (a === 'covp') this.call('cover', 'set_cover_position', { entity_id: e, position: +t.dataset.p });
     else if (a === 'covall') this.call('cover', t.dataset.sv, { entity_id: this.c.covers.map(x => x.entity) });
     else if (a === 'temp') { const s = this.s(this.c.climate), st = s.attributes.target_temp_step || 0.5; const v = Math.round(((this._tgt ?? s.attributes.temperature) + st * +t.dataset.d) * 2) / 2; this._tgt = Math.min(s.attributes.max_temp, Math.max(s.attributes.min_temp, v)); this.r_hero(); clearTimeout(this._tt); this._tt = setTimeout(() => { this.call('climate', 'set_temperature', { entity_id: this.c.climate, temperature: this._tgt }); setTimeout(() => { this._tgt = null; }, 4000); }, 900); }
     else if (a === 'hvac') { const s = this.s(this.c.climate); this.call('climate', 'set_hvac_mode', { entity_id: this.c.climate, hvac_mode: s.state === 'off' ? (s.attributes.hvac_modes.find(m => m !== 'off') || 'heat') : 'off' }); }
@@ -398,9 +419,33 @@ class RaumCard extends HTMLElement {
         <div class="lkb"><button class="btn" data-act="lock" data-sv="lock" data-e="${x.entity}">${R_icon('mdi:lock', 16)}Abschließen</button><button class="btn" data-act="lock" data-sv="unlock" data-e="${x.entity}">${R_icon('mdi:lock-open-variant', 16)}Aufschließen</button>${canOpen ? `<button class="btn" data-act="lock" data-sv="open" data-e="${x.entity}">${R_icon('mdi:door-open', 16)}Öffnen</button>` : ''}</div></div>`;
     }).join('');
   }
-  kCovers() { return this.ks(this.c.covers.map(x => x.entity)); }
+  kCovers() { return this.ks([...this.c.covers.map(x => x.entity), this.c.cover_style === 'scene' ? 'sun.sun' : null]); }
+  // Rollladen als Bild: Fenster/Tür mit Blick nach draußen (Tag/Nacht), Panzer mit Lamellen; auf dem Fenster ziehen setzt die Position
+  coverScene(x, s, p) {
+    const door = x.kind ? x.kind === 'door' : /tür/i.test(x.name || ''), day = (this.s('sun.sun') || {}).state !== 'below_horizon';
+    const W = 120, H = door ? 176 : 128, gy = 16, gh = H - gy - 6, id = x.entity.replace(/\W/g, ''), sh = Math.round(gh * (100 - p) / 100);
+    const mv = s.state === 'opening' ? 'fährt hoch' : s.state === 'closing' ? 'fährt runter' : p >= 99 ? 'offen' : p <= 1 ? 'geschlossen' : 'teilweise offen';
+    const stars = day ? '' : [[20, 30], [44, 22], [88, 34], [70, 48], [100, 24], [30, 56]].map(([a, b]) => `<circle cx="${a}" cy="${b + gy}" r="1" fill="#fff" opacity=".8"/>`).join('');
+    const sl = Array.from({ length: Math.ceil(gh / 6) }, (_, i) => `<rect x="6" y="${gy + i * 6}" width="${W - 12}" height="5" fill="${day ? '#9aa4b2' : '#4a5263'}"/>`).join('');
+    const svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" class="cvsvg" data-e="${x.entity}" data-gy="${gy}" data-gh="${gh}">
+      <defs><linearGradient id="${id}sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${day ? '#6fb8ff' : '#0a1230'}"/><stop offset="1" stop-color="${day ? '#dff0ff' : '#2a3a6a'}"/></linearGradient><clipPath id="${id}cl"><rect x="6" y="${gy}" width="${W - 12}" height="${gh}"/></clipPath></defs>
+      <rect x="0" y="0" width="${W}" height="${H}" rx="6" fill="#2a2f3b"/>
+      <g clip-path="url(#${id}cl)"><rect x="6" y="${gy}" width="${W - 12}" height="${gh}" fill="url(#${id}sky)"/>${stars}
+        ${day ? `<circle cx="${W - 30}" cy="${gy + 26}" r="11" fill="#ffe38a"/><circle cx="${W - 30}" cy="${gy + 26}" r="18" fill="#ffe38a" opacity=".25"/>` : `<circle cx="${W - 32}" cy="${gy + 24}" r="9" fill="#f3f0dc"/><circle cx="${W - 28}" cy="${gy + 21}" r="8" fill="#0d1636"/>`}
+        <path d="M6,${H - 6 - gh * .28} C30,${H - 6 - gh * .36} 50,${H - 6 - gh * .22} 74,${H - 6 - gh * .32} S110,${H - 6 - gh * .26} ${W - 6},${H - 6 - gh * .3} L${W - 6},${H - 6} L6,${H - 6} Z" fill="${day ? '#3f8a52' : '#13281c'}"/>
+        <rect x="${W / 2 - 1.5}" y="${gy}" width="3" height="${gh}" fill="#e9edf2" opacity="${door ? 0 : .9}"/>
+        ${door ? `<rect x="${W - 22}" y="${gy + gh * .5}" width="4" height="16" rx="2" fill="#e9edf2"/>` : ''}
+        <g class="cvsh" style="transition:transform .9s" transform="translate(0 ${sh - gh})"><rect x="6" y="${gy}" width="${W - 12}" height="${gh}" fill="${day ? '#6c7686' : '#2b313d'}"/>${sl}<rect x="6" y="${gy + gh - 4}" width="${W - 12}" height="4" fill="#3a4150"/></g></g>
+      <rect x="0" y="0" width="${W}" height="${gy}" rx="6" fill="#1b1f29"/><rect x="0" y="${gy - 3}" width="${W}" height="3" fill="#11141b"/>
+      <rect x="6" y="${gy}" width="${W - 12}" height="${gh}" fill="none" stroke="#e9edf2" stroke-width="2.5"/></svg>`;
+    return `<div class="cvs"><div class="cvw" title="Ziehen zum Verstellen">${svg}<div class="cvp" id="cvp-${id}">${p >= 99 ? 'offen' : p <= 1 ? 'zu' : p + ' %'}</div></div>
+      <div class="cvi"><div class="n">${R_esc(x.name)}</div><div class="s">${mv}</div>
+        <div class="cvq"><button class="chq" data-act="covp" data-e="${x.entity}" data-p="100">Auf</button><button class="chq" data-act="covp" data-e="${x.entity}" data-p="50">Halb</button><button class="chq" data-act="covp" data-e="${x.entity}" data-p="20">Schlitze</button><button class="chq" data-act="covp" data-e="${x.entity}" data-p="0">Zu</button></div></div>
+      <div class="cvb"><button class="ib2 ${s.state === 'opening' ? 'mv' : ''}" data-act="cov" data-sv="open_cover" data-e="${x.entity}" aria-label="Öffnen">${R_icon('mdi:arrow-up', 20)}</button><button class="ib2" data-act="cov" data-sv="stop_cover" data-e="${x.entity}" aria-label="Stopp">${R_icon('mdi:stop', 20)}</button><button class="ib2 ${s.state === 'closing' ? 'mv' : ''}" data-act="cov" data-sv="close_cover" data-e="${x.entity}" aria-label="Schließen">${R_icon('mdi:arrow-down', 20)}</button></div></div>`;
+  }
   r_covers() {
     const el = this.$('covers'); if (!el) return;
+    if (this.c.cover_style === 'scene') { el.classList.add('scene'); el.innerHTML = this.c.covers.map(x => { const s = this.s(x.entity); if (!s) return ''; return this.coverScene(x, s, s.attributes.current_position ?? (s.state === 'open' ? 100 : 0)); }).join(''); return; }
     el.innerHTML = this.c.covers.map(x => {
       const s = this.s(x.entity); if (!s) return '';
       const p = s.attributes.current_position ?? (s.state === 'open' ? 100 : 0), mv = s.state === 'opening' ? 'fährt hoch' : s.state === 'closing' ? 'fährt runter' : p >= 99 ? 'offen' : p <= 1 ? 'geschlossen' : `${p} % offen`;
