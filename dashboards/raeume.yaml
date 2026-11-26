@@ -454,6 +454,13 @@ badezimmer:
   temperature: sensor.shelly_blu_h_t_1eca_temperature
   humidity: sensor.shelly_blu_h_t_1eca_humidity
   climate: climate.shellywalldisplay_000822acf8f5
+  fixtures:
+  - type: mirror
+    name: Spiegel
+    entity: light.badezimmer_aqara_taster_badezimmer
+  - type: panel
+    name: Decke
+    entity: light.hue_surimu_panel_1
   lights:
   - entity: light.hue_surimu_panel_1
     name: Decke
