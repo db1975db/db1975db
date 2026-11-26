@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.16.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.16.1)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -93,6 +93,7 @@ const R_CSS = `
 .pin{display:grid;grid-template-columns:128px minmax(0,1fr);gap:18px;padding:18px 18px 10px;align-items:center}
 .pcv{position:relative;width:128px;height:128px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,#3a4a8a,#8a3a7a);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(0,0,0,.4)}
 .pcv img{width:100%;height:100%;object-fit:cover}
+.pst{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px;text-align:center}.pst b{font-size:19px;font-weight:800;line-height:1.1;letter-spacing:-.01em;overflow-wrap:anywhere}
 .plb{font-size:12px;opacity:.75;display:flex;align-items:center;gap:5px;text-transform:none}
 .pti{font-size:22px;font-weight:700;line-height:1.15;margin-top:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .par{font-size:14px;opacity:.8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -569,7 +570,8 @@ class RaumCard extends HTMLElement {
   player(x, s) {
     const A = s.attributes, F = A.supported_features || 0, on = !['off', 'standby', 'unavailable', 'unknown'].includes(s.state), pl = s.state === 'playing';
     const st = { playing: 'spielt', paused: 'pausiert', idle: 'bereit', off: 'aus', standby: 'Standby', unavailable: 'nicht erreichbar' }[s.state] || s.state;
-    const pic = A.entity_picture, title = A.media_title || A.source || (on ? 'Bereit' : 'Aus'), sub = [A.media_artist, A.media_album_name].filter(Boolean).join(' · ') || (A.media_channel && A.media_channel !== title ? A.media_channel : '');
+    const curSt = (x.stations || []).find(st => (A.media_content_id || '').includes(st.url) || (A.media_album_name === st.name && /radio/.test(A.media_content_id || '')));
+    const pic = A.entity_picture || (curSt && curSt.image), title = A.media_title || A.source || (on ? 'Bereit' : 'Aus'), sub = [A.media_artist, A.media_album_name].filter(Boolean).join(' · ') || (A.media_channel && A.media_channel !== title ? A.media_channel : '');
     const vol = A.volume_level != null ? Math.round(A.volume_level * 100) : null, id = 'mv-' + x.entity.replace(/\W/g, ''), e = x.entity;
     const dur = A.media_duration, pos = A.media_position != null ? A.media_position + (pl && A.media_position_updated_at ? (Date.now() - new Date(A.media_position_updated_at)) / 1000 : 0) : null;
     const t = (v) => `${Math.floor(v / 60)}:${String(Math.floor(v % 60)).padStart(2, '0')}`;
@@ -577,7 +579,7 @@ class RaumCard extends HTMLElement {
     const favs = x.sources === false ? [] : (Array.isArray(x.sources) ? x.sources : A.source_list || []);
     const b = (sv, ic, lb, cls = '') => `<button class="pb ${cls}" data-act="mp" data-sv="${sv}" data-e="${e}" aria-label="${lb}">${R_icon(ic, cls.includes('big') ? 30 : 22)}</button>`;
     return `<div class="ply ${pl ? 'plyon' : ''}">${pic ? `<div class="pbg" style="background-image:url('${pic}')"></div>` : ''}<div class="psh"></div>
-      <div class="pin"><div class="pcv">${pic ? `<img src="${pic}" alt="">` : R_icon(x.icon || 'mdi:speaker', 44)}${pl ? '<i class="eq"><b></b><b></b><b></b><b></b></i>' : ''}</div>
+      <div class="pin"><div class="pcv" ${!pic && curSt ? `style="background:linear-gradient(135deg,hsl(${[...curSt.name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7)} 65% 48%),hsl(${([...curSt.name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7) + 50) % 360} 55% 26%))"` : ''}>${pic ? `<img src="${pic}" alt="">` : curSt ? `<div class="pst">${R_icon('mdi:radio-tower', 22)}<b>${R_esc(curSt.name)}</b></div>` : R_icon(x.icon || 'mdi:speaker', 44)}${pl ? '<i class="eq"><b></b><b></b><b></b><b></b></i>' : ''}</div>
         <div class="pmt"><div class="plb">${R_icon(x.icon || 'mdi:speaker', 14)}${R_esc(x.name)} · ${radio ? 'Radio' : st}${radio && on ? ` · ${st}` : ''}</div>
           <div class="pti">${R_esc(title)}</div>${sub ? `<div class="par">${R_esc(sub)}</div>` : ''}
           ${dur ? `<div class="ppg"><span>${t(Math.min(pos || 0, dur))}</span><div class="pgb" data-pos="${pos || 0}" data-dur="${dur}" data-at="${pl ? Date.now() : 0}"><i style="width:${Math.min(100, (pos || 0) / dur * 100)}%"></i></div><span>${t(dur)}</span></div>` : radio && on ? '<div class="plive"><i></i>Live</div>' : ''}
