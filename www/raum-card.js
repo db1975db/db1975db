@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.12.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.13.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -114,6 +114,17 @@ const R_CSS = `
 .tvch{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;background:rgba(10,14,24,.6);backdrop-filter:blur(6px);border-radius:999px;padding:3px 10px}
 .tvb{position:absolute;left:16px;right:16px;bottom:12px}.tvb .pti{font-size:24px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
 .tvc2 .pct{padding:12px 16px 4px;margin-top:0;justify-content:center}
+.aq{display:grid;grid-template-columns:120px minmax(0,1fr);gap:6px 16px;border-radius:22px;padding:16px;color:#fff;background:radial-gradient(120% 100% at 0% 0%,color-mix(in srgb,var(--aq) 22%,#1b2234) 0%,#0e121c 70%);box-shadow:0 12px 30px rgba(0,0,0,.2)}
+.aqv{grid-row:span 1}.aqs{width:120px;height:auto;display:block}
+.aqs .fl{opacity:0;animation:aqfl 2.4s infinite ease-out}.aqs .f1{animation-delay:.8s}.aqs .f2{animation-delay:1.6s}
+@keyframes aqfl{0%{opacity:0;transform:translateY(8px)}30%{opacity:.9}100%{opacity:0;transform:translateY(-14px)}}
+.aqi{position:relative;align-self:center;padding-right:50px}.aql{font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.06em}.aqq{font-size:28px;font-weight:700;color:var(--aq);line-height:1.1;margin:2px 0 4px}.aqs2{font-size:13px;opacity:.8}
+.aqp{position:absolute;right:0;top:50%;transform:translateY(-50%)}.aqp.on{background:var(--aq);color:#0c1a10;border-color:transparent}
+.aqm,.aqx{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.aqb{font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;cursor:pointer}.aqb.on{background:var(--aq);color:#0c1a10;border-color:transparent}
+.aqt{font:inherit;font-size:12.5px;display:inline-flex;align-items:center;gap:6px;border-radius:14px;padding:7px 10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;cursor:pointer}.aqt b{font-weight:700;opacity:.8}.aqt.on{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.14)}
+.aqf{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;margin-top:4px}.aqf>div:first-child{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;opacity:.85}.aqf>div:first-child span{display:inline-flex;align-items:center;gap:5px}
+.aqf .mb{grid-column:1;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}.aqf .mb i{display:block;height:100%;background:var(--aq)}.aqr{grid-column:2;grid-row:1/span 2;color:#fff;border-color:rgba(255,255,255,.25)}
 .md{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--r-line);border-radius:18px;padding:10px 12px}
 .md .ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--r-line)}
 .md.on .ic{background:var(--r-acc);color:#fff}
@@ -153,7 +164,7 @@ class RaumCard extends HTMLElement {
   set hass(h) {
     this._hass = h;
     if (!this.root) this.build();
-    const parts = { hero: this.kHero(), locks: this.kLocks(), lights: this.kLights(), sockets: this.kSockets(), scenes: this.kScenes(), covers: this.kCovers(), media: this.kMedia(), power: this.kPower(), status: this.kStatus() };
+    const parts = { hero: this.kHero(), locks: this.kLocks(), lights: this.kLights(), sockets: this.kSockets(), scenes: this.kScenes(), covers: this.kCovers(), purifier: this.kPurifier(), media: this.kMedia(), power: this.kPower(), status: this.kStatus() };
     for (const [k, v] of Object.entries(parts)) {
       if (this._k[k] === v) continue;
       if (this._busy === k) { this._dirty = true; continue; }
@@ -173,6 +184,7 @@ class RaumCard extends HTMLElement {
       ${c.scene_select ? `<div class="blk full"><div class="bh"><h2>${R_icon('mdi:palette', 20)}Lichtszenen</h2><button class="btn" data-act="scmore" id="scmore"></button></div><div class="scenes" id="scenes"></div></div>` : ''}
       ${c.locks.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:lock-smart', 20)}Türschloss</h2></div><div class="locks" id="locks"></div></div>` : ''}
       ${c.covers.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:window-shutter', 20)}Rollläden</h2><div style="display:flex;gap:6px"><button class="btn" data-act="covall" data-sv="open_cover">${R_icon('mdi:arrow-up', 16)}Alle auf</button><button class="btn" data-act="covall" data-sv="close_cover">${R_icon('mdi:arrow-down', 16)}Alle zu</button></div></div><div class="covers" id="covers"></div></div>` : ''}
+      ${c.purifier ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:air-purifier', 20)}${R_esc(c.purifier.name || 'Luftreiniger')}</h2></div><div id="purifier"></div></div>` : ''}
       ${c.media.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:television-play', 20)}Medien</h2></div><div class="media" id="media"></div></div>` : ''}
       ${c.power.length ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:lightning-bolt', 20)}Strom jetzt</h2><p>Leistung der Messsteckdosen</p></div><div class="pw" id="power"></div></div>` : ''}
       ${c.temperature ? `<div class="blk half"><div class="bh"><h2>${R_icon('mdi:chart-bell-curve', 20)}Raumklima · 24 h</h2><p id="histsub"></p></div><div class="spark" id="spark"><div class="msg">Lade Verlauf …</div></div></div>` : ''}
@@ -228,6 +240,8 @@ class RaumCard extends HTMLElement {
     else if (a === 'temp') { const s = this.s(this.c.climate), st = s.attributes.target_temp_step || 0.5; const v = Math.round(((this._tgt ?? s.attributes.temperature) + st * +t.dataset.d) * 2) / 2; this._tgt = Math.min(s.attributes.max_temp, Math.max(s.attributes.min_temp, v)); this.r_hero(); clearTimeout(this._tt); this._tt = setTimeout(() => { this.call('climate', 'set_temperature', { entity_id: this.c.climate, temperature: this._tgt }); setTimeout(() => { this._tgt = null; }, 4000); }, 900); }
     else if (a === 'hvac') { const s = this.s(this.c.climate); this.call('climate', 'set_hvac_mode', { entity_id: this.c.climate, hvac_mode: s.state === 'off' ? (s.attributes.hvac_modes.find(m => m !== 'off') || 'heat') : 'off' }); }
     else if (a === 'mp') { const sv = t.dataset.sv, A = (this.s(e) || { attributes: {} }).attributes; this.call('media_player', sv, sv === 'shuffle_set' ? { entity_id: e, shuffle: !A.shuffle } : sv === 'repeat_set' ? { entity_id: e, repeat: A.repeat === 'off' ? 'all' : A.repeat === 'all' ? 'one' : 'off' } : sv === 'volume_mute' ? { entity_id: e, is_volume_muted: !A.is_volume_muted } : { entity_id: e }); }
+    else if (a === 'pmode') this.call('fan', 'set_preset_mode', { entity_id: e, preset_mode: t.dataset.m });
+    else if (a === 'freset') { if (window.confirm('Filter wirklich als neu gewechselt zurücksetzen?')) this.call('button', 'press', { entity_id: e }); }
     else if (a === 'srcb') this.call('media_player', 'select_source', { entity_id: e, source: t.dataset.o });
     else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: e } }));
   }
@@ -484,6 +498,36 @@ class RaumCard extends HTMLElement {
         <input type="range" min="0" max="100" step="5" value="${p}" data-act="pos" data-e="${x.entity}" data-busy="covers" data-live="cp-${x.entity.replace(/\W/g, '')}" data-unit=" % offen" aria-label="Position ${R_esc(x.name)}">
         <div class="row"><button class="ib" data-act="cov" data-sv="open_cover" data-e="${x.entity}" aria-label="Öffnen">${R_icon('mdi:arrow-up')}</button><button class="ib" data-act="cov" data-sv="stop_cover" data-e="${x.entity}" aria-label="Stopp">${R_icon('mdi:stop')}</button><button class="ib" data-act="cov" data-sv="close_cover" data-e="${x.entity}" aria-label="Schließen">${R_icon('mdi:arrow-down')}</button></div></div></div>`;
     }).join('');
+  }
+  // ---------- Luftreiniger ----------
+  kPurifier() { const p = this.c.purifier; return p ? this.ks([p.entity, p.air_quality, p.pm25, p.filter, p.light, p.child_lock, p.charging]) : ''; }
+  r_purifier() {
+    const el = this.$('purifier'), P = this.c.purifier; if (!el || !P) return;
+    const f = this.s(P.entity); if (!f) { el.innerHTML = ''; return; }
+    const on = f.state === 'on', pm = f.attributes.preset_mode, aq = (this.s(P.air_quality) || {}).state, pm25 = this.n(P.pm25), fh = this.n(P.filter), fmax = P.filter_max_h || 4380;
+    const AQ = { excellent: ['Ausgezeichnet', '#2fd27a'], good: ['Gut', '#9bd23a'], moderate: ['Mäßig', '#f2a93b'], fair: ['Mäßig', '#f2a93b'], unhealthy: ['Schlecht', '#ef5a4c'], poor: ['Schlecht', '#ef5a4c'], very_poor: ['Sehr schlecht', '#d63a5a'] };
+    const [aqt, aqc] = AQ[aq] || ['unbekannt', '#8a94a3'];
+    const PM = { auto: ['Auto', 'mdi:fan-auto'], level_1: ['Stufe 1', 'mdi:fan-speed-1'], level_2: ['Stufe 2', 'mdi:fan-speed-2'], level_3: ['Stufe 3', 'mdi:fan-speed-3'], low: ['Niedrig', 'mdi:fan-speed-1'], medium: ['Mittel', 'mdi:fan-speed-2'], high: ['Hoch', 'mdi:fan-speed-3'], sleep: ['Schlaf', 'mdi:power-sleep'], pet: ['Haustier', 'mdi:paw'] };
+    const modes = f.attributes.preset_modes || [], pmL = (m) => (PM[m] || [m])[0];
+    const lt = this.s(P.light), cl = this.s(P.child_lock), ch = this.s(P.charging);
+    const tog = (e, s2, ic, lb) => s2 && s2.state !== 'unavailable' ? `<button class="aqt ${s2.state === 'on' ? 'on' : ''}" data-act="toggle" data-e="${e}">${R_icon(ic, 18)}<span>${lb}</span><b>${s2.state === 'on' ? 'an' : s2.state === 'off' ? 'aus' : '–'}</b></button>` : '';
+    const svg = `<svg viewBox="0 0 140 170" class="aqs ${on ? 'on' : ''}" style="--aq:${aqc}">
+      ${on ? [0, 1, 2].map(i => `<path class="fl f${i}" d="M${46 + i * 4},34 C${50 + i * 4},18 ${90 - i * 4},18 ${94 - i * 4},34" fill="none" stroke="${aqc}" stroke-width="2.5" stroke-linecap="round"/>`).join('') : ''}
+      <ellipse cx="70" cy="44" rx="46" ry="10" fill="#2c3343" stroke="rgba(255,255,255,.18)"/>
+      <path d="M28,46 L32,152 Q70,164 108,152 L112,46 Q70,58 28,46 Z" fill="#e9ecf1"/>
+      <path d="M28,46 L32,152 Q70,164 108,152 L112,46 Q70,58 28,46 Z" fill="url(#aqsh)"/>
+      <defs><linearGradient id="aqsh" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".18"/><stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient></defs>
+      ${Array.from({ length: 9 }, (_, i) => `<line x1="${38 + i * 8}" y1="${66 + Math.abs(4 - i) * .6}" x2="${38 + i * 8}" y2="${140 - Math.abs(4 - i) * .4}" stroke="#c3c9d3" stroke-width="2.4" stroke-linecap="round"/>`).join('')}
+      <ellipse cx="70" cy="42" rx="40" ry="7" fill="#1b2130"/>
+      <ellipse cx="70" cy="152" rx="36" ry="4" fill="${on ? aqc : '#9aa3b0'}" opacity="${on ? .9 : .5}"/>
+      <circle cx="70" cy="56" r="3" fill="${aqc}"/></svg>`;
+    el.innerHTML = `<div class="aq ${on ? 'on' : ''}" style="--aq:${aqc}"><div class="aqv">${svg}</div>
+      <div class="aqi"><div class="aql">Luftqualität</div><div class="aqq">${aqt}</div>
+        <div class="aqs2">${pm25 != null ? `PM2,5 ${R_fmt(pm25, 0)} µg/m³ · ` : ''}${on ? `läuft · ${pmL(pm)}` : f.state === 'unavailable' ? 'nicht erreichbar' : 'aus'}</div>
+        <button class="fxp aqp ${on ? 'on' : ''}" data-act="toggle" data-e="${P.entity}" aria-label="Ein/Aus">${R_icon('mdi:power', 20)}</button></div>
+      <div class="aqm">${modes.map(m => `<button class="aqb ${on && m === pm ? 'on' : ''}" data-act="pmode" data-e="${P.entity}" data-m="${R_esc(m)}">${R_icon((PM[m] || [, 'mdi:fan'])[1], 18)}${R_esc(pmL(m))}</button>`).join('')}</div>
+      <div class="aqx">${tog(P.light, lt, 'mdi:led-strip-variant', 'Licht')}${tog(P.child_lock, cl, 'mdi:lock', 'Kindersicherung')}${tog(P.charging, ch, 'mdi:battery-charging-wireless', 'Laden')}</div>
+      ${fh != null ? `<div class="aqf"><div><span>${R_icon('mdi:air-filter', 16)}Filter</span><span>${R_fmt(fh, 0)} h in Betrieb · etwa ${Math.max(0, Math.round(100 - fh / fmax * 100))} % übrig</span></div><div class="mb"><i style="width:${Math.max(0, Math.min(100, 100 - fh / fmax * 100))}%"></i></div>${P.filter_reset ? `<button class="btn aqr" data-act="freset" data-e="${P.filter_reset}">Filter gewechselt</button>` : ''}</div>` : ''}</div>`;
   }
   // ---------- Medien ----------
   kMedia() { return this.ks(this.c.media.map(x => x.entity)); }
