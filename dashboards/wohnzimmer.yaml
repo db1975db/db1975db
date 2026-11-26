@@ -86,6 +86,10 @@ media:
       url: https://dispatcher.rndfnk.com/rbb/fritz/live/mp3/mid
     - name: rbb24 Inforadio
       url: https://dispatcher.rndfnk.com/rbb/inforadio/live/mp3/mid
+    - name: BB Radio
+      url: https://streambbr.ir-media-tec.com/live/mp3-128/dmhubweb/play.mp3
+    - name: Chillout Lounge
+      url: https://stream.epic-lounge.com/chillout-lounge
 power:
   - entity: "sensor.shellyplusplugs_e465b893fb00_power"
     name: "Fernseher & Co."
