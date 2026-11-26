@@ -1308,12 +1308,15 @@ views:
       name: Fernseher
       icon: mdi:television
       play: false
-    sockets_title: Geräte
-    sockets_icon: mdi:devices
-    sockets:
-    - entity: fan.switchbot_air_purifier
-      name: Luftreiniger
-      icon: mdi:air-purifier
+    purifier:
+      entity: fan.luftreiniger_2
+      air_quality: sensor.luftreiniger_luftqualitatsstufe
+      pm25: sensor.luftreiniger_pm25
+      filter: sensor.kuche_luftreiniger_filterverbrauch
+      filter_reset: button.kuche_luftreiniger_filterverbrauch_zurucksetzen
+      light: light.kuche_luftreiniger_leuchte
+      child_lock: switch.luftreiniger_kindersicherung
+      charging: switch.luftreiniger_kabelloses_laden
     power:
     - entity: sensor.kuche_aqara_taster_kuche_leistung
       name: Deckenlicht (Aqara Taster)
