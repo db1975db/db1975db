@@ -211,7 +211,7 @@ floors:
     temperature: sensor.shelly_blu_h_t_c34d_temperature
     humidity: sensor.shelly_blu_h_t_c34d_humidity
     lights:
-    - light.hwr_steckdose
+    - switch.shelly1pmmini_348518e06610
     windows:
     - entity: binary_sensor.bthome_sensor_cc6a_window
       name: Fenster

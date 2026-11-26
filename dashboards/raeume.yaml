@@ -142,10 +142,6 @@ hwr:
     icon: mdi:ceiling-light
     power: sensor.shelly1pmmini_348518e06610_power
   sockets:
-  - entity: switch.hwr_steckdose
-    name: Steckdose
-    icon: mdi:power-socket-de
-    power: sensor.hwr_steckdose_leistung
   - entity: switch.shelly1pmg4_a085e3bd38e0
     name: Strom im Garten
     icon: mdi:power-plug-outline
