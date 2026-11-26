@@ -398,6 +398,11 @@ buero:
   temperature: sensor.shelly_blu_h_t_6215_temperature
   humidity: sensor.shelly_blu_h_t_6215_humidity
   climate: climate.shellywalldisplay_000822d8f919
+  fixtures:
+  - type: panel
+    shape: square
+    name: Deckenpanel
+    entity: light.hue_aurelle_panel_1
   lights:
   - entity: light.buro
     name: Ambiente

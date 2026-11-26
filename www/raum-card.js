@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.20.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.20.1)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -348,7 +348,7 @@ class RaumCard extends HTMLElement {
     el.innerHTML = tiles.join('') + this.c.switches.filter(x => !fxE.has(x.entity)).map(x => this.swTile(x)).join('');
     this.keyNav(el);
   }
-  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln), 'bar' (Balken mit Up- und Downlight), 'spots' (Einbaustrahler in der Decke), 'pendants' (Pendelleuchten an einer Deckenschiene), 'lantern' (Laterne mit Glühbirnen, optional `socket`), 'nightstands' (zwei Rattan-Nachttischlampen am Bett), 'go' (Hue Go hinter dem Fernseher, `side: left|right`, sonst mittig), 'ceiling' (flache Rattan-Deckenleuchte, auch für switch.*, optional `power`), 'panel' (LED-Deckenpanel), 'mirror' (Spiegelschrank mit LED-Leiste); ohne `entity` wirken Schalter, Helligkeit und Farbe auf alle `bulbs`
+  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln), 'bar' (Balken mit Up- und Downlight), 'spots' (Einbaustrahler in der Decke), 'pendants' (Pendelleuchten an einer Deckenschiene), 'lantern' (Laterne mit Glühbirnen, optional `socket`), 'nightstands' (zwei Rattan-Nachttischlampen am Bett), 'go' (Hue Go hinter dem Fernseher, `side: left|right`, sonst mittig), 'ceiling' (flache Rattan-Deckenleuchte, auch für switch.*, optional `power`), 'panel' (LED-Deckenpanel, `shape: square` für quadratisch), 'mirror' (Spiegelschrank mit LED-Leiste); ohne `entity` wirken Schalter, Helligkeit und Farbe auf alle `bulbs`
   fixture(f) {
     const st = (e) => this.s(e), on = (e) => (st(e) || {}).state === 'on', col = (e) => this.lightColor(st(e)), al = (e) => on(e) ? 0.35 + 0.65 * ((st(e).attributes.brightness || 255) / 255) : 0;
     const rgba = (c, a) => `rgba(${c.join(',')},${a.toFixed(2)})`;
@@ -473,15 +473,16 @@ class RaumCard extends HTMLElement {
     } else if (f.type === 'panel') {
       // Rechteckiges LED-Deckenpanel (z. B. Hue Surimu), schräg von unten gesehen
       ents = [f.entity];
-      const e = f.entity, c = col(e), a = al(e), g = `${id}pn`;
+      const e = f.entity, c = col(e), a = al(e), g = `${id}pn`, sq = f.shape === 'square';
+      const O = sq ? 'M34,46 L210,46 L190,168 L54,168 Z' : 'M44,14 L200,14 L162,188 L82,188 Z', I = sq ? 'M44,53 L200,53 L182,161 L62,161 Z' : 'M54,22 L190,22 L156,180 L88,180 Z';
       svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet"><defs>
         ${c ? `<radialGradient id="${g}h"><stop offset="0" stop-color="${rgba(c, .55)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></radialGradient>
         <linearGradient id="${g}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="${rgba(c.map(v => Math.min(255, v + 40)), 1)}"/><stop offset="1" stop-color="${rgba(c, 1)}"/></linearGradient>` : ''}</defs>
         <g data-act="toggle" data-e="${e}" style="cursor:pointer"><rect x="0" y="0" width="244" height="200" fill="transparent"/>
         ${c ? `<ellipse cx="122" cy="100" rx="150" ry="118" fill="url(#${g}h)" opacity="${a.toFixed(2)}"/>` : ''}
-        <path d="M44,14 L200,14 L162,188 L82,188 Z" fill="${c ? '#e9ecef' : '#2a2f3b'}" stroke="rgba(255,255,255,.18)"/>
-        <path d="M54,22 L190,22 L156,180 L88,180 Z" fill="${c ? `url(#${g}f)` : '#151a24'}" opacity="${c ? (0.55 + 0.45 * a).toFixed(2) : 1}"/>
-        ${c ? '' : '<path d="M60,28 L120,28 L100,120 L74,120 Z" fill="rgba(255,255,255,.04)"/>'}</g></svg>`;
+        <path d="${O}" fill="${c ? '#e9ecef' : '#2a2f3b'}" stroke="rgba(255,255,255,.18)"/>
+        <path d="${I}" fill="${c ? `url(#${g}f)` : '#151a24'}" opacity="${c ? (0.55 + 0.45 * a).toFixed(2) : 1}"/>
+        ${c ? '' : `<path d="${sq ? 'M50,59 L110,59 L98,120 L60,120 Z' : 'M60,28 L120,28 L100,120 L74,120 Z'}" fill="rgba(255,255,255,.04)"/>`}</g></svg>`;
     } else if (f.type === 'mirror') {
       // Spiegelschrank mit drei Türen und LED-Leiste oben (Licht nach oben an die Wand und nach unten auf den Spiegel)
       ents = [f.entity];
