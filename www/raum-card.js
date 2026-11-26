@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.13.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.13.1)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -118,8 +118,8 @@ const R_CSS = `
 .aqv{grid-row:span 1}.aqs{width:126px;height:auto;display:block}
 .aqs .fl{opacity:0;animation:aqfl 2.4s infinite ease-out}.aqs .f1{animation-delay:.8s}.aqs .f2{animation-delay:1.6s}
 @keyframes aqfl{0%{opacity:0;transform:translateY(8px)}30%{opacity:.9}100%{opacity:0;transform:translateY(-14px)}}
-.aqi{position:relative;align-self:center;padding-right:50px}.aql{font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.06em}.aqq{font-size:28px;font-weight:700;color:var(--aq);line-height:1.1;margin:2px 0 4px}.aqs2{font-size:13px;opacity:.8}
-.aqp{position:absolute;right:0;top:50%;transform:translateY(-50%)}.aqp.on{background:var(--aq);color:#0c1a10;border-color:transparent}
+.aqi{align-self:center;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}.aqi>div{grid-column:1}.aqi .aqp{grid-column:2;grid-row:1/span 3}.aql{font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.06em}.aqq{font-size:clamp(20px,5.2vw,28px);overflow-wrap:anywhere;font-weight:700;color:var(--aq);line-height:1.1;margin:2px 0 4px}.aqs2{font-size:13px;opacity:.8}
+.aqp.on{background:var(--aq);color:#0c1a10;border-color:transparent}
 .aqm,.aqx{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
 .aqb{font:inherit;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;cursor:pointer}.aqb.on{background:var(--aq);color:#0c1a10;border-color:transparent}
 .aqt{font:inherit;font-size:12.5px;display:inline-flex;align-items:center;gap:6px;border-radius:14px;padding:7px 10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;cursor:pointer}.aqt b{font-weight:700;opacity:.8}.aqt.on{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.14)}
@@ -535,7 +535,7 @@ class RaumCard extends HTMLElement {
         <button class="fxp aqp ${on ? 'on' : ''}" data-act="toggle" data-e="${P.entity}" aria-label="Ein/Aus">${R_icon('mdi:power', 20)}</button></div>
       <div class="aqm">${modes.map(m => `<button class="aqb ${on && m === pm ? 'on' : ''}" data-act="pmode" data-e="${P.entity}" data-m="${R_esc(m)}">${R_icon((PM[m] || [, 'mdi:fan'])[1], 18)}${R_esc(pmL(m))}</button>`).join('')}</div>
       <div class="aqx">${tog(P.light, lt, 'mdi:led-strip-variant', 'Licht')}${tog(P.child_lock, cl, 'mdi:lock', 'Kindersicherung')}${tog(P.charging, ch, 'mdi:battery-charging-wireless', 'Laden')}</div>
-      ${fh != null ? `<div class="aqf"><div><span>${R_icon('mdi:air-filter', 16)}Filter</span><span>${R_fmt(fh, 0)} h in Betrieb · etwa ${Math.max(0, Math.round(100 - fh / fmax * 100))} % übrig</span></div><div class="mb"><i style="width:${Math.max(0, Math.min(100, 100 - fh / fmax * 100))}%"></i></div>${P.filter_reset ? `<button class="btn aqr" data-act="freset" data-e="${P.filter_reset}">Filter gewechselt</button>` : ''}</div>` : ''}</div>`;
+      ${fh != null ? `<div class="aqf"><div><span>${R_icon('mdi:air-filter', 16)}Filter</span><span>${R_fmt(fh, 0)} h · noch etwa ${Math.max(0, Math.round(100 - fh / fmax * 100))} %</span></div><div class="mb"><i style="width:${Math.max(0, Math.min(100, 100 - fh / fmax * 100))}%"></i></div>${P.filter_reset ? `<button class="btn aqr" data-act="freset" data-e="${P.filter_reset}">Filter gewechselt</button>` : ''}</div>` : ''}</div>`;
   }
   // ---------- Medien ----------
   kMedia() { return this.ks(this.c.media.map(x => x.entity)); }

@@ -57,9 +57,9 @@ media:
     name: "Fernseher"
     icon: "mdi:television"
     play: false
-# SwitchBot-Luftreiniger mit Tisch (raum-card v1.13); fan.luftreiniger_2 hat alle Stufen, filter_max_h Standard 4380 h
+# SwitchBot-Luftreiniger mit Tisch (raum-card v1.13); Steuerung über Matter (fan.switchbot_air_purifier), Bluetooth-Eintrag fan.luftreiniger_2 reagiert schlecht (RSSI -78); filter_max_h Standard 4380 h
 purifier:
-  entity: "fan.luftreiniger_2"
+  entity: "fan.switchbot_air_purifier"
   air_quality: "sensor.luftreiniger_luftqualitatsstufe"
   pm25: "sensor.luftreiniger_pm25"
   filter: "sensor.kuche_luftreiniger_filterverbrauch"

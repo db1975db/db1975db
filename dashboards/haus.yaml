@@ -1309,7 +1309,7 @@ views:
       icon: mdi:television
       play: false
     purifier:
-      entity: fan.luftreiniger_2
+      entity: fan.switchbot_air_purifier
       air_quality: sensor.luftreiniger_luftqualitatsstufe
       pm25: sensor.luftreiniger_pm25
       filter: sensor.kuche_luftreiniger_filterverbrauch
