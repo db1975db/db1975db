@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.13.1)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.14.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -113,6 +113,13 @@ const R_CSS = `
 .tvt{position:absolute;left:14px;right:14px;top:12px;display:flex;gap:8px;align-items:center}.tvt .plive{margin-top:0}
 .tvch{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;background:rgba(10,14,24,.6);backdrop-filter:blur(6px);border-radius:999px;padding:3px 10px}
 .tvb{position:absolute;left:16px;right:16px;bottom:12px}.tvb .pti{font-size:24px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.tvl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(30px,8vw,54px);font-weight:800;letter-spacing:-.02em;opacity:.22;text-align:center;padding:0 20px}
+.tvp{font-weight:800;opacity:.6;font-size:15px}
+.rmt{display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:center;padding:6px 16px 4px}
+.rpad{display:grid;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:4px;background:rgba(255,255,255,.06);border-radius:50%;padding:8px}
+.rpad .u{grid-column:2;grid-row:1}.rpad .l{grid-column:1;grid-row:2}.rpad .ok{grid-column:2;grid-row:2;background:#fff;color:#141826;font-weight:800;font-size:13px}.rpad .r{grid-column:3;grid-row:2}.rpad .d{grid-column:2;grid-row:3}
+.rk{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font:inherit}.rpad .rk:not(.ok){background:transparent}
+.rcol{display:grid;grid-template-columns:repeat(2,40px);gap:8px;justify-content:center}
 .tvc2 .pct{padding:12px 16px 4px;margin-top:0;justify-content:center}
 .aq{display:grid;grid-template-columns:120px minmax(0,1fr);gap:6px 16px;border-radius:22px;padding:16px;color:#fff;background:radial-gradient(120% 100% at 0% 0%,color-mix(in srgb,var(--aq) 22%,#1b2234) 0%,#0e121c 70%);box-shadow:0 12px 30px rgba(0,0,0,.2)}
 .aqv{grid-row:span 1}.aqs{width:126px;height:auto;display:block}
@@ -242,6 +249,7 @@ class RaumCard extends HTMLElement {
     else if (a === 'mp') { const sv = t.dataset.sv, A = (this.s(e) || { attributes: {} }).attributes; this.call('media_player', sv, sv === 'shuffle_set' ? { entity_id: e, shuffle: !A.shuffle } : sv === 'repeat_set' ? { entity_id: e, repeat: A.repeat === 'off' ? 'all' : A.repeat === 'all' ? 'one' : 'off' } : sv === 'volume_mute' ? { entity_id: e, is_volume_muted: !A.is_volume_muted } : { entity_id: e }); }
     else if (a === 'pmode') this.call('fan', 'set_preset_mode', { entity_id: e, preset_mode: t.dataset.m });
     else if (a === 'freset') { if (window.confirm('Filter wirklich als neu gewechselt zurücksetzen?')) this.call('button', 'press', { entity_id: e }); }
+    else if (a === 'rc') this.call('remote', 'send_command', { entity_id: e, command: t.dataset.c });
     else if (a === 'srcb') this.call('media_player', 'select_source', { entity_id: e, source: t.dataset.o });
     else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: e } }));
   }
@@ -581,18 +589,26 @@ class RaumCard extends HTMLElement {
     const A = s.attributes, on = !['off', 'standby', 'unavailable', 'unknown'].includes(s.state), e = x.entity;
     const k = x.sky && this.s(x.sky), K = k ? k.attributes : {}, kon = k && !['off', 'standby', 'unavailable', 'unknown'].includes(k.state), kpl = k && k.state === 'playing';
     const pic = kon ? (K.entity_picture_local || K.entity_picture) : null, live = K.skyq_media_type === 'live';
-    const title = kon ? (K.media_series_title || K.media_title || K.media_channel) : on ? 'Fernseher an' : 'Fernseher aus';
+    const own = !k && on && (A.media_channel || A.media_title), chNo = own && A.media_content_type === 'channel' && A.media_content_id ? String(+A.media_content_id || A.media_content_id) : '';
+    const title = kon ? (K.media_series_title || K.media_title || K.media_channel) : own ? (A.media_title || A.media_channel) : on ? (A.source || 'Fernseher an') : 'Fernseher aus';
     const sub = kon && K.media_series_title && K.media_title && K.media_title !== K.media_channel && K.media_title !== K.media_series_title ? K.media_title : '';
-    const ch = kon ? [K.skyq_channelno, K.media_channel].filter(Boolean).join(' · ') : '';
+    const ch = kon ? [K.skyq_channelno, K.media_channel].filter(Boolean).join(' · ') : own ? [chNo, A.media_channel].filter(Boolean).join(' · ') : '';
+    const dur = own && A.media_duration, pos = dur && A.media_position != null ? Math.min(dur, A.media_position + (A.media_position_updated_at ? (Date.now() - new Date(A.media_position_updated_at)) / 1000 : 0)) : null;
+    const hue = [...(A.media_channel || x.name || 'TV')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+    const F = A.supported_features || 0, rm = x.remote;
+    const rb = (cmd, ic, lb, cls = '') => `<button class="rk ${cls}" data-act="rc" data-e="${rm}" data-c="${cmd}" aria-label="${lb}">${ic.startsWith('mdi:') ? R_icon(ic, 20) : ic}</button>`;
     const vol = A.volume_level != null ? Math.round(A.volume_level * 100) : null, id = 'mv-' + e.replace(/\W/g, '');
     const KF = K.supported_features || 0, apps = x.sources === true ? (A.source_list || []) : (x.sources || []);
     const b = (ent, sv, ic, lb, cls = '') => `<button class="pb ${cls}" data-act="mp" data-sv="${sv}" data-e="${ent}" aria-label="${lb}">${R_icon(ic, cls.includes('big') ? 30 : 22)}</button>`;
-    return `<div class="tvc ${on ? 'on' : ''}"><div class="tvi">${pic ? `<img src="${pic}" alt="">` : `<div class="tvn">${R_icon(x.icon || 'mdi:television', 54)}</div>`}<div class="tvg"></div>
-        <div class="tvt">${ch ? `<span class="tvch">${R_icon('mdi:satellite-variant', 14)}${R_esc(ch)}</span>` : ''}${kon && live ? '<span class="plive"><i></i>Live</span>' : kon ? `<span class="tvch">${kpl ? 'läuft' : 'pausiert'}</span>` : ''}</div>
-        <div class="tvb"><div class="pti">${R_esc(title)}</div>${sub ? `<div class="par">${R_esc(sub)}</div>` : ''}</div></div>
-      <div class="tvc2"><div class="pct">${b(e, 'toggle', 'mdi:power', 'Fernseher ein/aus', on ? 'act' : '')}${k ? `${KF & 16 ? b(x.sky, 'media_previous_track', 'mdi:rewind', 'Zurück') : ''}${b(x.sky, 'media_play_pause', kpl ? 'mdi:pause' : 'mdi:play', 'Play/Pause', 'big')}${KF & 32 ? b(x.sky, 'media_next_track', 'mdi:fast-forward', 'Vor') : ''}${b(x.sky, 'toggle', 'mdi:satellite-variant', 'Receiver ein/aus', kon ? 'act' : '')}` : ''}</div>
+    return `<div class="tvc ${on ? 'on' : ''}"><div class="tvi" ${own ? `style="background:radial-gradient(120% 130% at 20% 10%,hsl(${hue} 55% 38%),hsl(${(hue + 40) % 360} 45% 14%) 70%)"` : ''}>${pic ? `<img src="${pic}" alt="">` : own ? `<div class="tvl">${R_esc(A.media_channel || '')}</div>` : `<div class="tvn">${R_icon(x.icon || 'mdi:television', 54)}</div>`}<div class="tvg"></div>
+        <div class="tvt">${ch ? `<span class="tvch">${R_icon(kon ? 'mdi:satellite-variant' : 'mdi:television-classic', 14)}${R_esc(ch)}</span>` : ''}${kon && live ? '<span class="plive"><i></i>Live</span>' : kon ? `<span class="tvch">${kpl ? 'läuft' : 'pausiert'}</span>` : ''}</div>
+        <div class="tvb"><div class="pti">${R_esc(title)}</div>${sub ? `<div class="par">${R_esc(sub)}</div>` : ''}${dur ? `<div class="ppg"><span>${new Date(Date.now() - pos * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span><div class="pgb"><i style="width:${Math.round(pos / dur * 100)}%"></i></div><span>${new Date(Date.now() + (dur - pos) * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span></div>` : ''}</div></div>
+      <div class="tvc2"><div class="pct">${b(e, 'toggle', 'mdi:power', 'Fernseher ein/aus', on ? 'act' : '')}${k ? `${KF & 16 ? b(x.sky, 'media_previous_track', 'mdi:rewind', 'Zurück') : ''}${b(x.sky, 'media_play_pause', kpl ? 'mdi:pause' : 'mdi:play', 'Play/Pause', 'big')}${KF & 32 ? b(x.sky, 'media_next_track', 'mdi:fast-forward', 'Vor') : ''}${b(x.sky, 'toggle', 'mdi:satellite-variant', 'Receiver ein/aus', kon ? 'act' : '')}` : on && !rm ? `${F & 16 ? b(e, 'media_previous_track', 'mdi:chevron-down', 'Programm zurück') : ''}<span class="tvp">P</span>${F & 32 ? b(e, 'media_next_track', 'mdi:chevron-up', 'Programm vor') : ''}` : ''}</div>
+      ${on && rm ? `<div class="rmt"><div class="rpad">${rb('Up', 'mdi:chevron-up', 'Hoch', 'u')}${rb('Left', 'mdi:chevron-left', 'Links', 'l')}${rb('Confirm', 'OK', 'OK', 'ok')}${rb('Right', 'mdi:chevron-right', 'Rechts', 'r')}${rb('Down', 'mdi:chevron-down', 'Runter', 'd')}</div>
+        <div class="rcol">${rb('Return', 'mdi:keyboard-return', 'Zurück')}${rb('Home', 'mdi:home', 'Home')}${rb('EPG', 'mdi:television-guide', 'Programmführer')}${rb('Options', 'mdi:dots-horizontal', 'Optionen')}</div>
+        <div class="rcol">${rb('VolumeUp', 'mdi:volume-plus', 'Lauter')}${rb('VolumeDown', 'mdi:volume-minus', 'Leiser')}${rb('ChannelUp', '<b>P+</b>', 'Programm +')}${rb('ChannelDown', '<b>P−</b>', 'Programm −')}</div></div>` : ''}
       ${on && vol != null ? `<div class="pvo"><button class="pb sm" data-act="mp" data-sv="volume_mute" data-e="${e}" aria-label="Stumm">${R_icon(A.is_volume_muted ? 'mdi:volume-off' : vol < 30 ? 'mdi:volume-low' : vol < 70 ? 'mdi:volume-medium' : 'mdi:volume-high', 18)}</button><input type="range" min="0" max="100" value="${vol}" data-act="vol" data-e="${e}" data-busy="media" data-live="${id}" data-unit=" %" aria-label="Lautstärke ${R_esc(x.name)}"><span id="${id}">${vol} %</span></div>` : ''}
-      ${on && apps.length ? `<div class="pfv">${apps.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${R_esc(String(o).split(' – ')[0])}</button>`).join('')}</div>` : ''}</div></div>`;
+      ${on && (apps.length || rm) ? `<div class="pfv">${rm ? `<button class="pfc" data-act="rc" data-e="${rm}" data-c="Tv">${R_icon('mdi:television-classic', 14)}TV</button>` : ''}${apps.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${R_esc(String(o).split(' – ')[0])}</button>`).join('')}</div>` : ''}</div></div>`;
   }
   // ---------- Strom ----------
   kPower() { return this.ks(this.c.power.map(x => x.entity)); }
