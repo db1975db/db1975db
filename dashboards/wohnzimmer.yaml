@@ -64,6 +64,7 @@ media:
     icon: "mdi:television"
     style: tv
     sky: "media_player.sky_q"
+    sky_remote: "remote.192_168_178_63"   # Sky-Q-Fernbedienung (sky_remote) für P+/P−, Steuerkreuz, TV Guide
     sources:
       - "TV"
       - "HDMI"
