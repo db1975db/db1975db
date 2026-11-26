@@ -64,7 +64,7 @@
 - Stand 25.11. abends: Rückmeldung vom iPad noch offen zu langem Drücken (Farbrad), Ziehen am Rollladen-Bild, Sonos-Cover (Küche) und Sky-Q-Sendungsbild (Wohnzimmer).
 - Rollläden Treppe, Flur oben und Eingang „Alle (Zentral)“ melden keine Position – Shellys in der Shelly-App kalibrieren, dann gehen Ziehen und Schnellwahl automatisch.
 - Luftreiniger Küche: Steuerung über Matter (`fan.switchbot_air_purifier`, Stufen niedrig/mittel/hoch/auto). Der Bluetooth-Eintrag `fan.luftreiniger_2` (mit Schlaf/Haustier) reagierte nicht (Signal −78 dBm). Licht, Kindersicherung, Laden und die Sensoren laufen weiter über Bluetooth – prüfen, ob sie schalten.
-- Küchen-TV (Sony Bravia, `media_player.bravia_kdl_32w706b`, 192.168.178.103): Einbindung hing tagelang auf „aus“, nach Neuladen am 26.11. ok. Fernstart am TV eingeschaltet – Einschalten aus dem Standby klappt, dauert aber etwa eine halbe Minute.
+- Küchen-TV (Sony Bravia, `media_player.bravia_kdl_32w706b`, 192.168.178.103): Einbindung hing tagelang auf „aus“, nach Neuladen am 26.11. ok. Fernstart am TV eingeschaltet – Einschalten aus dem Standby klappt, dauert aber etwa eine halbe Minute. Fernbedienungstasten der Kachel von Dennis am 26.11. getestet: alle funktionieren.
 - Leuchten als Bild bisher nur Wohnzimmer und Küche – weitere Räume nach Fotos von Dennis.
 - Laterne Wohnzimmer: Die Shelly-Vintage-Birnen melden in HA nur Helligkeit (kein Kalt-/Warmweiß), daher keine Farbtupfer.
 - Esstisch (Hue Ensis): laut Gerätemodell ist `light.tisch` das Uplight und `light.tisch_2` das Downlight – die Namen in HA sagen das Gegenteil. In der Karte gilt vorerst `up: light.tisch_2`; mit Dennis prüfen.
