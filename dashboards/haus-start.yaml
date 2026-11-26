@@ -233,8 +233,10 @@ floors:
     humidity: sensor.shelly_blu_h_t_3914_humidity
     climate: climate.shellywalldisplay_000822ffbd78
     lights:
-    - light.schlafzimmer
+    - light.nachtisch_links
+    - light.nachtisch_rechts
     - light.hue_go_1
+    - switch.shellyplus1pm_90380c37bf1c_deckenlampe
     windows:
     - entity: binary_sensor.shelly_blu_door_window_3729_window
       name: Fenster
