@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.18.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.18.1)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -449,25 +449,24 @@ class RaumCard extends HTMLElement {
         <rect x="66" y="140" width="112" height="14" rx="3" fill="#3a302b"/><path d="M60,152 L184,152 L192,200 L52,200 Z" fill="#4a4540"/><path d="M60,158 L184,158 L190,200 L54,200 Z" fill="#6b665f" opacity=".55"/>
         ${stand(X[0])}${stand(X[1])}${ents.slice(0, 2).map(lamp).join('')}</svg>`;
     } else if (f.type === 'ceiling') {
-      // Flache Rattan-Deckenleuchte (Ufo-Form) mit Öffnung unten; geht auch mit einem Schalter (switch.*)
+      // Flache Rattan-Deckenleuchte von unten gesehen: Geflecht leuchtet, Strahlenmuster an der Decke, Glühbirne in der Öffnung; geht auch mit einem Schalter (switch.*)
       ents = [f.entity];
-      const e = f.entity, c = col(e), a = al(e), g = `${id}cl`;
-      const sh = 'M72,24 L172,24 C204,26 224,40 214,56 C202,76 162,86 122,86 C82,86 42,76 30,56 C20,40 40,26 72,24 Z';
-      let lat = ''; for (let k = -150; k <= 150; k += 7) lat += `M${122 + k - 40},90 L${122 + k + 40},20 M${122 + k + 40},90 L${122 + k - 40},20 `;
-      const rings = [0, 1, 2, 3].map(r => `<path d="M${26 + r * 6},${38 + r * 9} C${80},${52 + r * 9} ${164},${52 + r * 9} ${218 - r * 6},${38 + r * 9}" fill="none" stroke="${c ? '#a87a44' : '#4a3c2d'}" stroke-width="1.4" opacity=".7"/>`).join('');
-      svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="${g}c"><path d="${sh}"/></clipPath>
-        ${c ? `<linearGradient id="${g}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${rgba(c, .75)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></linearGradient>
-        <radialGradient id="${g}h"><stop offset="0" stop-color="${rgba(c, .6)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></radialGradient>
-        <radialGradient id="${g}f" cx=".5" cy=".7" r=".7"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="${rgba(c, 1)}"/><stop offset="1" stop-color="${rgba(c.map(v => v * .55), 1)}"/></radialGradient>` : ''}</defs>
+      const e = f.entity, c = col(e), a = al(e), g = `${id}cl`, cx = 122, cy = 92;
+      let lat = ''; for (let k = -160; k <= 160; k += 6.5) lat += `M${cx + k - 50},${cy + 50} L${cx + k + 50},${cy - 50} M${cx + k + 50},${cy + 50} L${cx + k - 50},${cy - 50} `;
+      let rays = ''; if (c) for (let n = 0; n < 120; n++) { const w = n * Math.PI / 60 + (n % 3) * .012, r0 = 46, r1 = 150 + (n % 5) * 14; rays += `<line x1="${(cx + Math.cos(w) * r0 * 1.5).toFixed(1)}" y1="${(cy + Math.sin(w) * r0).toFixed(1)}" x2="${(cx + Math.cos(w) * r1 * 1.5).toFixed(1)}" y2="${(cy + Math.sin(w) * r1).toFixed(1)}" stroke="${rgba(c, n % 2 ? .4 : .2)}" stroke-width="${n % 4 ? .9 : 2}"/>`; }
+      svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="${g}c"><ellipse cx="${cx}" cy="${cy}" rx="66" ry="40"/></clipPath>
+        ${c ? `<radialGradient id="${g}h"><stop offset="0" stop-color="${rgba(c, .85)}"/><stop offset=".35" stop-color="${rgba(c, .35)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></radialGradient>
+        <radialGradient id="${g}m"><stop offset=".25" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient><mask id="${g}k"><ellipse cx="${cx}" cy="${cy}" rx="200" ry="130" fill="url(#${g}m)"/></mask>
+        <radialGradient id="${g}f" cx=".5" cy=".6" r=".6"><stop offset="0" stop-color="#fff3d6"/><stop offset=".45" stop-color="${rgba(c, 1)}"/><stop offset="1" stop-color="${rgba(c.map(v => v * .6), 1)}"/></radialGradient>` : ''}</defs>
         <g data-act="toggle" data-e="${e}" style="cursor:pointer"><rect x="0" y="0" width="244" height="200" fill="transparent"/>
-        ${c ? `<ellipse cx="122" cy="30" rx="122" ry="34" fill="url(#${g}h)" opacity="${a.toFixed(2)}"/><path d="M96,86 L148,86 L206,198 L38,198 Z" fill="url(#${g}b)" opacity="${a.toFixed(2)}"/><ellipse cx="122" cy="192" rx="96" ry="10" fill="url(#${g}h)" opacity="${a.toFixed(2)}"/>` : ''}
-        <rect x="0" y="16" width="244" height="8" fill="#0d1018"/><line x1="0" y1="24" x2="244" y2="24" stroke="rgba(255,255,255,.12)"/>
-        <path d="${sh}" fill="${c ? `url(#${g}f)` : '#1d1a17'}"/>
-        <path d="${lat}" clip-path="url(#${g}c)" stroke="${c ? '#c29257' : '#5c4a36'}" stroke-width="2.2" fill="none"/>
-        <g clip-path="url(#${g}c)">${rings}</g>
-        <path d="${sh}" fill="none" stroke="${c ? '#d0a46a' : '#4a3c2d'}" stroke-width="1.3"/>
-        <ellipse cx="122" cy="82" rx="27" ry="6.5" fill="${c ? '#fff8e8' : '#0e0c0a'}" stroke="${c ? '#d0a46a' : '#5c4a36'}" stroke-width="2.5"/>
-        ${c ? `<ellipse cx="122" cy="82" rx="14" ry="3.5" fill="#fff"/>` : ''}</g></svg>`;
+        ${c ? `<g opacity="${a.toFixed(2)}"><ellipse cx="${cx}" cy="${cy}" rx="200" ry="130" fill="url(#${g}h)"/><g mask="url(#${g}k)">${rays}</g></g>` : ''}
+        <ellipse cx="${cx}" cy="${cy + 3}" rx="68" ry="42" fill="rgba(0,0,0,.35)"/>
+        <ellipse cx="${cx}" cy="${cy}" rx="66" ry="40" fill="${c ? `url(#${g}f)` : '#1d1a17'}"/>
+        <path d="${lat}" clip-path="url(#${g}c)" stroke="${c ? '#b27a3c' : '#5c4a36'}" stroke-width="2" fill="none" opacity="${c ? .85 : 1}"/>
+        <ellipse cx="${cx}" cy="${cy}" rx="66" ry="40" fill="none" stroke="${c ? '#d9a865' : '#4a3c2d'}" stroke-width="2"/>
+        <ellipse cx="${cx}" cy="${cy + 8}" rx="30" ry="19" fill="${c ? '#7a4f26' : '#2a2119'}" stroke="${c ? '#c99555' : '#4a3c2d'}" stroke-width="2.5" stroke-dasharray="4 2"/>
+        <ellipse cx="${cx}" cy="${cy + 9}" rx="21" ry="13" fill="${c ? '#ffe3a8' : '#0e0c0a'}" stroke="${c ? '#e8b878' : '#5c4a36'}" stroke-width="1.5"/>
+        ${c ? `<ellipse cx="${cx}" cy="${cy + 8}" rx="9" ry="7" fill="#fff" opacity=".9"/><path d="M${cx - 2.5},${cy + 3} L${cx - 2.5},${cy + 13} M${cx + 2.5},${cy + 3} L${cx + 2.5},${cy + 13}" stroke="#ffb347" stroke-width="1.4" stroke-linecap="round"/>` : `<ellipse cx="${cx}" cy="${cy + 8}" rx="7" ry="5.5" fill="none" stroke="rgba(255,255,255,.2)"/>`}</g></svg>`;
     } else if (f.type === 'go') {
       // Hue Go (Halbkugel) hinter dem Fernseher – leuchtet die Wand an
       ents = f.bulbs || (f.entity ? [f.entity] : []);
