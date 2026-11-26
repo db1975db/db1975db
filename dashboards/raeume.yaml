@@ -338,10 +338,6 @@ kinderzimmer:
   - entity: cover.shelly2pmg3_b08184e89350
     name: Kleines Fenster
   media:
-  - entity: media_player.av_samsung_soundbar_q80r
-    name: Soundbar
-    icon: mdi:soundbar
-    power: false
   - entity: media_player.kinderzimmer_kinderzimmer
     name: HomePod
     icon: mdi:speaker

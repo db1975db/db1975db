@@ -76,6 +76,11 @@ media:
       - "ARD Mediathek – Streaming für alle"
       - "ZDF"
       - "Spotify – Musik und Podcasts"
+  # Soundbar (Samsung HW-Q80R, DLNA) – am 26.11. vom Kinderzimmer ins Wohnzimmer verschoben
+  - entity: media_player.av_samsung_soundbar_q80r
+    name: Soundbar
+    icon: mdi:soundbar
+    power: false
   # HomePod über Music Assistant (spielt Sender direkt per Stream-Adresse, raum-card v1.16)
   - entity: media_player.wohnzimmer_4
     name: HomePod
