@@ -61,7 +61,7 @@
 `media[]` (`entity`, `name`, `icon`, `sources`, `play`, `power`, `chip`), `power[]`, `windows[]`, `batteries[]`.
 
 ## Offene Punkte
-- Stand 25.11. abends: Rückmeldung vom iPad noch offen zu langem Drücken (Farbrad), Ziehen am Rollladen-Bild, Sonos-Cover (Küche) und Sky-Q-Sendungsbild (Wohnzimmer).
+- Stand 26.11.: Sky-Q-Bild und Sky-Fernbedienung im Wohnzimmer von Dennis getestet – funktioniert. Noch offen: langes Drücken (Farbrad), Ziehen am Rollladen-Bild, Sonos-Cover Küche, Luftreiniger-Licht/Kindersicherung/Laden (Bluetooth).
 - Rollläden Treppe, Flur oben und Eingang „Alle (Zentral)“ melden keine Position – Shellys in der Shelly-App kalibrieren, dann gehen Ziehen und Schnellwahl automatisch.
 - Luftreiniger Küche: Steuerung über Matter (`fan.switchbot_air_purifier`, Stufen niedrig/mittel/hoch/auto). Der Bluetooth-Eintrag `fan.luftreiniger_2` (mit Schlaf/Haustier) reagierte nicht (Signal −78 dBm). Licht, Kindersicherung, Laden und die Sensoren laufen weiter über Bluetooth – prüfen, ob sie schalten.
 - Küchen-TV (Sony Bravia, `media_player.bravia_kdl_32w706b`, 192.168.178.103): Einbindung hing tagelang auf „aus“, nach Neuladen am 26.11. ok. Fernstart am TV eingeschaltet – Einschalten aus dem Standby klappt, dauert aber etwa eine halbe Minute. Fernbedienungstasten der Kachel von Dennis am 26.11. getestet: alle funktionieren.
