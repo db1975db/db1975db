@@ -16,6 +16,7 @@ eingang:
   - type: door
     name: Wandlampen
     entity: light.wandlampen_eingang
+    socket: switch.shelly1pmmini_348518df06e4
     bulbs:
     - light.eingang_links_2
     - light.eingang_rechts_2
