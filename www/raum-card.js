@@ -115,7 +115,7 @@ const R_CSS = `
 .tvb{position:absolute;left:16px;right:16px;bottom:12px}.tvb .pti{font-size:24px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
 .tvc2 .pct{padding:12px 16px 4px;margin-top:0;justify-content:center}
 .aq{display:grid;grid-template-columns:120px minmax(0,1fr);gap:6px 16px;border-radius:22px;padding:16px;color:#fff;background:radial-gradient(120% 100% at 0% 0%,color-mix(in srgb,var(--aq) 22%,#1b2234) 0%,#0e121c 70%);box-shadow:0 12px 30px rgba(0,0,0,.2)}
-.aqv{grid-row:span 1}.aqs{width:120px;height:auto;display:block}
+.aqv{grid-row:span 1}.aqs{width:126px;height:auto;display:block}
 .aqs .fl{opacity:0;animation:aqfl 2.4s infinite ease-out}.aqs .f1{animation-delay:.8s}.aqs .f2{animation-delay:1.6s}
 @keyframes aqfl{0%{opacity:0;transform:translateY(8px)}30%{opacity:.9}100%{opacity:0;transform:translateY(-14px)}}
 .aqi{position:relative;align-self:center;padding-right:50px}.aql{font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.06em}.aqq{font-size:28px;font-weight:700;color:var(--aq);line-height:1.1;margin:2px 0 4px}.aqs2{font-size:13px;opacity:.8}
@@ -511,16 +511,24 @@ class RaumCard extends HTMLElement {
     const modes = f.attributes.preset_modes || [], pmL = (m) => (PM[m] || [m])[0];
     const lt = this.s(P.light), cl = this.s(P.child_lock), ch = this.s(P.charging);
     const tog = (e, s2, ic, lb) => s2 && s2.state !== 'unavailable' ? `<button class="aqt ${s2.state === 'on' ? 'on' : ''}" data-act="toggle" data-e="${e}">${R_icon(ic, 18)}<span>${lb}</span><b>${s2.state === 'on' ? 'an' : s2.state === 'off' ? 'aus' : '–'}</b></button>` : '';
-    const svg = `<svg viewBox="0 0 140 170" class="aqs ${on ? 'on' : ''}" style="--aq:${aqc}">
-      ${on ? [0, 1, 2].map(i => `<path class="fl f${i}" d="M${46 + i * 4},34 C${50 + i * 4},18 ${90 - i * 4},18 ${94 - i * 4},34" fill="none" stroke="${aqc}" stroke-width="2.5" stroke-linecap="round"/>`).join('') : ''}
-      <ellipse cx="70" cy="44" rx="46" ry="10" fill="#2c3343" stroke="rgba(255,255,255,.18)"/>
-      <path d="M28,46 L32,152 Q70,164 108,152 L112,46 Q70,58 28,46 Z" fill="#e9ecf1"/>
-      <path d="M28,46 L32,152 Q70,164 108,152 L112,46 Q70,58 28,46 Z" fill="url(#aqsh)"/>
-      <defs><linearGradient id="aqsh" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".18"/><stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient></defs>
-      ${Array.from({ length: 9 }, (_, i) => `<line x1="${38 + i * 8}" y1="${66 + Math.abs(4 - i) * .6}" x2="${38 + i * 8}" y2="${140 - Math.abs(4 - i) * .4}" stroke="#c3c9d3" stroke-width="2.4" stroke-linecap="round"/>`).join('')}
-      <ellipse cx="70" cy="42" rx="40" ry="7" fill="#1b2130"/>
-      <ellipse cx="70" cy="152" rx="36" ry="4" fill="${on ? aqc : '#9aa3b0'}" opacity="${on ? .9 : .5}"/>
-      <circle cx="70" cy="56" r="3" fill="${aqc}"/></svg>`;
+    const lon = lt && lt.state === 'on', chg = ch && ch.state === 'on';
+    const svg = `<svg viewBox="0 0 140 170" class="aqs ${on ? 'on' : ''}" style="--aq:${aqc}"><defs>
+      <linearGradient id="aqw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2c08a"/><stop offset=".55" stop-color="#cfa66b"/><stop offset="1" stop-color="#b88d55"/></linearGradient>
+      <linearGradient id="aqb" x1="0" x2="1"><stop offset="0" stop-color="#d9dde3"/><stop offset=".35" stop-color="#fbfcfd"/><stop offset=".7" stop-color="#eef0f3"/><stop offset="1" stop-color="#c9ced6"/></linearGradient>
+      <radialGradient id="aqg"><stop offset="0" stop-color="${lon ? '#ffb48a' : aqc}" stop-opacity=".85"/><stop offset="1" stop-color="${lon ? '#ffb48a' : aqc}" stop-opacity="0"/></radialGradient></defs>
+      <ellipse cx="70" cy="164" rx="48" ry="4" fill="#000" opacity=".35"/>
+      <path d="M24,56 L24,152 Q70,166 116,152 L116,56 Z" fill="url(#aqb)"/>
+      ${Array.from({ length: 15 }, (_, i) => `<line x1="${27 + i * 6.2}" y1="92" x2="${27 + i * 6.2}" y2="${152 + (i < 3 || i > 11 ? 0 : 4)}" stroke="#c7ccd4" stroke-width="1.2"/>`).join('')}
+      <rect x="40" y="102" width="60" height="44" rx="3" fill="#2a2f3a"/>${Array.from({ length: 12 }, (_, i) => `<line x1="${43 + i * 4.9}" y1="104" x2="${43 + i * 4.9}" y2="144" stroke="#e9ecf0" stroke-width="2"/>`).join('')}
+      <line x1="40" y1="117" x2="100" y2="117" stroke="#e9ecf0" stroke-width="1.5"/><line x1="40" y1="131" x2="100" y2="131" stroke="#e9ecf0" stroke-width="1.5"/>
+      <ellipse cx="70" cy="56" rx="46" ry="8" fill="${on || lon ? (lon ? '#ffcfb3' : aqc) : '#dfe3e8'}" opacity="${on || lon ? .9 : 1}"/>
+      ${on || lon ? `<ellipse cx="70" cy="52" rx="60" ry="16" fill="url(#aqg)"/>` : ''}
+      ${on ? [0, 1, 2].map(i => `<path class="fl f${i}" d="M${20 + i * 3},${48 - i} C${14},${36} ${18},${26} ${12 + i * 2},${16}" fill="none" stroke="${aqc}" stroke-width="2" stroke-linecap="round"/><path class="fl f${i}" d="M${120 - i * 3},${48 - i} C${126},${36} ${122},${26} ${128 - i * 2},${16}" fill="none" stroke="${aqc}" stroke-width="2" stroke-linecap="round"/>`).join('') : ''}
+      <path d="M6,40 C6,30 34,24 70,24 C106,24 134,30 134,40 L134,44 C134,54 106,60 70,60 C34,60 6,54 6,44 Z" fill="#a87d49"/>
+      <ellipse cx="70" cy="40" rx="64" ry="16" fill="url(#aqw)"/>
+      <path d="M18,40 C40,34 70,46 118,36 M28,46 C55,40 85,50 112,44 M24,34 C50,30 80,36 110,31" stroke="#b58a52" stroke-width=".8" fill="none" opacity=".7"/>
+      ${chg ? `<g transform="rotate(-12 92 36)"><rect x="80" y="26" width="26" height="14" rx="3" fill="#20242e"/><rect x="82" y="28" width="22" height="10" rx="2" fill="#3a3f55"/><circle cx="93" cy="33" r="3" fill="none" stroke="#3ddc84" stroke-width="1.2"/></g>` : ''}
+      <circle cx="108" cy="66" r="1.8" fill="${aqc}"/></svg>`;
     el.innerHTML = `<div class="aq ${on ? 'on' : ''}" style="--aq:${aqc}"><div class="aqv">${svg}</div>
       <div class="aqi"><div class="aql">Luftqualität</div><div class="aqq">${aqt}</div>
         <div class="aqs2">${pm25 != null ? `PM2,5 ${R_fmt(pm25, 0)} µg/m³ · ` : ''}${on ? `läuft · ${pmL(pm)}` : f.state === 'unavailable' ? 'nicht erreichbar' : 'aus'}</div>
