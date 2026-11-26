@@ -635,6 +635,15 @@ views:
     temperature: sensor.shelly_blu_h_t_3914_temperature
     humidity: sensor.shelly_blu_h_t_3914_humidity
     climate: climate.shellywalldisplay_000822ffbd78
+    fixtures:
+    - type: nightstands
+      name: Nachttische
+      bulbs:
+      - light.nachtisch_links
+      - light.nachtisch_rechts
+    - type: go
+      name: Hue Go
+      entity: light.hue_go_1
     lights:
     - entity: light.schlafzimmer
       name: Ambiente
