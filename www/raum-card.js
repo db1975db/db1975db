@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.17.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.18.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -319,7 +319,7 @@ class RaumCard extends HTMLElement {
       <div class="chips">${chips.join('')}</div></div>${dial}`;
   }
   // ---------- Licht ----------
-  kLights() { return this.ks([...this.c.fixtures.flatMap(f => [f.entity, f.up, f.down, f.socket, ...(f.bulbs || [])]), ...this.c.lights.map(x => x.entity), ...this.c.lights.map(x => x.socket), ...this.c.switches.map(x => x.entity), ...this.c.switches.map(x => x.power)]); }
+  kLights() { return this.ks([...this.c.fixtures.flatMap(f => [f.entity, f.up, f.down, f.socket, f.power, ...(f.bulbs || [])]), ...this.c.lights.map(x => x.entity), ...this.c.lights.map(x => x.socket), ...this.c.switches.map(x => x.entity), ...this.c.switches.map(x => x.power)]); }
   kSockets() { return this.ks([...this.c.sockets.map(x => x.entity), ...this.c.sockets.map(x => x.power)]); }
   r_sockets() { const el = this.$('sockets'); if (!el) return; el.innerHTML = this.c.sockets.map(x => this.swTile(x)).join(''); this.keyNav(el); }
   r_lights() {
@@ -342,10 +342,10 @@ class RaumCard extends HTMLElement {
         <div><div class="n">${R_esc(x.name || s.attributes.friendly_name)}</div><div class="s" id="lv-${x.entity.replace(/\W/g, '')}">${on ? (dim ? pct + ' %' : 'an') : s.state === 'unavailable' ? 'nicht erreichbar' : 'aus'}</div></div>
         ${dim ? `<input type="range" min="1" max="100" value="${pct || 1}" data-act="bri" data-e="${x.entity}" data-busy="lights" data-live="lv-${x.entity.replace(/\W/g, '')}" data-unit=" %" aria-label="Helligkeit ${R_esc(x.name)}">` : ''}</div>`;
     });
-    el.innerHTML = tiles.join('') + this.c.switches.map(x => this.swTile(x)).join('');
+    el.innerHTML = tiles.join('') + this.c.switches.filter(x => !fxE.has(x.entity)).map(x => this.swTile(x)).join('');
     this.keyNav(el);
   }
-  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln), 'bar' (Balken mit Up- und Downlight), 'spots' (Einbaustrahler in der Decke), 'pendants' (Pendelleuchten an einer Deckenschiene), 'lantern' (Laterne mit Glühbirnen, optional `socket`), 'nightstands' (zwei Rattan-Nachttischlampen am Bett), 'go' (Hue Go hinter dem Fernseher, optional `side: right`); ohne `entity` wirken Schalter, Helligkeit und Farbe auf alle `bulbs`
+  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln), 'bar' (Balken mit Up- und Downlight), 'spots' (Einbaustrahler in der Decke), 'pendants' (Pendelleuchten an einer Deckenschiene), 'lantern' (Laterne mit Glühbirnen, optional `socket`), 'nightstands' (zwei Rattan-Nachttischlampen am Bett), 'go' (Hue Go hinter dem Fernseher, `side: left|right`, sonst mittig), 'ceiling' (flache Rattan-Deckenleuchte, auch für switch.*, optional `power`); ohne `entity` wirken Schalter, Helligkeit und Farbe auf alle `bulbs`
   fixture(f) {
     const st = (e) => this.s(e), on = (e) => (st(e) || {}).state === 'on', col = (e) => this.lightColor(st(e)), al = (e) => on(e) ? 0.35 + 0.65 * ((st(e).attributes.brightness || 255) / 255) : 0;
     const rgba = (c, a) => `rgba(${c.join(',')},${a.toFixed(2)})`;
@@ -448,22 +448,43 @@ class RaumCard extends HTMLElement {
         <path d="M86,140 C86,128 90,126 104,127 C116,127 118,130 118,140 Z M126,140 C126,130 128,127 140,127 C154,126 158,128 158,140 Z" fill="#3a3a40"/>
         <rect x="66" y="140" width="112" height="14" rx="3" fill="#3a302b"/><path d="M60,152 L184,152 L192,200 L52,200 Z" fill="#4a4540"/><path d="M60,158 L184,158 L190,200 L54,200 Z" fill="#6b665f" opacity=".55"/>
         ${stand(X[0])}${stand(X[1])}${ents.slice(0, 2).map(lamp).join('')}</svg>`;
+    } else if (f.type === 'ceiling') {
+      // Flache Rattan-Deckenleuchte (Ufo-Form) mit Öffnung unten; geht auch mit einem Schalter (switch.*)
+      ents = [f.entity];
+      const e = f.entity, c = col(e), a = al(e), g = `${id}cl`;
+      const sh = 'M72,24 L172,24 C204,26 224,40 214,56 C202,76 162,86 122,86 C82,86 42,76 30,56 C20,40 40,26 72,24 Z';
+      let lat = ''; for (let k = -150; k <= 150; k += 7) lat += `M${122 + k - 40},90 L${122 + k + 40},20 M${122 + k + 40},90 L${122 + k - 40},20 `;
+      const rings = [0, 1, 2, 3].map(r => `<path d="M${26 + r * 6},${38 + r * 9} C${80},${52 + r * 9} ${164},${52 + r * 9} ${218 - r * 6},${38 + r * 9}" fill="none" stroke="${c ? '#a87a44' : '#4a3c2d'}" stroke-width="1.4" opacity=".7"/>`).join('');
+      svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="${g}c"><path d="${sh}"/></clipPath>
+        ${c ? `<linearGradient id="${g}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${rgba(c, .75)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></linearGradient>
+        <radialGradient id="${g}h"><stop offset="0" stop-color="${rgba(c, .6)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></radialGradient>
+        <radialGradient id="${g}f" cx=".5" cy=".7" r=".7"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="${rgba(c, 1)}"/><stop offset="1" stop-color="${rgba(c.map(v => v * .55), 1)}"/></radialGradient>` : ''}</defs>
+        <g data-act="toggle" data-e="${e}" style="cursor:pointer"><rect x="0" y="0" width="244" height="200" fill="transparent"/>
+        ${c ? `<ellipse cx="122" cy="30" rx="122" ry="34" fill="url(#${g}h)" opacity="${a.toFixed(2)}"/><path d="M96,86 L148,86 L206,198 L38,198 Z" fill="url(#${g}b)" opacity="${a.toFixed(2)}"/><ellipse cx="122" cy="192" rx="96" ry="10" fill="url(#${g}h)" opacity="${a.toFixed(2)}"/>` : ''}
+        <rect x="0" y="16" width="244" height="8" fill="#0d1018"/><line x1="0" y1="24" x2="244" y2="24" stroke="rgba(255,255,255,.12)"/>
+        <path d="${sh}" fill="${c ? `url(#${g}f)` : '#1d1a17'}"/>
+        <path d="${lat}" clip-path="url(#${g}c)" stroke="${c ? '#c29257' : '#5c4a36'}" stroke-width="2.2" fill="none"/>
+        <g clip-path="url(#${g}c)">${rings}</g>
+        <path d="${sh}" fill="none" stroke="${c ? '#d0a46a' : '#4a3c2d'}" stroke-width="1.3"/>
+        <ellipse cx="122" cy="82" rx="27" ry="6.5" fill="${c ? '#fff8e8' : '#0e0c0a'}" stroke="${c ? '#d0a46a' : '#5c4a36'}" stroke-width="2.5"/>
+        ${c ? `<ellipse cx="122" cy="82" rx="14" ry="3.5" fill="#fff"/>` : ''}</g></svg>`;
     } else if (f.type === 'go') {
       // Hue Go (Halbkugel) hinter dem Fernseher – leuchtet die Wand an
       ents = f.bulbs || (f.entity ? [f.entity] : []);
-      const e = ents[0], c = col(e), a = al(e), g = `${id}go`, gx = f.side === 'right' ? 206 : 38;
+      const e = ents[0], c = col(e), a = al(e), g = `${id}go`, gx = f.side === 'right' ? 206 : f.side === 'left' ? 38 : 127, mid = gx === 127;
       svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet"><defs>
         ${c ? `<radialGradient id="${g}w"><stop offset="0" stop-color="${rgba(c, .85)}"/><stop offset=".55" stop-color="${rgba(c, .25)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></radialGradient>
         <radialGradient id="${g}f" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="${rgba(c, 1)}"/><stop offset="1" stop-color="${rgba(c.map(v => v * .7), 1)}"/></radialGradient>` : ''}</defs>
         <g data-act="toggle" data-e="${e}" style="cursor:pointer"><rect x="0" y="0" width="244" height="200" fill="transparent"/>
-        ${c ? `<ellipse cx="${(gx + 127) / 2}" cy="100" rx="150" ry="104" fill="url(#${g}w)" opacity="${a.toFixed(2)}"/>` : ''}
+        ${c ? `<ellipse cx="${(gx + 127) / 2}" cy="${mid ? 86 : 100}" rx="${mid ? 128 : 150}" ry="${mid ? 92 : 104}" fill="url(#${g}w)" opacity="${a.toFixed(2)}"/>` : ''}
+        ${mid ? `<g transform="rotate(-12 127 120)"><path d="M101,120 A26,26 0 0 0 153,120 Z" fill="${c ? rgba(c, .8) : '#2b303c'}"/><ellipse cx="127" cy="120" rx="26" ry="6" fill="${c ? `url(#${g}f)` : '#3a4152'}"/></g>` : ''}
         <rect x="52" y="34" width="150" height="104" rx="3" fill="#06080d" stroke="${c ? rgba(c, .7) : 'rgba(255,255,255,.14)'}" stroke-width="1.5"/>
         <path d="M60,42 L120,42 L84,130 L60,130 Z" fill="rgba(255,255,255,.025)"/>
         <rect x="112" y="138" width="30" height="8" fill="#0b0e15"/><rect x="92" y="146" width="70" height="20" rx="2" fill="#11141c" stroke="rgba(255,255,255,.1)"/>
         <rect x="8" y="166" width="228" height="10" rx="2" fill="#1b1f29" stroke="rgba(255,255,255,.16)"/><rect x="14" y="176" width="216" height="20" fill="#141822"/>
-        <g transform="rotate(-28 ${gx} 150)">
+        ${mid ? '' : `<g transform="rotate(-28 ${gx} 150)">
           <path d="M${gx - 22},150 A22,22 0 0 0 ${gx + 22},150 Z" fill="${c ? rgba(c, .75) : '#2b303c'}" stroke="${c ? '#fff' : 'rgba(255,255,255,.2)'}" stroke-width="1"/>
-          <ellipse cx="${gx}" cy="150" rx="22" ry="5.5" fill="${c ? `url(#${g}f)` : '#3a4152'}" stroke="${c ? '#fff' : 'rgba(255,255,255,.25)'}" stroke-width="1"/></g></g></svg>`;
+          <ellipse cx="${gx}" cy="150" rx="22" ry="5.5" fill="${c ? `url(#${g}f)` : '#3a4152'}" stroke="${c ? '#fff' : 'rgba(255,255,255,.25)'}" stroke-width="1"/></g>`}</g></svg>`;
     } else return '';
     // Ohne Gruppen-Entität, aber mit mehreren Lampen: virtuelle Gruppe (Schalten, Helligkeit und Farbe wirken auf alle)
     const virt = !f.entity && ents.length > 1, vOn = virt ? ents.filter(on) : [];
@@ -474,8 +495,8 @@ class RaumCard extends HTMLElement {
     const tgl = f._sOff ? f.socket : (f.entity || ents[0]);
     const tA = virt ? `data-act="gtog" data-on="${gOn ? 1 : 0}" data-e="${gE}"` : `data-act="toggle" data-e="${tgl}"`;
     return `<div class="fxi ${gOn ? 'on' : ''}"><div class="fxs">${svg}</div>
-      <div class="fxb"><div class="fxt" ${tA} role="button" tabindex="0"><div class="n">${R_esc(f.name || '')}</div><div class="s" id="lv-${id}">${sub}${pct ? ` · ${pct} %` : ''}</div></div>
-      ${g && !f._sOff ? `<input type="range" min="1" max="100" value="${pct || 1}" data-act="bri" data-e="${gE}" data-busy="lights" aria-label="Helligkeit ${R_esc(f.name || '')}">` : '<span></span>'}
+      <div class="fxb"><div class="fxt" ${tA} role="button" tabindex="0"><div class="n">${R_esc(f.name || '')}</div><div class="s" id="lv-${id}">${sub}${pct ? ` · ${pct} %` : ''}${f.power && this.n(f.power) != null ? ` · ${R_fmt(this.n(f.power), this.n(f.power) < 10 ? 1 : 0)} W` : ''}</div></div>
+      ${g && !f._sOff && gE.startsWith('light.') ? `<input type="range" min="1" max="100" value="${pct || 1}" data-act="bri" data-e="${gE}" data-busy="lights" aria-label="Helligkeit ${R_esc(f.name || '')}">` : '<span></span>'}
       <button class="fxp" ${tA} aria-label="${R_esc(f.name || '')} schalten">${R_icon('mdi:power', 20)}</button></div>${f._sOff ? '' : this.swatches(gE, g)}</div>`;
   }
   // Farbtupfer für eine Lampengruppe: Weißtöne (Farbtemperatur) und Farben, je nachdem was die Lampe kann

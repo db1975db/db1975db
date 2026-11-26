@@ -644,6 +644,10 @@ views:
     - type: go
       name: Hue Go
       entity: light.hue_go_1
+    - type: ceiling
+      name: Deckenlampe
+      entity: switch.shellyplus1pm_90380c37bf1c_deckenlampe
+      power: sensor.shellyplus1pm_90380c37bf1c_deckenlampe_power
     lights:
     - entity: light.schlafzimmer
       name: Ambiente
