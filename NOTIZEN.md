@@ -73,6 +73,7 @@
 - Esstisch (Hue Ensis): laut Gerätemodell ist `light.tisch` das Uplight und `light.tisch_2` das Downlight – die Namen in HA sagen das Gegenteil. In der Karte gilt vorerst `up: light.tisch_2`; mit Dennis prüfen.
 - Räume sind ein Erstentwurf – mit Dennis durchgehen, was raus/rein soll (Batterien stehen je Raum unter „Status“).
 - Pool: Wärmepumpe `climate.pool_warmepumpe`, Pumpe/Elektrolyse und Poollicht sind derzeit nicht erreichbar (Winter?). Das alte Pool-Dashboard nutzt teils Entitäten, die es nicht mehr gibt.
+- Haus-Karte (Übersicht/Etagen) zählt nur, was unter `lights:` des Raums steht. Schlafzimmer seit 26.11. korrigiert (Nachttische, Hue Go, Deckenlampe-Shelly). In anderen Räumen fehlen die Shelly-Lichtschalter noch (Eingang, Flur unten, WC, HWR, Kinderzimmer, Büro, Flur oben, Terrasse, Carport) – Dennis will das vorerst nicht; bei „Taster“-Schaltern klären, ob sie direkt Licht schalten. Sauna nicht als Licht zählen.
 - Flur oben hat keinen Temperatursensor (große Temperatur zeigt „–“).
 - Mähroboter-Ansicht im neuen Stil bauen, sobald die Dreame-Integration wieder Entitäten liefert.
 - Später: „Zuhause (neu)“ umbenennen/als Standard setzen, alte Einzel-Dashboards löschen – nur nach Rückfrage.
