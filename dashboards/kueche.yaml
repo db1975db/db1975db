@@ -53,10 +53,13 @@ media:
     name: "Sonos"
     icon: "mdi:speaker"
     style: player   # "Jetzt läuft" mit Cover und Favoriten (raum-card v1.11)
+  # Sony Bravia mit Senderanzeige und Fernbedienung (raum-card v1.14, style: tv + remote)
   - entity: "media_player.bravia_kdl_32w706b"
     name: "Fernseher"
     icon: "mdi:television"
-    play: false
+    style: tv
+    remote: "remote.bravia_kdl_32w706b"
+    sources: true
 # SwitchBot-Luftreiniger mit Tisch (raum-card v1.13); Steuerung über Matter (fan.switchbot_air_purifier), Bluetooth-Eintrag fan.luftreiniger_2 reagiert schlecht (RSSI -78); filter_max_h Standard 4380 h
 purifier:
   entity: "fan.switchbot_air_purifier"

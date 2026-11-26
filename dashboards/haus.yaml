@@ -1307,7 +1307,9 @@ views:
     - entity: media_player.bravia_kdl_32w706b
       name: Fernseher
       icon: mdi:television
-      play: false
+      style: tv
+      remote: remote.bravia_kdl_32w706b
+      sources: true
     purifier:
       entity: fan.switchbot_air_purifier
       air_quality: sensor.luftreiniger_luftqualitatsstufe
