@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.15.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.16.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -250,6 +250,7 @@ class RaumCard extends HTMLElement {
     else if (a === 'pmode') this.call('fan', 'set_preset_mode', { entity_id: e, preset_mode: t.dataset.m });
     else if (a === 'freset') { if (window.confirm('Filter wirklich als neu gewechselt zurücksetzen?')) this.call('button', 'press', { entity_id: e }); }
     else if (a === 'rc') this.call('remote', 'send_command', { entity_id: e, command: t.dataset.c });
+    else if (a === 'stn') this.call('music_assistant', 'play_media', { entity_id: e, media_id: t.dataset.u, media_type: 'radio' });
     else if (a === 'srcb') this.call('media_player', 'select_source', { entity_id: e, source: t.dataset.o });
     else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: e } }));
   }
@@ -582,7 +583,8 @@ class RaumCard extends HTMLElement {
           ${dur ? `<div class="ppg"><span>${t(Math.min(pos || 0, dur))}</span><div class="pgb" data-pos="${pos || 0}" data-dur="${dur}" data-at="${pl ? Date.now() : 0}"><i style="width:${Math.min(100, (pos || 0) / dur * 100)}%"></i></div><span>${t(dur)}</span></div>` : radio && on ? '<div class="plive"><i></i>Live</div>' : ''}
           <div class="pct">${F & 32768 && !radio ? b('shuffle_set', 'mdi:shuffle-variant', 'Zufall', A.shuffle ? 'act' : '') : ''}${F & 16 && !radio ? b('media_previous_track', 'mdi:skip-previous', 'Zurück') : ''}${b('media_play_pause', pl ? 'mdi:pause' : 'mdi:play', 'Play/Pause', 'big')}${F & 32 && !radio ? b('media_next_track', 'mdi:skip-next', 'Weiter') : ''}${F & 262144 && !radio ? b('repeat_set', A.repeat === 'one' ? 'mdi:repeat-once' : 'mdi:repeat', 'Wiederholen', A.repeat && A.repeat !== 'off' ? 'act' : '') : ''}</div></div></div>
       ${vol != null ? `<div class="pvo"><button class="pb sm" data-act="mp" data-sv="volume_mute" data-e="${e}" aria-label="Stumm">${R_icon(A.is_volume_muted ? 'mdi:volume-off' : vol < 30 ? 'mdi:volume-low' : vol < 70 ? 'mdi:volume-medium' : 'mdi:volume-high', 18)}</button><input type="range" min="0" max="100" value="${vol}" data-act="vol" data-e="${e}" data-busy="media" data-live="${id}" data-unit=" %" aria-label="Lautstärke ${R_esc(x.name)}"><span id="${id}">${vol} %</span></div>` : ''}
-      ${favs.length ? `<div class="pfv">${favs.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${o === A.source && pl ? '<i class="eq sm"><b></b><b></b><b></b></i>' : R_icon('mdi:radio', 14)}${R_esc(o)}</button>`).join('')}</div>` : ''}</div>`;
+      ${x.stations && x.stations.length ? `<div class="pfv">${x.stations.map(st => { const act = (A.media_content_id || '').includes(st.url) || (A.media_album_name === st.name && /radio/.test(A.media_content_id || '')); return `<button class="pfc ${act ? 'on' : ''}" data-act="stn" data-e="${e}" data-u="${R_esc(st.url)}">${act && pl ? '<i class="eq sm"><b></b><b></b><b></b></i>' : R_icon('mdi:radio', 14)}${R_esc(st.name)}</button>`; }).join('')}</div>` : ''}
+      ${favs.length && !x.stations ? `<div class="pfv">${favs.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${o === A.source && pl ? '<i class="eq sm"><b></b><b></b><b></b></i>' : R_icon('mdi:radio', 14)}${R_esc(o)}</button>`).join('')}</div>` : ''}</div>`;
   }
   // Fernseher mit Receiver: großes Sendungsbild (16:9) vom Receiver, Sender, Titel, Steuerung, Lautstärke, Apps
   tv(x, s) {
