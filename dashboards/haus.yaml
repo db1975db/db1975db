@@ -1207,10 +1207,15 @@ views:
       - ARD Mediathek – Streaming für alle
       - ZDF
       - Spotify – Musik und Podcasts
-    - entity: media_player.wohnzimmer_wohnzimmer
+    - entity: media_player.wohnzimmer_4
       name: HomePod
       icon: mdi:speaker
-      power: false
+      style: player
+      stations:
+      - name: Fritz
+        url: https://dispatcher.rndfnk.com/rbb/fritz/live/mp3/mid
+      - name: rbb24 Inforadio
+        url: https://dispatcher.rndfnk.com/rbb/rbb24inforadio/live/mp3/mid
     power:
     - entity: sensor.shellyplusplugs_e465b893fb00_power
       name: Fernseher & Co.

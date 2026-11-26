@@ -76,10 +76,16 @@ media:
       - "ARD Mediathek – Streaming für alle"
       - "ZDF"
       - "Spotify – Musik und Podcasts"
-  - entity: "media_player.wohnzimmer_wohnzimmer"
-    name: "HomePod"
-    icon: "mdi:speaker"
-    power: false
+  # HomePod über Music Assistant (spielt Sender direkt per Stream-Adresse, raum-card v1.16)
+  - entity: media_player.wohnzimmer_4
+    name: HomePod
+    icon: mdi:speaker
+    style: player
+    stations:
+    - name: Fritz
+      url: https://dispatcher.rndfnk.com/rbb/fritz/live/mp3/mid
+    - name: rbb24 Inforadio
+      url: https://dispatcher.rndfnk.com/rbb/rbb24inforadio/live/mp3/mid
 power:
   - entity: "sensor.shellyplusplugs_e465b893fb00_power"
     name: "Fernseher & Co."
