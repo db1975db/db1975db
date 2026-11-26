@@ -188,9 +188,7 @@ views:
         humidity: sensor.shelly_blu_h_t_42d4_humidity
         climate: climate.shellywalldisplay_000822e3235e
         lights:
-        - light.spots_flur_eingang
         - light.wandlampen_eingang
-        - light.eingang_rechts
         windows:
         - entity: binary_sensor.multi_state_sensor_p100_tur
           name: Haustür
@@ -412,16 +410,17 @@ views:
     temperature: sensor.shelly_blu_h_t_42d4_temperature
     humidity: sensor.shelly_blu_h_t_42d4_humidity
     climate: climate.shellywalldisplay_000822e3235e
+    fixtures:
+    - type: door
+      name: Wandlampen
+      entity: light.wandlampen_eingang
+      bulbs:
+      - light.eingang_links_2
+      - light.eingang_rechts_2
     lights:
-    - entity: light.spots_flur_eingang
-      name: Spots Flur
-      icon: mdi:light-recessed
     - entity: light.wandlampen_eingang
       name: Wandlampen
       icon: mdi:wall-sconce
-    - entity: light.eingang_rechts
-      name: Govee rechts
-      icon: mdi:led-strip-variant
     switches:
     - entity: switch.shelly1pmmini_348518df06e4
       name: Außenbeleuchtung
@@ -471,6 +470,15 @@ views:
     inset: ipad
     temperature: sensor.flur_unten_aqara_presence_multisensor_fp300_temperatur
     humidity: sensor.flur_unten_aqara_presence_multisensor_fp300_luftfeuchtigkeit
+    fixtures:
+    - type: spots
+      name: Spots Flur
+      entity: light.spots_flur_eingang
+      bulbs:
+      - light.flur_unten_aqara_flur_led_1
+      - light.flur_unten_aqara_flur_led_2
+      - light.flur_unten_aqara_flur_led_3
+      - light.flur_unten_aqara_flur_led_4
     lights:
     - entity: light.flur_unten_aqara_flur_led_1
       name: Flur LED 1

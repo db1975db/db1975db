@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.20.1)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.21.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -348,7 +348,7 @@ class RaumCard extends HTMLElement {
     el.innerHTML = tiles.join('') + this.c.switches.filter(x => !fxE.has(x.entity)).map(x => this.swTile(x)).join('');
     this.keyNav(el);
   }
-  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln), 'bar' (Balken mit Up- und Downlight), 'spots' (Einbaustrahler in der Decke), 'pendants' (Pendelleuchten an einer Deckenschiene), 'lantern' (Laterne mit Glühbirnen, optional `socket`), 'nightstands' (zwei Rattan-Nachttischlampen am Bett), 'go' (Hue Go hinter dem Fernseher, `side: left|right`, sonst mittig), 'ceiling' (flache Rattan-Deckenleuchte, auch für switch.*, optional `power`), 'panel' (LED-Deckenpanel, `shape: square` für quadratisch), 'mirror' (Spiegelschrank mit LED-Leiste); ohne `entity` wirken Schalter, Helligkeit und Farbe auf alle `bulbs`
+  // Leuchten als Bild: 'globes' (Pendel mit Glaskugeln), 'bar' (Balken mit Up- und Downlight), 'spots' (Einbaustrahler in der Decke), 'pendants' (Pendelleuchten an einer Deckenschiene), 'lantern' (Laterne mit Glühbirnen, optional `socket`), 'nightstands' (zwei Rattan-Nachttischlampen am Bett), 'go' (Hue Go hinter dem Fernseher, `side: left|right`, sonst mittig), 'ceiling' (flache Rattan-Deckenleuchte, auch für switch.*, optional `power`), 'panel' (LED-Deckenpanel, `shape: square` für quadratisch), 'mirror' (Spiegelschrank mit LED-Leiste), 'door' (Haustür mit zwei Wandleuchten, `bulbs` links/rechts); ohne `entity` wirken Schalter, Helligkeit und Farbe auf alle `bulbs`
   fixture(f) {
     const st = (e) => this.s(e), on = (e) => (st(e) || {}).state === 'on', col = (e) => this.lightColor(st(e)), al = (e) => on(e) ? 0.35 + 0.65 * ((st(e).attributes.brightness || 255) / 255) : 0;
     const rgba = (c, a) => `rgba(${c.join(',')},${a.toFixed(2)})`;
@@ -499,6 +499,25 @@ class RaumCard extends HTMLElement {
         <rect x="58" y="49" width="128" height="4" rx="2" fill="${c ? '#fff' : '#3a4050'}"/>
         <rect x="40" y="62.5" width="164" height="2" fill="${c ? rgba(c, 1) : '#2f3542'}"/>
         <rect x="56" y="168" width="6" height="2" fill="${c ? '#fff' : '#3a4050'}"/><rect x="152" y="168" width="6" height="2" fill="${c ? '#fff' : '#3a4050'}"/><rect x="198" y="168" width="6" height="2" fill="${c ? '#fff' : '#3a4050'}"/></g></svg>`;
+    } else if (f.type === 'door') {
+      // Haustür mit zwei Wandleuchten links und rechts (Lichtkegel nach oben und unten)
+      ents = f.bulbs || [];
+      const X = [56, 188];
+      const lamp = (e, i) => {
+        const x = X[i % 2], c = col(e), a = al(e), g = `${id}w${i}`;
+        return `<g data-act="toggle" data-e="${e}" style="cursor:pointer"><rect x="${x - 30}" y="0" width="60" height="200" fill="transparent"/>
+          ${c ? `<defs><linearGradient id="${g}u" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${rgba(c, .7)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></linearGradient><linearGradient id="${g}d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${rgba(c, .6)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></linearGradient><radialGradient id="${g}h"><stop offset="0" stop-color="${rgba(c, .55)}"/><stop offset="1" stop-color="${rgba(c, 0)}"/></radialGradient></defs>
+          <g opacity="${a.toFixed(2)}"><ellipse cx="${x}" cy="92" rx="40" ry="34" fill="url(#${g}h)"/><path d="M${x - 8},78 L${x + 8},78 L${x + 26},0 L${x - 26},0 Z" fill="url(#${g}u)"/><path d="M${x - 8},106 L${x + 8},106 L${x + 30},196 L${x - 30},196 Z" fill="url(#${g}d)"/></g>` : ''}
+          <rect x="${x - 9}" y="76" width="18" height="32" rx="2" fill="${c ? '#fff4dc' : '#1c2029'}" stroke="${c ? rgba(c, 1) : 'rgba(255,255,255,.22)'}" stroke-width="1.5"/>
+          ${c ? `<rect x="${x - 6}" y="80" width="12" height="24" rx="1.5" fill="${rgba(c, .65)}"/>` : ''}<rect x="${x - 10}" y="72" width="20" height="5" rx="1" fill="#2a2d35"/></g>`;
+      };
+      const win = [0, 1, 2, 3].map(k => `<rect x="114" y="${82 + k * 27}" width="16" height="16" fill="${ents.some(on) ? '#e9e1cf' : '#3a3f4a'}"/>`).join('');
+      svg = `<svg viewBox="0 0 244 200" preserveAspectRatio="xMidYMid meet">
+        <rect x="88" y="58" width="68" height="142" fill="#191c24" stroke="rgba(255,255,255,.18)"/>
+        <rect x="96" y="66" width="52" height="134" fill="#262a33" stroke="rgba(255,255,255,.1)"/>${win}
+        <rect x="102" y="90" width="2" height="60" fill="rgba(255,255,255,.35)"/>
+        <rect x="8" y="80" width="26" height="48" fill="#14171e" stroke="rgba(255,255,255,.12)"/><rect x="210" y="80" width="26" height="48" fill="#14171e" stroke="rgba(255,255,255,.12)"/>
+        ${ents.slice(0, 2).map(lamp).join('')}</svg>`;
     } else if (f.type === 'go') {
       // Hue Go (Halbkugel) hinter dem Fernseher – leuchtet die Wand an
       ents = f.bulbs || (f.entity ? [f.entity] : []);
