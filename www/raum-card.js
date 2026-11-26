@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.14.0)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.15.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -595,8 +595,10 @@ class RaumCard extends HTMLElement {
     const ch = kon ? [K.skyq_channelno, K.media_channel].filter(Boolean).join(' · ') : own ? [chNo, A.media_channel].filter(Boolean).join(' · ') : '';
     const dur = own && A.media_duration, pos = dur && A.media_position != null ? Math.min(dur, A.media_position + (A.media_position_updated_at ? (Date.now() - new Date(A.media_position_updated_at)) / 1000 : 0)) : null;
     const hue = [...(A.media_channel || x.name || 'TV')].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
-    const F = A.supported_features || 0, rm = x.remote;
-    const rb = (cmd, ic, lb, cls = '') => `<button class="rk ${cls}" data-act="rc" data-e="${rm}" data-c="${cmd}" aria-label="${lb}">${ic.startsWith('mdi:') ? R_icon(ic, 20) : ic}</button>`;
+    const F = A.supported_features || 0, srm = !x.remote && kon ? x.sky_remote : null, rm = x.remote || srm;
+    // Sky-Q-Fernbedienung (remote über sky_remote) nutzt eigene Befehlsnamen
+    const SKY = { Up: 'up', Down: 'down', Left: 'left', Right: 'right', Confirm: 'select', Return: 'backup', Home: 'home', EPG: 'tvguide', Options: 'i', ChannelUp: 'channelup', ChannelDown: 'channeldown' };
+    const rb = (cmd, ic, lb, cls = '') => srm && /^Volume/.test(cmd) ? `<button class="rk ${cls}" data-act="mp" data-sv="${cmd === 'VolumeUp' ? 'volume_up' : 'volume_down'}" data-e="${e}" aria-label="${lb}">${R_icon(ic, 20)}</button>` : `<button class="rk ${cls}" data-act="rc" data-e="${rm}" data-c="${srm ? SKY[cmd] || cmd : cmd}" aria-label="${lb}">${ic.startsWith('mdi:') ? R_icon(ic, 20) : ic}</button>`;
     const vol = A.volume_level != null ? Math.round(A.volume_level * 100) : null, id = 'mv-' + e.replace(/\W/g, '');
     const KF = K.supported_features || 0, apps = x.sources === true ? (A.source_list || []) : (x.sources || []);
     const b = (ent, sv, ic, lb, cls = '') => `<button class="pb ${cls}" data-act="mp" data-sv="${sv}" data-e="${ent}" aria-label="${lb}">${R_icon(ic, cls.includes('big') ? 30 : 22)}</button>`;
@@ -608,7 +610,7 @@ class RaumCard extends HTMLElement {
         <div class="rcol">${rb('Return', 'mdi:keyboard-return', 'Zurück')}${rb('Home', 'mdi:home', 'Home')}${rb('EPG', 'mdi:television-guide', 'Programmführer')}${rb('Options', 'mdi:dots-horizontal', 'Optionen')}</div>
         <div class="rcol">${rb('VolumeUp', 'mdi:volume-plus', 'Lauter')}${rb('VolumeDown', 'mdi:volume-minus', 'Leiser')}${rb('ChannelUp', '<b>P+</b>', 'Programm +')}${rb('ChannelDown', '<b>P−</b>', 'Programm −')}</div></div>` : ''}
       ${on && vol != null ? `<div class="pvo"><button class="pb sm" data-act="mp" data-sv="volume_mute" data-e="${e}" aria-label="Stumm">${R_icon(A.is_volume_muted ? 'mdi:volume-off' : vol < 30 ? 'mdi:volume-low' : vol < 70 ? 'mdi:volume-medium' : 'mdi:volume-high', 18)}</button><input type="range" min="0" max="100" value="${vol}" data-act="vol" data-e="${e}" data-busy="media" data-live="${id}" data-unit=" %" aria-label="Lautstärke ${R_esc(x.name)}"><span id="${id}">${vol} %</span></div>` : ''}
-      ${on && (apps.length || rm) ? `<div class="pfv">${rm ? `<button class="pfc" data-act="rc" data-e="${rm}" data-c="Tv">${R_icon('mdi:television-classic', 14)}TV</button>` : ''}${apps.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${R_esc(String(o).split(' – ')[0])}</button>`).join('')}</div>` : ''}</div></div>`;
+      ${on && (apps.length || rm) ? `<div class="pfv">${x.remote ? `<button class="pfc" data-act="rc" data-e="${x.remote}" data-c="Tv">${R_icon('mdi:television-classic', 14)}TV</button>` : ''}${apps.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${R_esc(String(o).split(' – ')[0])}</button>`).join('')}</div>` : ''}</div></div>`;
   }
   // ---------- Strom ----------
   kPower() { return this.ks(this.c.power.map(x => x.entity)); }
