@@ -678,7 +678,21 @@ views:
     - entity: media_player.samsung_2
       name: Fernseher
       icon: mdi:television
-      play: false
+      style: tv
+      remote: remote.samsung_2
+      remote_type: samsung
+      sources: true
+      apps:
+      - name: Netflix
+        id: '3201907018807'
+      - name: Prime Video
+        id: '3201910019365'
+      - name: Disney+
+        id: '3201901017640'
+      - name: YouTube
+        id: '111299001912'
+      - name: Spotify
+        id: '3201606009684'
     - entity: media_player.schlafzimmer_schlafzimmer
       name: HomePod
       icon: mdi:speaker

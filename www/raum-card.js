@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.18.2)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.19.0)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -255,6 +255,7 @@ class RaumCard extends HTMLElement {
     else if (a === 'freset') { if (window.confirm('Filter wirklich als neu gewechselt zurücksetzen?')) this.call('button', 'press', { entity_id: e }); }
     else if (a === 'rc') this.call('remote', 'send_command', { entity_id: e, command: t.dataset.c });
     else if (a === 'stn') this.call('music_assistant', 'play_media', { entity_id: e, media_id: t.dataset.u, media_type: 'radio' });
+    else if (a === 'app') this.call('media_player', 'play_media', { entity_id: e, media_content_type: 'app', media_content_id: t.dataset.id });
     else if (a === 'srcb') this.call('media_player', 'select_source', { entity_id: e, source: t.dataset.o });
     else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: e } }));
   }
@@ -674,7 +675,10 @@ class RaumCard extends HTMLElement {
     const F = A.supported_features || 0, srm = !x.remote && kon ? x.sky_remote : null, rm = x.remote || srm;
     // Sky-Q-Fernbedienung (remote über sky_remote) nutzt eigene Befehlsnamen
     const SKY = { Up: 'up', Down: 'down', Left: 'left', Right: 'right', Confirm: 'select', Return: 'backup', Home: 'home', EPG: 'tvguide', Options: 'i', ChannelUp: 'channelup', ChannelDown: 'channeldown' };
-    const rb = (cmd, ic, lb, cls = '') => srm && /^Volume/.test(cmd) ? `<button class="rk ${cls}" data-act="mp" data-sv="${cmd === 'VolumeUp' ? 'volume_up' : 'volume_down'}" data-e="${e}" aria-label="${lb}">${R_icon(ic, 20)}</button>` : `<button class="rk ${cls}" data-act="rc" data-e="${rm}" data-c="${srm ? SKY[cmd] || cmd : cmd}" aria-label="${lb}">${ic.startsWith('mdi:') ? R_icon(ic, 20) : ic}</button>`;
+    // Samsung-Fernbedienung (remote_type: samsung) nutzt KEY_-Codes
+    const SAM = { Up: 'KEY_UP', Down: 'KEY_DOWN', Left: 'KEY_LEFT', Right: 'KEY_RIGHT', Confirm: 'KEY_ENTER', Return: 'KEY_RETURN', Home: 'KEY_HOME', EPG: 'KEY_GUIDE', Options: 'KEY_TOOLS', VolumeUp: 'KEY_VOLUP', VolumeDown: 'KEY_VOLDOWN', ChannelUp: 'KEY_CHUP', ChannelDown: 'KEY_CHDOWN', Tv: 'KEY_TV' };
+    const kc = (cmd) => srm ? SKY[cmd] || cmd : x.remote_type === 'samsung' ? SAM[cmd] || cmd : cmd;
+    const rb = (cmd, ic, lb, cls = '') => srm && /^Volume/.test(cmd) ? `<button class="rk ${cls}" data-act="mp" data-sv="${cmd === 'VolumeUp' ? 'volume_up' : 'volume_down'}" data-e="${e}" aria-label="${lb}">${R_icon(ic, 20)}</button>` : `<button class="rk ${cls}" data-act="rc" data-e="${rm}" data-c="${kc(cmd)}" aria-label="${lb}">${ic.startsWith('mdi:') ? R_icon(ic, 20) : ic}</button>`;
     const vol = A.volume_level != null ? Math.round(A.volume_level * 100) : null, id = 'mv-' + e.replace(/\W/g, '');
     const KF = K.supported_features || 0, apps = x.sources === true ? (A.source_list || []) : (x.sources || []);
     const b = (ent, sv, ic, lb, cls = '') => `<button class="pb ${cls}" data-act="mp" data-sv="${sv}" data-e="${ent}" aria-label="${lb}">${R_icon(ic, cls.includes('big') ? 30 : 22)}</button>`;
@@ -686,7 +690,7 @@ class RaumCard extends HTMLElement {
         <div class="rcol">${rb('Return', 'mdi:keyboard-return', 'Zurück')}${rb('Home', 'mdi:home', 'Home')}${rb('EPG', 'mdi:television-guide', 'Programmführer')}${rb('Options', 'mdi:dots-horizontal', 'Optionen')}</div>
         <div class="rcol">${rb('VolumeUp', 'mdi:volume-plus', 'Lauter')}${rb('VolumeDown', 'mdi:volume-minus', 'Leiser')}${rb('ChannelUp', '<b>P+</b>', 'Programm +')}${rb('ChannelDown', '<b>P−</b>', 'Programm −')}</div></div>` : ''}
       ${on && vol != null ? `<div class="pvo"><button class="pb sm" data-act="mp" data-sv="volume_mute" data-e="${e}" aria-label="Stumm">${R_icon(A.is_volume_muted ? 'mdi:volume-off' : vol < 30 ? 'mdi:volume-low' : vol < 70 ? 'mdi:volume-medium' : 'mdi:volume-high', 18)}</button><input type="range" min="0" max="100" value="${vol}" data-act="vol" data-e="${e}" data-busy="media" data-live="${id}" data-unit=" %" aria-label="Lautstärke ${R_esc(x.name)}"><span id="${id}">${vol} %</span></div>` : ''}
-      ${on && (apps.length || rm) ? `<div class="pfv">${x.remote ? `<button class="pfc" data-act="rc" data-e="${x.remote}" data-c="Tv">${R_icon('mdi:television-classic', 14)}TV</button>` : ''}${apps.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${R_esc(String(o).split(' – ')[0])}</button>`).join('')}</div>` : ''}</div></div>`;
+      ${on && (apps.length || rm || (x.apps || []).length) ? `<div class="pfv">${x.remote && !apps.includes('TV') ? `<button class="pfc" data-act="rc" data-e="${x.remote}" data-c="${kc('Tv')}">${R_icon('mdi:television-classic', 14)}TV</button>` : ''}${apps.map(o => `<button class="pfc ${o === A.source ? 'on' : ''}" data-act="srcb" data-e="${e}" data-o="${R_esc(o)}">${R_esc(String(o).split(' – ')[0])}</button>`).join('')}${(x.apps || []).map(ap => `<button class="pfc" data-act="app" data-e="${e}" data-id="${R_esc(ap.id)}">${R_icon(ap.icon || 'mdi:apps', 14)}${R_esc(ap.name)}</button>`).join('')}</div>` : ''}</div></div>`;
   }
   // ---------- Strom ----------
   kPower() { return this.ks(this.c.power.map(x => x.entity)); }
