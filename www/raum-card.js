@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.16.1)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.16.2)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -100,6 +100,7 @@ const R_CSS = `
 .ppg{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11.5px;opacity:.85;font-variant-numeric:tabular-nums}.pgb{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}.pgb i{display:block;height:100%;background:#fff;border-radius:3px}
 .plive{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.14);border-radius:999px;padding:3px 10px}.plive i{width:7px;height:7px;border-radius:50%;background:#ff5a5a}.ply.plyon .plive i{animation:cvpl 1.2s infinite}
 .pct{display:flex;align-items:center;gap:10px;margin-top:12px}
+.pb ha-icon,.rk ha-icon,.ib2 ha-icon,.fxp ha-icon{display:flex;align-items:center;justify-content:center;margin:auto}.pb,.rk,.ib2,.fxp{padding:0;line-height:1}
 .pb{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}.pb.big{width:58px;height:58px;background:#fff;color:#141826}.pb.act{background:#ffd27a;color:#2a1a05}.pb.sm{width:34px;height:34px;background:transparent}
 .pvo{display:flex;align-items:center;gap:8px;padding:4px 18px 8px}.pvo input{flex:1;accent-color:#fff}.pvo span{font-size:12px;opacity:.8;min-width:38px;text-align:right;font-variant-numeric:tabular-nums}
 .pfv{display:flex;gap:8px;overflow-x:auto;padding:4px 18px 16px;scrollbar-width:none}.pfv::-webkit-scrollbar{display:none}
@@ -116,7 +117,7 @@ const R_CSS = `
 .tvb{position:absolute;left:16px;right:16px;bottom:12px}.tvb .pti{font-size:24px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
 .tvl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(30px,8vw,54px);font-weight:800;letter-spacing:-.02em;opacity:.22;text-align:center;padding:0 20px}
 .tvp{font-weight:800;opacity:.6;font-size:15px}
-.rmt{display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:center;padding:6px 16px 4px}
+.rmt{display:flex;flex-wrap:wrap;justify-content:space-around;gap:12px;align-items:center;padding:6px 12px 4px}
 .rpad{display:grid;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:4px;background:rgba(255,255,255,.06);border-radius:50%;padding:8px}
 .rpad .u{grid-column:2;grid-row:1}.rpad .l{grid-column:1;grid-row:2}.rpad .ok{grid-column:2;grid-row:2;background:#fff;color:#141826;font-weight:800;font-size:13px}.rpad .r{grid-column:3;grid-row:2}.rpad .d{grid-column:2;grid-row:3}
 .rk{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font:inherit}.rpad .rk:not(.ok){background:transparent}
@@ -571,7 +572,8 @@ class RaumCard extends HTMLElement {
     const A = s.attributes, F = A.supported_features || 0, on = !['off', 'standby', 'unavailable', 'unknown'].includes(s.state), pl = s.state === 'playing';
     const st = { playing: 'spielt', paused: 'pausiert', idle: 'bereit', off: 'aus', standby: 'Standby', unavailable: 'nicht erreichbar' }[s.state] || s.state;
     const curSt = (x.stations || []).find(st => (A.media_content_id || '').includes(st.url) || (A.media_album_name === st.name && /radio/.test(A.media_content_id || '')));
-    const pic = A.entity_picture || (curSt && curSt.image), title = A.media_title || A.source || (on ? 'Bereit' : 'Aus'), sub = [A.media_artist, A.media_album_name].filter(Boolean).join(' · ') || (A.media_channel && A.media_channel !== title ? A.media_channel : '');
+    const junk = (t) => !t || /^(no name|livestream|unknown|untitled)$/i.test(String(t).trim());
+    const pic = A.entity_picture || (curSt && curSt.image), title = (!junk(A.media_title) && A.media_title) || (curSt && curSt.name) || A.source || (on ? 'Bereit' : 'Aus'), sub = [A.media_artist, A.media_album_name].filter(v => !junk(v) && v !== title).join(' · ') || (A.media_channel && A.media_channel !== title ? A.media_channel : '');
     const vol = A.volume_level != null ? Math.round(A.volume_level * 100) : null, id = 'mv-' + x.entity.replace(/\W/g, ''), e = x.entity;
     const dur = A.media_duration, pos = A.media_position != null ? A.media_position + (pl && A.media_position_updated_at ? (Date.now() - new Date(A.media_position_updated_at)) / 1000 : 0) : null;
     const t = (v) => `${Math.floor(v / 60)}:${String(Math.floor(v % 60)).padStart(2, '0')}`;
@@ -609,7 +611,7 @@ class RaumCard extends HTMLElement {
     return `<div class="tvc ${on ? 'on' : ''}"><div class="tvi" ${own ? `style="background:radial-gradient(120% 130% at 20% 10%,hsl(${hue} 55% 38%),hsl(${(hue + 40) % 360} 45% 14%) 70%)"` : ''}>${pic ? `<img src="${pic}" alt="">` : own ? `<div class="tvl">${R_esc(A.media_channel || '')}</div>` : `<div class="tvn">${R_icon(x.icon || 'mdi:television', 54)}</div>`}<div class="tvg"></div>
         <div class="tvt">${ch ? `<span class="tvch">${R_icon(kon ? 'mdi:satellite-variant' : 'mdi:television-classic', 14)}${R_esc(ch)}</span>` : ''}${kon && live ? '<span class="plive"><i></i>Live</span>' : kon ? `<span class="tvch">${kpl ? 'läuft' : 'pausiert'}</span>` : ''}</div>
         <div class="tvb"><div class="pti">${R_esc(title)}</div>${sub ? `<div class="par">${R_esc(sub)}</div>` : ''}${dur ? `<div class="ppg"><span>${new Date(Date.now() - pos * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span><div class="pgb"><i style="width:${Math.round(pos / dur * 100)}%"></i></div><span>${new Date(Date.now() + (dur - pos) * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span></div>` : ''}</div></div>
-      <div class="tvc2"><div class="pct">${b(e, 'toggle', 'mdi:power', 'Fernseher ein/aus', on ? 'act' : '')}${k ? `${KF & 16 ? b(x.sky, 'media_previous_track', 'mdi:rewind', 'Zurück') : ''}${b(x.sky, 'media_play_pause', kpl ? 'mdi:pause' : 'mdi:play', 'Play/Pause', 'big')}${KF & 32 ? b(x.sky, 'media_next_track', 'mdi:fast-forward', 'Vor') : ''}${b(x.sky, 'toggle', 'mdi:satellite-variant', 'Receiver ein/aus', kon ? 'act' : '')}` : on && !rm ? `${F & 16 ? b(e, 'media_previous_track', 'mdi:chevron-down', 'Programm zurück') : ''}<span class="tvp">P</span>${F & 32 ? b(e, 'media_next_track', 'mdi:chevron-up', 'Programm vor') : ''}` : ''}</div>
+      <div class="tvc2"><div class="pct">${b(e, on ? 'turn_off' : 'turn_on', 'mdi:power', 'Fernseher ein/aus', on ? 'act' : '')}${k ? `${KF & 16 ? b(x.sky, 'media_previous_track', 'mdi:rewind', 'Zurück') : ''}${b(x.sky, 'media_play_pause', kpl ? 'mdi:pause' : 'mdi:play', 'Play/Pause', 'big')}${KF & 32 ? b(x.sky, 'media_next_track', 'mdi:fast-forward', 'Vor') : ''}${b(x.sky, kon ? 'turn_off' : 'turn_on', 'mdi:satellite-variant', 'Receiver ein/aus', kon ? 'act' : '')}` : on && !rm ? `${F & 16 ? b(e, 'media_previous_track', 'mdi:chevron-down', 'Programm zurück') : ''}<span class="tvp">P</span>${F & 32 ? b(e, 'media_next_track', 'mdi:chevron-up', 'Programm vor') : ''}` : ''}</div>
       ${on && rm ? `<div class="rmt"><div class="rpad">${rb('Up', 'mdi:chevron-up', 'Hoch', 'u')}${rb('Left', 'mdi:chevron-left', 'Links', 'l')}${rb('Confirm', 'OK', 'OK', 'ok')}${rb('Right', 'mdi:chevron-right', 'Rechts', 'r')}${rb('Down', 'mdi:chevron-down', 'Runter', 'd')}</div>
         <div class="rcol">${rb('Return', 'mdi:keyboard-return', 'Zurück')}${rb('Home', 'mdi:home', 'Home')}${rb('EPG', 'mdi:television-guide', 'Programmführer')}${rb('Options', 'mdi:dots-horizontal', 'Optionen')}</div>
         <div class="rcol">${rb('VolumeUp', 'mdi:volume-plus', 'Lauter')}${rb('VolumeDown', 'mdi:volume-minus', 'Leiser')}${rb('ChannelUp', '<b>P+</b>', 'Programm +')}${rb('ChannelDown', '<b>P−</b>', 'Programm −')}</div></div>` : ''}
