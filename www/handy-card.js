@@ -1,5 +1,6 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.11)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.12)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
+// Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const P_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
@@ -84,7 +85,34 @@ const P_CSS = `
 .wi .ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
 .wi .n{font-size:12.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.wi .s{font-size:12px;color:var(--p-fg2)}.wi .s2{font-size:11px;color:var(--p-fg2);opacity:.75}
 .wi.soon{background:rgba(239,138,60,.16);box-shadow:inset 0 0 0 1px rgba(239,138,60,.5)}.wi.soon .s{color:#ffb27a;font-weight:650}.wi.soon .s2{color:#ffb27a}
+.wrap.hasnav{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.nav{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:5;display:flex;justify-content:space-around;gap:4px;padding:6px;border-radius:22px;background:rgba(24,28,38,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+.nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:16px;color:var(--p-fg2);font-size:10.5px;font-weight:650;cursor:pointer;text-decoration:none}
+.nav a.on{color:#fff;background:rgba(255,255,255,.1)}.nav a.on ha-icon{color:#ffd34d}
+.fh{border:none;color:#fff;padding:14px}
+.fh .tt{display:flex;align-items:center;gap:8px;font-size:22px;font-weight:750}
+.fh .tv{font-size:13px;opacity:.85;margin-top:2px}
+.fh .cps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fh .cp{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:650;padding:5px 10px;border-radius:20px;background:rgba(0,0,0,.2)}
+.fh .cp.bad{background:rgba(227,73,72,.85)}.fh .cp.heat{background:rgba(239,138,60,.85)}
+.fh .off{border:none;font:inherit;font-size:12px;font-weight:700;padding:5px 12px;border-radius:20px;background:#fff;color:#1d2230;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.rm{display:flex;flex-direction:column;gap:4px;cursor:pointer;min-height:92px;padding:10px 11px;transition:background .3s}
+.rm .tp{display:flex;align-items:center;justify-content:space-between}
+.rm .ic{width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center}
+.rm .tmp{font-size:19px;font-weight:300}.rm .tmp small{font-size:11px;opacity:.7}
+.rm .nm{font-size:14px;font-weight:700;display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rm .bt2{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:auto}
+.rm .inf{display:flex;flex-wrap:wrap;gap:4px;font-size:11.5px;color:var(--p-fg2);align-items:center}
+.rm .bdg{display:inline-flex;align-items:center;gap:2px;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:8px}
+.rm .bdg.bad{background:rgba(227,73,72,.22);color:#ff8f8e}.rm .bdg.heat{background:rgba(239,138,60,.22);color:#ffb27a}
+.rm .lb2{width:38px;height:38px;flex:none;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--p-fg2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rm.lit{background:linear-gradient(160deg,rgba(var(--lc),.28),var(--p-card) 75%)}.rm.lit .lb2{background:rgb(var(--lc));color:#2a1a05;border-color:transparent;box-shadow:0 0 16px rgba(var(--lc),.6)}
+.gi{display:flex;flex-direction:column;gap:3px;cursor:pointer;min-height:92px;padding:10px 11px}
+.gi .v{font-size:19px;font-weight:650}.gi .s{font-size:12px;color:var(--p-fg2)}
 `;
+// Leiste unten (gemeinsam für Start- und Etagen-Seiten)
+const P_nav = (items, base) => items && items.length ? `<nav class="nav">${items.map(n => { const p = n.path.startsWith('/') ? n.path : `${base || ''}/${n.path}`, on = location.pathname === p || location.pathname.startsWith(p + '/');
+  return `<a class="${on ? 'on' : ''}" data-act="nav" data-p="${P_esc(p)}">${P_icon(n.icon || 'mdi:circle', 22)}${P_esc(n.name)}</a>`; }).join('')}</nav>` : '';
 class HandyCard extends HTMLElement {
   setConfig(c) { this.c = { persons: [], waste: [], waste_days: 1, ...c }; this._k = null; if (this.root) this.build(); }
   set hass(h) {
@@ -121,8 +149,9 @@ class HandyCard extends HTMLElement {
     if (c.energy) out.push(this.energy());
     if (c.door) out.push(this.door());
     if (c.waste.length) out.push(this.waste());
+    if (c.nav) out.push(P_nav(c.nav, c.base_path));
     // Nur geänderte Bereiche ersetzen, damit laufende Animationen nicht neu starten
-    const w = this.root.getElementById('w');
+    const w = this.root.getElementById('w'); w.classList.toggle('hasnav', !!c.nav);
     while (w.children.length > out.length) w.lastChild.remove();
     out.forEach((html, i) => {
       let el = w.children[i];
@@ -344,6 +373,60 @@ class HandyCard extends HTMLElement {
     }).join('')}</div></div>`;
   }
 }
+// Etagen-Seite fürs iPhone: Kopf mit Zusammenfassung, kleine Raumkacheln (Licht direkt schaltbar), optional Garten-Kacheln
+class HandyFloor extends HandyCard {
+  setConfig(c) { this.c = { rooms: [], garden: [], ...c }; this._k = null; if (this.root) this.build(); }
+  set hass(h) { this._hass = h; if (!this.root) { this.root = this.attachShadow({ mode: 'open' }); this.build(); } const k = this.keys(); if (k === this._k) return; this._k = k; this.render(); }
+  keys() {
+    const c = this.c, ents = [...c.rooms.flatMap(r => [r.temperature, r.humidity, r.climate, ...(r.lights || []), ...(r.windows || []).map(w => w.entity || w)]), ...c.garden.flatMap(g => [g.entity, g.battery, g.temperature, g.climate, g.recommendation, ...(g.zones || [])])];
+    return ents.map(e => { const s = this.s(e); return s ? s.state + JSON.stringify((s.attributes || {}).rgb_color || '') + ((s.attributes || {}).hvac_action || '') : '-'; }).join('|');
+  }
+  onClick(ev) {
+    const t = ev.target.closest('[data-act]'); if (!t) return; ev.stopPropagation();
+    const a = t.dataset.act;
+    if (a === 'lights' || a === 'alloff') { const ids = t.dataset.e.split(',').filter(Boolean), on = ids.filter(e => (this.s(e) || {}).state === 'on'); this.call('homeassistant', a === 'alloff' || on.length ? 'turn_off' : 'turn_on', { entity_id: a === 'alloff' ? on : on.length ? on : ids }); }
+    else if (a === 'nav') this.nav(t.dataset.p);
+    else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: t.dataset.e } }));
+  }
+  rgb(s) { const a = s.attributes || {}; if (a.rgb_color) return a.rgb_color; if (a.color_temp_kelvin) { const k = a.color_temp_kelvin; return k < 3000 ? [255, 180, 107] : k < 4500 ? [255, 214, 170] : [235, 240, 255]; } return [255, 196, 122]; }
+  render() {
+    const c = this.c, rooms = c.rooms, base = c.room_base || c.base_path || '';
+    const allL = rooms.flatMap(r => r.lights || []), onL = allL.filter(e => (this.s(e) || {}).state === 'on');
+    const temps = rooms.map(r => this.n(r.temperature)).filter(v => v != null), tt = temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : null;
+    const open = rooms.filter(r => (r.windows || []).some(w => (this.s(w.entity || w) || {}).state === 'on')), heat = rooms.filter(r => { const x = this.s(r.climate); return x && x.attributes.hvac_action === 'heating'; });
+    const head = `<div class="t full fh" style="background:${c.background || 'linear-gradient(150deg,#2b3a67,#4a5d8f)'}"><div class="tt">${P_icon(c.icon || 'mdi:home', 26)}${P_esc(c.title || '')}</div>
+      <div class="tv">${tt != null ? `Ø ${P_fmt(tt)} °C · ` : ''}${rooms.length} ${rooms.length === 1 ? 'Raum' : 'Räume'}</div>
+      <div class="cps">${allL.length ? `<span class="cp">${P_icon(onL.length ? 'mdi:lightbulb-on' : 'mdi:lightbulb-off-outline', 14)}${onL.length ? `${onL.length} ${onL.length === 1 ? 'Licht' : 'Lichter'} an` : 'Alle Lichter aus'}</span>` : ''}
+        ${onL.length ? `<button class="off" data-act="alloff" data-e="${allL.join(',')}">${P_icon('mdi:power', 14)}Alle aus</button>` : ''}
+        ${open.length ? `<span class="cp bad">${P_icon('mdi:window-open-variant', 14)}offen: ${open.map(r => P_esc(r.name)).join(', ')}</span>` : ''}
+        ${heat.length ? `<span class="cp heat">${P_icon('mdi:fire', 14)}${heat.length} ${heat.length === 1 ? 'Raum heizt' : 'Räume heizen'}</span>` : ''}</div></div>`;
+    const tiles = rooms.map(r => {
+      const ls = (r.lights || []).map(e => this.s(e)).filter(Boolean), on = ls.filter(s => s.state === 'on'), t = this.n(r.temperature), hu = this.n(r.humidity);
+      const op = (r.windows || []).some(w => (this.s(w.entity || w) || {}).state === 'on'), cl = this.s(r.climate), ht = cl && cl.attributes.hvac_action === 'heating';
+      const lc = on.length ? this.rgb(on[0]).join(',') : '';
+      const p = r.path ? (r.path.startsWith('/') ? r.path : `${base}/${r.path}`) : '';
+      return `<div class="t rm ${on.length ? 'lit' : ''}" ${lc ? `style="--lc:${lc}"` : ''} ${p ? `data-act="nav" data-p="${P_esc(p)}"` : ''}>
+        <div class="tp"><div class="ic">${P_icon(r.icon || 'mdi:door', 19)}</div>${t != null ? `<div class="tmp">${P_fmt(t)}<small>°</small></div>` : ''}</div>
+        <div class="nm">${P_esc(r.name)}${p ? P_icon('mdi:chevron-right', 15) : ''}</div>
+        <div class="bt2"><div class="inf">${hu != null ? `<span>${P_icon('mdi:water-percent', 13)}${P_fmt(hu, 0)} %</span>` : ''}${op ? `<span class="bdg bad">${P_icon('mdi:window-open-variant', 12)}offen</span>` : ''}${ht ? `<span class="bdg heat">${P_icon('mdi:fire', 12)}heizt</span>` : ''}</div>
+          ${ls.length ? `<button class="lb2" data-act="lights" data-e="${(r.lights || []).join(',')}" aria-label="Licht ${P_esc(r.name)}">${P_icon(on.length ? 'mdi:lightbulb-on' : 'mdi:lightbulb-outline', 20)}</button>` : ''}</div></div>`;
+    }).join('');
+    const garden = c.garden.map(g => {
+      const s = this.s(g.entity), p = g.path ? (g.path.startsWith('/') ? g.path : `${base}/${g.path}`) : '';
+      let v = '–', sub = '';
+      if (g.type === 'pool') { const t = this.n(g.temperature), cl = this.s(g.climate); v = t != null ? `${P_fmt(t)} °C` : '–'; sub = !cl || cl.state === 'unavailable' ? 'Wärmepumpe nicht erreichbar' : cl.state === 'off' ? 'Wärmepumpe aus' : `Wärmepumpe ${cl.attributes.hvac_action === 'heating' ? 'heizt' : 'an'}`; }
+      else if (g.type === 'irrigation') { const run = (g.zones || []).filter(z => (this.s(z) || {}).state === 'on').length; v = run ? `${run} ${run === 1 ? 'Zone' : 'Zonen'} aktiv` : 'Bereit'; const r = this.s(g.recommendation); sub = r ? r.state : (s ? (s.state === 'on' ? 'verbunden' : 'getrennt') : ''); }
+      else if (g.type === 'mower') { const M = { mowing: 'mäht', docked: 'in der Station', returning: 'fährt heim', paused: 'Pause', error: 'Fehler' }; v = s ? (M[s.state] || s.state) : 'nicht verfügbar'; const b = this.n(g.battery); sub = b != null ? `Akku ${P_fmt(b, 0)} %` : ''; }
+      return `<div class="t gi" ${p ? `data-act="nav" data-p="${P_esc(p)}"` : g.entity ? `data-act="more" data-e="${g.entity}"` : ''}><div class="ic" style="width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center">${P_icon(g.icon || 'mdi:flower', 19)}</div>
+        <div class="nm" style="font-size:14px;font-weight:700">${P_esc(g.name)}</div><div class="v" style="font-size:15px">${P_esc(v)}</div><div class="s">${P_esc(sub)}</div></div>`;
+    }).join('');
+    const out = [head, tiles, garden, P_nav(c.nav, c.base_path)];
+    const w = this.root.getElementById('w'); w.classList.toggle('hasnav', !!c.nav);
+    while (w.children.length > out.length) w.lastChild.remove();
+    out.forEach((html, i) => { let el = w.children[i]; if (!el) { el = document.createElement('div'); el.style.display = 'contents'; w.appendChild(el); } if (el._h !== html) { el._h = html; el.innerHTML = html; } });
+  }
+}
 if (!customElements.get('handy-card')) customElements.define('handy-card', HandyCard);
+if (!customElements.get('handy-floor')) customElements.define('handy-floor', HandyFloor);
 window.customCards = window.customCards || [];
 if (!window.customCards.some(c => c.type === 'handy-card')) window.customCards.push({ type: 'handy-card', name: 'Handy-Karte', description: 'Kompakte Startseite fürs iPhone: Wetter, Haustür, Energie, Personen, Müll' });
