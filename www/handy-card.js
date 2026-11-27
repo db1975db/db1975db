@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.14)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.14.1)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -18,7 +18,7 @@ const P_WX = {
 const P_CSS = `
 :host{display:block;--p-bg:#0e1118;--p-card:#181c26;--p-line:rgba(255,255,255,.08);--p-fg:#f2f4f8;--p-fg2:#9aa3b2;--p-ok:#1baf7a;--p-warn:#ef8a3c;--p-bad:#e34948;color:var(--p-fg);font-family:inherit}
 *{box-sizing:border-box}
-.wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:max(12px,env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom))}
+.wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 12px calc(14px + env(safe-area-inset-bottom))}
 .full{grid-column:1/-1}
 .t{background:var(--p-card);border:1px solid var(--p-line);border-radius:18px;padding:12px;min-width:0;position:relative;overflow:hidden}
 .lnk{cursor:pointer}
@@ -41,7 +41,7 @@ const P_CSS = `
 .wx .wl{display:flex;gap:3px;align-items:flex-start;font-size:11.5px;line-height:1.3;opacity:.9;margin-top:4px}.wx .wl ha-icon,.wx .wl svg{flex:none;margin-top:1px}
 .wx .rain{margin-top:8px;border-radius:12px;background:rgba(0,0,0,.16);padding:7px 10px 6px}.wx .rain.dry{padding:6px 10px;opacity:.9}
 .wx .ms{display:grid;gap:6px;margin-top:10px}.wx .m{background:rgba(0,0,0,.16);border-radius:12px;padding:6px 4px 5px;text-align:center;cursor:pointer;min-width:0}
-.wx .m .mi{opacity:.75;display:flex;justify-content:center}.wx .m b{display:block;font-size:16px;font-weight:650;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}.wx .m b small{font-size:10.5px;font-weight:500;opacity:.8;margin-left:1px}.wx .m span{display:block;font-size:10.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wx .m .mi{opacity:.75;display:flex;justify-content:center}.wx .m span ha-icon,.wx .m span svg{vertical-align:-2px;--mdc-icon-size:12px}.wx .m b{display:block;font-size:16px;font-weight:650;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}.wx .m b small{font-size:10.5px;font-weight:500;opacity:.8;margin-left:1px}.wx .m span{display:block;font-size:10.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wx .rt2{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:650}
 .wx .bars{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;align-items:end;height:26px;margin-top:6px}
 .wx .bars i{display:block;border-radius:3px 3px 1px 1px;background:#7cc4ff;min-height:2px}
@@ -225,7 +225,7 @@ class HandyCard extends HTMLElement {
   windText(ws, gust, deg) {
     const dirs = ['N', 'NNO', 'NO', 'ONO', 'O', 'OSO', 'SO', 'SSO', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'], name = deg == null ? '' : dirs[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
     const bf = ws == null ? '' : ws < 2 ? 'windstill' : ws < 6 ? 'leiser Zug' : ws < 12 ? 'leichte Brise' : ws < 20 ? 'schwache Brise' : ws < 29 ? 'mäßiger Wind' : ws < 39 ? 'frischer Wind' : ws < 50 ? 'starker Wind' : ws < 62 ? 'steifer Wind' : 'Sturm';
-    return `${P_icon('mdi:weather-windy', 13)}<span><b>${bf}</b>${name ? ` aus ${name}` : ''}${gust != null ? ` · Böen ${P_fmt(gust, 0)} km/h` : ''}</span>`;
+    return `${P_icon('mdi:weather-windy', 13)}<span><b>${bf}</b>${name ? ` aus ${name}` : ''}${gust != null ? ` · <span style="white-space:nowrap">Böen ${P_fmt(gust, 0)} km/h</span>` : ''}</span>`;
   }
   weather() {
     const W = this.c.weather, w = this.s(W.entity), A = w ? w.attributes : {}, sun = this.s(W.sun || 'sun.sun'), day = sun ? sun.state === 'above_horizon' : (new Date().getHours() > 7 && new Date().getHours() < 17);
@@ -255,7 +255,7 @@ class HandyCard extends HTMLElement {
     // Messwerte der Wetterstation als kleine Kacheln (nur konfigurierte)
     const pt = this.n(W.pressure_trend), ms = [
       [W.humidity, 'mdi:water-percent', 'Feuchte', (v) => `${P_fmt(v, 0)}<small>%</small>`],
-      [W.pressure, 'mdi:gauge', pt == null ? 'Luftdruck' : `Druck ${pt > .5 ? '↗' : pt < -.5 ? '↘' : '→'}`, (v) => `${P_fmt(v, 0)}<small>hPa</small>`],
+      [W.pressure, 'mdi:gauge', pt == null ? 'Luftdruck' : `Druck ${P_icon(pt > .5 ? 'mdi:trending-up' : pt < -.5 ? 'mdi:trending-down' : 'mdi:trending-neutral', 12)}`, (v) => `${P_fmt(v, 0)}<small>hPa</small>`],
       [W.dew_point, 'mdi:thermometer-water', 'Taupunkt', (v) => `${P_fmt(v, 1)}<small>°</small>`],
       [W.uv, 'mdi:white-balance-sunny', 'UV-Index', (v) => P_fmt(v, 0)],
       [W.rain_day, 'mdi:weather-rainy', 'Regen heute', (v) => `${P_fmt(v, 1)}<small>mm</small>`],
