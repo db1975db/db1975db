@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.13)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.14)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -38,7 +38,10 @@ const P_CSS = `
 .wx .cd2{font-size:13.5px;font-weight:650;margin-top:3px}.wx .mm2{font-size:12px;opacity:.85;display:flex;align-items:center;gap:2px;margin-top:1px}
 .wx .cmp{position:relative;width:104px;height:104px;cursor:pointer}.wx .cmp svg{width:104px;height:104px;display:block}
 .wx .cmp text{fill:#fff}
-.wx .rain{margin-top:8px;border-radius:12px;background:rgba(0,0,0,.16);padding:7px 10px 6px}
+.wx .wl{display:flex;gap:3px;align-items:flex-start;font-size:11.5px;line-height:1.3;opacity:.9;margin-top:4px}.wx .wl ha-icon,.wx .wl svg{flex:none;margin-top:1px}
+.wx .rain{margin-top:8px;border-radius:12px;background:rgba(0,0,0,.16);padding:7px 10px 6px}.wx .rain.dry{padding:6px 10px;opacity:.9}
+.wx .ms{display:grid;gap:6px;margin-top:10px}.wx .m{background:rgba(0,0,0,.16);border-radius:12px;padding:6px 4px 5px;text-align:center;cursor:pointer;min-width:0}
+.wx .m .mi{opacity:.75;display:flex;justify-content:center}.wx .m b{display:block;font-size:16px;font-weight:650;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}.wx .m b small{font-size:10.5px;font-weight:500;opacity:.8;margin-left:1px}.wx .m span{display:block;font-size:10.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wx .rt2{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:650}
 .wx .bars{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;align-items:end;height:26px;margin-top:6px}
 .wx .bars i{display:block;border-radius:3px 3px 1px 1px;background:#7cc4ff;min-height:2px}
@@ -204,8 +207,6 @@ class HandyCard extends HTMLElement {
   // Windkompass: Pfeil zeigt die Herkunft, Windlinien ziehen in Windrichtung, in der Mitte die Geschwindigkeit
   compass(ws, gust, deg) {
     const dirs = ['N', 'NNO', 'NO', 'ONO', 'O', 'OSO', 'SO', 'SSO', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'], d = deg == null ? null : ((deg % 360) + 360) % 360;
-    const name = d == null ? '' : dirs[Math.round(d / 22.5) % 16];
-    const bf = ws == null ? '' : ws < 2 ? 'windstill' : ws < 6 ? 'leiser Zug' : ws < 12 ? 'leichte Brise' : ws < 20 ? 'schwache Brise' : ws < 29 ? 'mäßiger Wind' : ws < 39 ? 'frischer Wind' : ws < 50 ? 'starker Wind' : ws < 62 ? 'steifer Wind' : 'Sturm';
     const spd = ws == null || ws < 1 ? 0 : Math.max(.35, 3 - Math.log10(ws + 1) * 1.6);
     const streaks = spd ? [-14, -4, 6, 16].map((o, i) => `<line x1="${o}" y1="-30" x2="${o}" y2="30" stroke="#fff" stroke-opacity=".25" stroke-width="1.3" stroke-dasharray="6 14" style="animation:streak ${(spd * (1 + i * .15)).toFixed(2)}s linear infinite"/>`).join('') : '';
     const ticks = [...Array(16)].map((_, i) => `<line x1="0" y1="-46" x2="0" y2="${i % 4 ? -43 : -40}" stroke="#fff" stroke-opacity="${i % 4 ? .35 : .8}" stroke-width="${i % 4 ? 1 : 1.6}" transform="rotate(${i * 22.5})"/>`).join('');
@@ -216,7 +217,13 @@ class HandyCard extends HTMLElement {
     return `<svg viewBox="-52 -52 104 104"><circle r="47" fill="rgba(0,0,0,.18)" stroke="rgba(255,255,255,.35)"/>${ticks}
       <clipPath id="cmpc"><circle r="28"/></clipPath><g clip-path="url(#cmpc)" transform="rotate(${d ?? 0})">${streaks}</g>${lbls}${arrow}
       <circle r="21" fill="rgba(10,16,30,.55)"/><text y="1" text-anchor="middle" style="font-size:15px;font-weight:750">${ws == null ? '–' : P_fmt(ws, ws < 10 ? 1 : 0)}</text><text y="11" text-anchor="middle" style="font-size:7.5px;opacity:.8">km/h</text></svg>
-      <div style="position:absolute;left:0;right:0;bottom:-30px;text-align:center;font-size:11px;line-height:1.25;white-space:nowrap"><b>${name ? 'aus ' + name : ''}</b>${gust != null ? ` · Böen ${P_fmt(gust, 0)}` : ''}<br><span style="opacity:.8">${bf}</span></div>`;
+`;
+  }
+  // Windbeschreibung als Text: Herkunft, Böen, Stärke in Worten
+  windText(ws, gust, deg) {
+    const dirs = ['N', 'NNO', 'NO', 'ONO', 'O', 'OSO', 'SO', 'SSO', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'], name = deg == null ? '' : dirs[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
+    const bf = ws == null ? '' : ws < 2 ? 'windstill' : ws < 6 ? 'leiser Zug' : ws < 12 ? 'leichte Brise' : ws < 20 ? 'schwache Brise' : ws < 29 ? 'mäßiger Wind' : ws < 39 ? 'frischer Wind' : ws < 50 ? 'starker Wind' : ws < 62 ? 'steifer Wind' : 'Sturm';
+    return `${P_icon('mdi:weather-windy', 13)}<span><b>${bf}</b>${name ? ` aus ${name}` : ''}${gust != null ? ` · Böen ${P_fmt(gust, 0)} km/h` : ''}</span>`;
   }
   weather() {
     const W = this.c.weather, w = this.s(W.entity), A = w ? w.attributes : {}, sun = this.s(W.sun || 'sun.sun'), day = sun ? sun.state === 'above_horizon' : (new Date().getHours() > 7 && new Date().getHours() < 17);
@@ -238,19 +245,28 @@ class HandyCard extends HTMLElement {
     const wet = (f) => (f.precipitation || 0) >= .1 || (f.precipitation_probability || 0) >= 50 || ['rainy', 'pouring', 'snowy', 'snowy-rainy', 'hail', 'lightning-rainy'].includes(f.condition);
     const snowy = (f) => ['snowy', 'snowy-rainy', 'hail'].includes(f.condition) || (f.temperature != null && f.temperature <= 0.5);
     const hr = (f) => `${new Date(f.datetime).getHours()} Uhr`, nowRain = this.n(W.rain_rate) > 0 || ['rainy', 'pouring', 'snowy', 'snowy-rainy', 'hail', 'lightning-rainy'].includes(key);
-    let rtxt = '', ric = 'mdi:weather-cloudy';
+    let rtxt = '', ric = 'mdi:weather-cloudy', dry = false;
     if (fc.length) {
       if (nowRain || wet(fc[0])) { const e = fc.findIndex(f => !wet(f)), what = snowy(fc[0]) ? 'Schnee' : 'Regen'; ric = snowy(fc[0]) ? 'mdi:weather-snowy' : 'mdi:weather-pouring'; rtxt = e > 0 ? `${what} hört gegen ${hr(fc[e])} auf` : e === 0 ? `${what} hört bald auf` : `${what} in den nächsten ${fc.length} Std.`; }
-      else { const b = fc.findIndex(wet); if (b > 0) { const f = fc[b], what = snowy(f) ? 'Schnee' : 'Regen'; ric = snowy(f) ? 'mdi:weather-snowy' : 'mdi:umbrella'; rtxt = `${what} ab ca. ${hr(f)}${f.precipitation_probability ? ` (${f.precipitation_probability} %)` : ''}`; } else { ric = 'mdi:umbrella-closed-outline'; rtxt = `Kein Regen bis ${hr(fc[fc.length - 1])}`; } }
+      else { const b = fc.findIndex(wet); if (b > 0) { const f = fc[b], what = snowy(f) ? 'Schnee' : 'Regen'; ric = snowy(f) ? 'mdi:weather-snowy' : 'mdi:umbrella'; rtxt = `${what} ab ca. ${hr(f)}${f.precipitation_probability ? ` (${f.precipitation_probability} %)` : ''}`; } else { dry = true; ric = 'mdi:umbrella-closed-outline'; rtxt = `Kein Regen in den nächsten ${fc.length} Stunden`; } }
     }
-    const rain = fc.length ? `<div class="rain"><div class="rt2">${P_icon(ric, 15)}${rtxt}</div>
+    // Messwerte der Wetterstation als kleine Kacheln (nur konfigurierte)
+    const pt = this.n(W.pressure_trend), ms = [
+      [W.humidity, 'mdi:water-percent', 'Feuchte', (v) => `${P_fmt(v, 0)}<small>%</small>`],
+      [W.pressure, 'mdi:gauge', pt == null ? 'Luftdruck' : `Druck ${pt > .5 ? '↗' : pt < -.5 ? '↘' : '→'}`, (v) => `${P_fmt(v, 0)}<small>hPa</small>`],
+      [W.dew_point, 'mdi:thermometer-water', 'Taupunkt', (v) => `${P_fmt(v, 1)}<small>°</small>`],
+      [W.uv, 'mdi:white-balance-sunny', 'UV-Index', (v) => P_fmt(v, 0)],
+      [W.rain_day, 'mdi:weather-rainy', 'Regen heute', (v) => `${P_fmt(v, 1)}<small>mm</small>`],
+    ].filter(([e]) => e && this.n(e) != null).slice(0, 4);
+    const meas = ms.length ? `<div class="ms" style="grid-template-columns:repeat(${ms.length},minmax(0,1fr))">${ms.map(([e, ic, l, f]) => `<div class="m" data-act="more" data-e="${e}"><div class="mi">${P_icon(ic, 14)}</div><b>${f(this.n(e))}</b><span>${l}</span></div>`).join('')}</div>` : '';
+    const rain = !fc.length ? '' : dry ? `<div class="rain dry"><div class="rt2">${P_icon(ric, 15)}${rtxt}</div></div>` : `<div class="rain"><div class="rt2">${P_icon(ric, 15)}${rtxt}</div>
       <div class="bars">${fc.map(f => { const v = Math.max((f.precipitation_probability || 0) / 100, Math.min(1, (f.precipitation || 0) / 2)); return `<i class="${v < .05 ? 'z' : ''}" style="height:${Math.max(8, v * 100)}%;${snowy(f) && v >= .05 ? 'background:#e8f1ff' : ''}"></i>`; }).join('')}</div>
-      <div class="tk">${fc.map((f, i) => `<span>${i % 3 === 0 ? new Date(f.datetime).getHours() : ''}</span>`).join('')}</div></div>` : '';
+      <div class="tk">${fc.map((f, i) => `<span>${i % 3 === 0 ? new Date(f.datetime).getHours() : ''}</span>`).join('')}</div></div>`;
     return `<div class="t full wx" style="background:linear-gradient(160deg,${bg[0]},${bg[1]})">
       <div class="row1"><div class="wic ${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-f="1" data-p="${P_esc(W.path)}"` : ''}>${this.wicon(key, day)}</div>
-        <div class="${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-f="1" data-p="${P_esc(W.path)}"` : ''}><div class="tp2">${P_fmt(t)}<small>°C</small></div><div class="cd2">${P_esc(txt)}</div><div class="mm2">${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}° ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</div></div>
+        <div class="${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-f="1" data-p="${P_esc(W.path)}"` : ''}><div class="tp2">${P_fmt(t)}<small>°C</small></div><div class="cd2">${P_esc(txt)}</div><div class="mm2">${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}° ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</div><div class="wl">${this.windText(ws, gust, deg)}</div></div>
         <div class="cmp" data-act="more" data-e="${W.wind || W.entity}">${this.compass(ws, gust, deg)}</div></div>
-      <div style="height:26px"></div>${rain}${warn}</div>`;
+      ${meas}${rain}${warn}</div>`;
   }
   door() {
     const D = this.c.door, l = this.s(D.lock), st = l ? l.state : 'unavailable', b = this.n(D.battery), ct = this.s(D.contact), open = ct && ct.state === 'on';

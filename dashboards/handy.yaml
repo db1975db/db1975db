@@ -19,6 +19,9 @@ views:
       rain_rate: sensor.garden_wetterstation_niederschlag_pro_stunde
       rain_day: sensor.garten_wetterstation_niederschlag_heute
       humidity: sensor.garden_wetterstation_luftfeuchtigkeit
+      pressure: sensor.garden_wetterstation_druck
+      pressure_trend: sensor.garten_wetterstation_luftdruck_tendenz_3h
+      dew_point: sensor.garden_wetterstation_taupunkt
       warning: sensor.kreis_markisch_oderland_aktuelle_warnstufe
       prewarning: sensor.kreis_markisch_oderland_vorwarnstufe
       path: /dashboard-haus/wetter
