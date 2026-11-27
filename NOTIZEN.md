@@ -55,7 +55,7 @@
 - Später: Einzel-Dashboards (Wohnzimmer, Küche, Wetterstation, Mähroboter, Hunter-Bewässerung) erst löschen, wenn Dennis das will.
 
 ### Dashboard „Zuhause (iPhone)“ (`/dashboard-handy`) – im Aufbau, seit 27.11.2026
-- Eigenes iPhone-Dashboard mit kleineren Kacheln (Dennis' Wunsch). Bisher nur die Startseite: `custom:handy-card` und `custom:handy-floor` (`www/handy-card.js`, v0.12), Konfiguration `dashboards/handy.yaml`.
+- Eigenes iPhone-Dashboard mit kleineren Kacheln (Dennis' Wunsch). Bisher nur die Startseite: `custom:handy-card` und `custom:handy-floor` (`www/handy-card.js`, v0.13), Konfiguration `dashboards/handy.yaml`.
 - **Ressource:** inline, Resource-ID `661a62894e9e4e4381ed12b1ca498677` (Hash 45420d33… = Repo).
 - Bereiche: Begrüßung, Personen mit Fotos (entity_picture), Wetter (animiertes Symbol, Windkompass mit Richtung/Geschwindigkeit/Böen der Gartenstation, Regenbeginn aus DWD-Stundenvorhersage `weather.lebus_3` mit 12-Std.-Balken, kurze DWD-Warnzeile), Energie als Szene mit der eigenen Stadtvilla von vorne (symmetrisch, graue Betondachsteine, 9 PV-Module mittig 4+5, Varta Element backup 6,5 kWh hinter dem HWR-Fenster rechts unten), Haustür (Aqara U200), Müll mit den Bildern `/local/muell/*.png`.
 - Das ältere Dashboard `dashboard-iphone` bleibt vorerst unverändert.
@@ -70,6 +70,7 @@
 
 ## Offene Punkte
 - **Stand 26.11. nachmittags:** In HA eingespielt sind raum-card v1.21.1 (Ressource 1bc3365d…, Hash f9e2d4e9…; Leuchtenbild `door` mit `socket`; Leuchtenbilder `panel` (auch `shape: square`) und `mirror`, Regler nur bei dimmbaren Lampen; Kopfzeile zählt Lichtschalter mit; Samsung-Fernbedienung `remote_type: samsung`, App-Knöpfe `apps: [{name, id}]` über `media_player.play_media` mit `media_content_type: app`) und haus-card v0.8.5 (Ressource 0e363120…). Repo und HA stimmen überein. Getestet und ok: Fernseher Küche (Bravia) und Wohnzimmer (Samsung + Sky Q inkl. Fernbedienung, Wake-on-LAN), HomePod Wohnzimmer mit 4 Sendern, Luftreiniger-Stufen über Matter. Noch ohne Rückmeldung: langes Drücken (Farbrad), Ziehen am Rollladen-Bild, Sonos-Cover Küche, Luftreiniger Licht/Kindersicherung/Laden (Bluetooth). Ideen: Sonos Küche ebenfalls mit `stations`, MA-App-Update (vorher Sicherung).
+- **Stand 27.11.:** Zurück-Knopf aus dem iPhone-Dashboard: handy-card v0.13 (Ressource 661a6289…, Hash cf566b8e…) hängt bei Sprüngen in andere Dashboards (Raumkacheln, Garten-Kacheln, Wetter) `?from=<aktuelle Seite>` an. raum-card v1.21.2 (Hash a18b4291…) und wetterstation-garten-card v1.3.1 (Hash 0444b2ae…) springen beim Zurück-Knopf zu `from`, falls vorhanden, sonst wie bisher zu `back`. iPad-Verhalten unverändert. Repo und HA stimmen überein.
 - Arbeitsweise mit Dennis: Änderungen erst als Vorschau zeigen, dann auf „ja, spiel es ein“ einspielen. Nach Kartenänderungen Hinweis auf „Frontend-Cache zurücksetzen“ in der Companion App.
 - Rollläden Treppe, Flur oben und Eingang „Alle (Zentral)“ melden keine Position – Shellys in der Shelly-App kalibrieren, dann gehen Ziehen und Schnellwahl automatisch.
 - Luftreiniger Küche: Steuerung über Matter (`fan.switchbot_air_purifier`, Stufen niedrig/mittel/hoch/auto). Der Bluetooth-Eintrag `fan.luftreiniger_2` (mit Schlaf/Haustier) reagierte nicht (Signal −78 dBm). Licht, Kindersicherung, Laden und die Sensoren laufen weiter über Bluetooth – prüfen, ob sie schalten.

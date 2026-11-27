@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.21.1)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.21.2)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -235,7 +235,8 @@ class RaumCard extends HTMLElement {
     const t = ev.target.closest('[data-act]'); if (!t || t.tagName === 'INPUT' || t.tagName === 'SELECT') return;
     if (ev.target.closest('input,select')) return;
     const a = t.dataset.act, e = t.dataset.e;
-    if (a === 'back') { const p = this.c.back.startsWith('/') ? this.c.back : `${this.c.base_path || ''}/${this.c.back}`; history.pushState(null, '', p); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); return; }
+    // Zurück: kam man aus einem anderen Dashboard (?from=…, z. B. iPhone-Dashboard), dorthin zurück
+    if (a === 'back') { const f = new URLSearchParams(location.search).get('from'), p = f && f.startsWith('/') ? f : this.c.back.startsWith('/') ? this.c.back : `${this.c.base_path || ''}/${this.c.back}`; history.pushState(null, '', p); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); return; }
     if (this._lp && Date.now() - this._lp < 800) { this._lp = 0; return; }
     const ids = e && e.includes(',') ? e.split(',') : e;
     if (a === 'toggle') this.call(e.split('.')[0], 'toggle', { entity_id: e });

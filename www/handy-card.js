@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.12)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.13)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -132,12 +132,13 @@ class HandyCard extends HTMLElement {
     this.root.innerHTML = `<style>${P_CSS}</style><div class="wrap" id="w"></div>`;
     this.root.addEventListener('click', (ev) => this.onClick(ev));
   }
-  nav(p) { if (!p) return; const path = p.startsWith('/') ? p : `${this.c.base_path || ''}/${p}`; history.pushState(null, '', path); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); }
+  // Ziele in anderen Dashboards bekommen ?from=<aktuelle Seite>, damit deren Zurück-Knopf hierher zurückführt
+  nav(p, from) { if (!p) return; let path = p.startsWith('/') ? p : `${this.c.base_path || ''}/${p}`; if (from) path += (path.includes('?') ? '&' : '?') + 'from=' + encodeURIComponent(location.pathname); history.pushState(null, '', path); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); }
   call(d, s, data) { this._hass.callService(d, s, data); }
   onClick(ev) {
     const t = ev.target.closest('[data-act]'); if (!t) return;
     const a = t.dataset.act, e = t.dataset.e;
-    if (a === 'nav') this.nav(t.dataset.p);
+    if (a === 'nav') this.nav(t.dataset.p, t.dataset.f);
     else if (a === 'lock') { const sv = t.dataset.sv; if (sv !== 'lock' && !window.confirm(sv === 'open' ? 'Haustür wirklich öffnen?' : 'Haustür wirklich aufschließen?')) return; this.call('lock', sv, { entity_id: e }); }
     else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: e } }));
   }
@@ -246,8 +247,8 @@ class HandyCard extends HTMLElement {
       <div class="bars">${fc.map(f => { const v = Math.max((f.precipitation_probability || 0) / 100, Math.min(1, (f.precipitation || 0) / 2)); return `<i class="${v < .05 ? 'z' : ''}" style="height:${Math.max(8, v * 100)}%;${snowy(f) && v >= .05 ? 'background:#e8f1ff' : ''}"></i>`; }).join('')}</div>
       <div class="tk">${fc.map((f, i) => `<span>${i % 3 === 0 ? new Date(f.datetime).getHours() : ''}</span>`).join('')}</div></div>` : '';
     return `<div class="t full wx" style="background:linear-gradient(160deg,${bg[0]},${bg[1]})">
-      <div class="row1"><div class="wic ${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-p="${P_esc(W.path)}"` : ''}>${this.wicon(key, day)}</div>
-        <div class="${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-p="${P_esc(W.path)}"` : ''}><div class="tp2">${P_fmt(t)}<small>°C</small></div><div class="cd2">${P_esc(txt)}</div><div class="mm2">${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}° ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</div></div>
+      <div class="row1"><div class="wic ${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-f="1" data-p="${P_esc(W.path)}"` : ''}>${this.wicon(key, day)}</div>
+        <div class="${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-f="1" data-p="${P_esc(W.path)}"` : ''}><div class="tp2">${P_fmt(t)}<small>°C</small></div><div class="cd2">${P_esc(txt)}</div><div class="mm2">${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}° ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</div></div>
         <div class="cmp" data-act="more" data-e="${W.wind || W.entity}">${this.compass(ws, gust, deg)}</div></div>
       <div style="height:26px"></div>${rain}${warn}</div>`;
   }
@@ -385,7 +386,7 @@ class HandyFloor extends HandyCard {
     const t = ev.target.closest('[data-act]'); if (!t) return; ev.stopPropagation();
     const a = t.dataset.act;
     if (a === 'lights' || a === 'alloff') { const ids = t.dataset.e.split(',').filter(Boolean), on = ids.filter(e => (this.s(e) || {}).state === 'on'); this.call('homeassistant', a === 'alloff' || on.length ? 'turn_off' : 'turn_on', { entity_id: a === 'alloff' ? on : on.length ? on : ids }); }
-    else if (a === 'nav') this.nav(t.dataset.p);
+    else if (a === 'nav') this.nav(t.dataset.p, t.dataset.f);
     else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: t.dataset.e } }));
   }
   rgb(s) { const a = s.attributes || {}; if (a.rgb_color) return a.rgb_color; if (a.color_temp_kelvin) { const k = a.color_temp_kelvin; return k < 3000 ? [255, 180, 107] : k < 4500 ? [255, 214, 170] : [235, 240, 255]; } return [255, 196, 122]; }
@@ -405,7 +406,7 @@ class HandyFloor extends HandyCard {
       const op = (r.windows || []).some(w => (this.s(w.entity || w) || {}).state === 'on'), cl = this.s(r.climate), ht = cl && cl.attributes.hvac_action === 'heating';
       const lc = on.length ? this.rgb(on[0]).join(',') : '';
       const p = r.path ? (r.path.startsWith('/') ? r.path : `${base}/${r.path}`) : '';
-      return `<div class="t rm ${on.length ? 'lit' : ''}" ${lc ? `style="--lc:${lc}"` : ''} ${p ? `data-act="nav" data-p="${P_esc(p)}"` : ''}>
+      return `<div class="t rm ${on.length ? 'lit' : ''}" ${lc ? `style="--lc:${lc}"` : ''} ${p ? `data-act="nav" data-f="1" data-p="${P_esc(p)}"` : ''}>
         <div class="tp"><div class="ic">${P_icon(r.icon || 'mdi:door', 19)}</div>${t != null ? `<div class="tmp">${P_fmt(t)}<small>°</small></div>` : ''}</div>
         <div class="nm">${P_esc(r.name)}${p ? P_icon('mdi:chevron-right', 15) : ''}</div>
         <div class="bt2"><div class="inf">${hu != null ? `<span>${P_icon('mdi:water-percent', 13)}${P_fmt(hu, 0)} %</span>` : ''}${op ? `<span class="bdg bad">${P_icon('mdi:window-open-variant', 12)}offen</span>` : ''}${ht ? `<span class="bdg heat">${P_icon('mdi:fire', 12)}heizt</span>` : ''}</div>
@@ -417,7 +418,7 @@ class HandyFloor extends HandyCard {
       if (g.type === 'pool') { const t = this.n(g.temperature), cl = this.s(g.climate); v = t != null ? `${P_fmt(t)} °C` : '–'; sub = !cl || cl.state === 'unavailable' ? 'Wärmepumpe nicht erreichbar' : cl.state === 'off' ? 'Wärmepumpe aus' : `Wärmepumpe ${cl.attributes.hvac_action === 'heating' ? 'heizt' : 'an'}`; }
       else if (g.type === 'irrigation') { const run = (g.zones || []).filter(z => (this.s(z) || {}).state === 'on').length; v = run ? `${run} ${run === 1 ? 'Zone' : 'Zonen'} aktiv` : 'Bereit'; const r = this.s(g.recommendation); sub = r ? r.state : (s ? (s.state === 'on' ? 'verbunden' : 'getrennt') : ''); }
       else if (g.type === 'mower') { const M = { mowing: 'mäht', docked: 'in der Station', returning: 'fährt heim', paused: 'Pause', error: 'Fehler' }; v = s ? (M[s.state] || s.state) : 'nicht verfügbar'; const b = this.n(g.battery); sub = b != null ? `Akku ${P_fmt(b, 0)} %` : ''; }
-      return `<div class="t gi" ${p ? `data-act="nav" data-p="${P_esc(p)}"` : g.entity ? `data-act="more" data-e="${g.entity}"` : ''}><div class="ic" style="width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center">${P_icon(g.icon || 'mdi:flower', 19)}</div>
+      return `<div class="t gi" ${p ? `data-act="nav" data-f="1" data-p="${P_esc(p)}"` : g.entity ? `data-act="more" data-e="${g.entity}"` : ''}><div class="ic" style="width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center">${P_icon(g.icon || 'mdi:flower', 19)}</div>
         <div class="nm" style="font-size:14px;font-weight:700">${P_esc(g.name)}</div><div class="v" style="font-size:15px">${P_esc(v)}</div><div class="s">${P_esc(sub)}</div></div>`;
     }).join('');
     const out = [head, tiles, garden, P_nav(c.nav, c.base_path)];
