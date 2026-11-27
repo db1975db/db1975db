@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.10)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.11)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -30,21 +30,24 @@ const P_CSS = `
 .av i{position:absolute;right:-3px;bottom:-3px;width:20px;height:20px;border-radius:50%;border:2px solid var(--p-card);background:#5b6375;display:flex;align-items:center;justify-content:center;color:#fff}
 .pp.home .av i{background:var(--p-ok)}
 .pp .n{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp .s{font-size:11.5px;color:var(--p-fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wx{color:#fff;border:none;padding:0}
-.wx .sc{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.wx .top{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px 8px}
-.wx .lc{font-size:12px;opacity:.85;display:flex;align-items:center;gap:4px}
-.wx .tp2{font-size:42px;font-weight:200;line-height:1;letter-spacing:-1px}.wx .tp2 small{font-size:17px;font-weight:300;vertical-align:top;margin-left:2px}
-.wx .cd2{font-size:14px;font-weight:650}.wx .mm2{font-size:12.5px;opacity:.85;display:flex;align-items:center;gap:2px;margin-top:2px}
-.wx .rt{text-align:right;font-size:12.5px;line-height:1.7;align-self:end;text-shadow:0 1px 4px rgba(0,0,0,.35)}
-.wx .rt span{display:inline-flex;align-items:center;gap:3px}
-.wx .warn{position:relative;margin:0 10px 6px;border-radius:20px;padding:4px 10px;display:flex;width:fit-content;max-width:calc(100% - 20px);gap:6px;align-items:center;font-size:12px;font-weight:650;color:#1d1a10;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wx .hr{position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:2px 10px 10px}
-.wx .hc{text-align:center;padding:4px 0;border-radius:10px;background:rgba(0,0,0,.14);font-size:12px}
-.wx .hc .tt{opacity:.8;font-size:10.5px}.wx .hc .tv{font-weight:650;font-size:12.5px}
-.wx .hc.now{background:rgba(255,255,255,.22)}
-.wx .ch{position:relative;display:flex;flex-wrap:wrap;gap:6px;padding:2px 10px 12px}
-.wx .cp{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:5px 9px;border-radius:20px;background:rgba(0,0,0,.18)}
+.wx{color:#fff;border:none;padding:12px 12px 10px}
+.wx .row1{display:grid;grid-template-columns:64px 1fr 104px;align-items:center;gap:8px}
+.wx .wic svg{width:64px;height:64px;display:block}
+.wx .tp2{font-size:38px;font-weight:200;line-height:1;letter-spacing:-1px}.wx .tp2 small{font-size:16px;font-weight:300;vertical-align:top;margin-left:2px}
+.wx .cd2{font-size:13.5px;font-weight:650;margin-top:3px}.wx .mm2{font-size:12px;opacity:.85;display:flex;align-items:center;gap:2px;margin-top:1px}
+.wx .cmp{position:relative;width:104px;height:104px;cursor:pointer}.wx .cmp svg{width:104px;height:104px;display:block}
+.wx .cmp text{fill:#fff}
+.wx .rain{margin-top:8px;border-radius:12px;background:rgba(0,0,0,.16);padding:7px 10px 6px}
+.wx .rt2{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:650}
+.wx .bars{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;align-items:end;height:26px;margin-top:6px}
+.wx .bars i{display:block;border-radius:3px 3px 1px 1px;background:#7cc4ff;min-height:2px}
+.wx .bars i.z{background:rgba(255,255,255,.18)}
+.wx .tk{display:grid;grid-template-columns:repeat(12,1fr);font-size:9.5px;opacity:.7;margin-top:2px}.wx .tk span{text-align:center}
+.wx .warn{margin-top:7px;border-radius:20px;padding:4px 10px;display:flex;gap:6px;align-items:center;font-size:12px;font-weight:650;color:#1d1a10;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:fit-content;max-width:100%}
+@keyframes wob2{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes streak{from{stroke-dashoffset:40}to{stroke-dashoffset:0}}
+@keyframes drop{from{transform:translateY(-6px);opacity:0}30%{opacity:1}to{transform:translateY(14px);opacity:0}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes drift{from{transform:translateX(-60px)}to{transform:translateX(460px)}}
 @keyframes fall{from{transform:translateY(-20px)}to{transform:translateY(160px)}}
@@ -94,7 +97,7 @@ class HandyCard extends HTMLElement {
   n(e) { const s = this.s(e); const v = s ? parseFloat(s.state) : NaN; return isNaN(v) ? null : v; }
   keys() {
     const c = this.c, W = c.weather || {}, D = c.door || {}, E = c.energy || {};
-    const ents = [W.entity, W.temperature, W.max, W.min, W.wind, W.rain_day, W.humidity, W.warning, W.prewarning, W.sun || 'sun.sun', D.lock, D.battery, D.contact, ...Object.values(E), ...c.persons.map(p => p.entity), ...c.waste.map(w => w.entity)];
+    const ents = [W.entity, W.temperature, W.max, W.min, W.wind, W.wind_gust, W.wind_bearing, W.rain_rate, W.rain_day, W.humidity, W.warning, W.prewarning, W.sun || 'sun.sun', D.lock, D.battery, D.contact, ...Object.values(E), ...c.persons.map(p => p.entity), ...c.waste.map(w => w.entity)];
     return ents.map(e => { const s = this.s(e); return s ? s.state + (s.attributes.entity_picture || '') : '-'; }).join('|') + new Date().toDateString();
   }
   build() {
@@ -148,50 +151,76 @@ class HandyCard extends HTMLElement {
     const W = this.c.weather || {}, e = W.forecast || W.entity; if (this._unsub || !e || !this._hass || !this._hass.connection) return;
     this._unsub = this._hass.connection.subscribeMessage((m) => { this._fc = (m && m.forecast) || []; this._k = null; this.render(); }, { type: 'weather/subscribe_forecast', forecast_type: 'hourly', entity_id: e }).catch(() => null);
   }
-  scene(key, day) {
-    // Animierte Wetter-Szene hinter dem Wetter-Bereich
-    const cloud = (x, y, k, o, d, dl) => `<g style="animation:drift ${d}s linear ${dl}s infinite" opacity="${o}"><g transform="translate(${x} ${y}) scale(${k})"><ellipse cx="0" cy="10" rx="34" ry="14" fill="#fff"/><ellipse cx="-14" cy="2" rx="18" ry="15" fill="#fff"/><ellipse cx="10" cy="-4" rx="22" ry="20" fill="#fff"/></g></g>`;
-    const sun = (x, y) => `<g transform="translate(${x} ${y})"><circle r="44" fill="#ffd65a" opacity=".18" style="animation:glow 4s ease-in-out infinite"/><g style="animation:spin 30s linear infinite">${[...Array(12)].map((_, i) => `<rect x="-2" y="-40" width="4" height="12" rx="2" fill="#ffe28a" opacity=".85" transform="rotate(${i * 30})"/>`).join('')}</g><circle r="22" fill="#ffd34d"/></g>`;
-    const moon = (x, y) => `<g transform="translate(${x} ${y})"><circle r="30" fill="#fff" opacity=".08"/><path d="M8,-18 A20,20 0 1 0 8,18 A15,15 0 1 1 8,-18Z" fill="#f2ecd2"/></g>`;
-    const stars = [...Array(18)].map((_, i) => `<circle cx="${(i * 73) % 400}" cy="${(i * 37) % 110 + 6}" r="${i % 3 ? 1 : 1.6}" fill="#fff" style="animation:tw ${2 + i % 4}s ease-in-out ${i * .3}s infinite"/>`).join('');
-    const drops = (n, snow) => [...Array(n)].map((_, i) => { const x = (i * 47) % 400, d = snow ? 5 + i % 4 : .7 + (i % 5) * .12, dl = -(i * .37) % d; return snow ? `<circle cx="${x}" cy="0" r="${1.5 + i % 2}" fill="#fff" opacity=".85" style="animation:fall ${d}s linear ${dl}s infinite"/>` : `<line x1="${x}" y1="0" x2="${x - 3}" y2="10" stroke="#bfe3ff" stroke-width="1.5" stroke-linecap="round" opacity=".8" style="animation:fall ${d}s linear ${dl}s infinite"/>`; }).join('');
-    const clouds = (n, o) => [[30, 30, 1, 46], [220, 18, .8, 60], [120, 60, 1.2, 52], [330, 50, .9, 70]].slice(0, n).map(([x, y, k, d], i) => cloud(x, y, k, o, d, -i * 13)).join('');
-    let g = '';
-    if (key === 'sunny') g = sun(340, 42);
-    else if (key === 'clear-night') g = stars + moon(340, 40);
-    else if (key === 'partlycloudy') g = (day ? sun(330, 44) : stars + moon(330, 40)) + clouds(2, .85);
-    else if (key === 'cloudy') g = clouds(4, .35);
-    else if (key === 'fog') g = [20, 50, 80, 110].map((y, i) => `<rect x="-40" y="${y}" width="480" height="14" rx="7" fill="#fff" opacity=".14" style="animation:fogm ${8 + i * 2}s ease-in-out infinite"/>`).join('');
-    else if (['rainy', 'pouring', 'lightning-rainy'].includes(key)) g = clouds(3, .45) + drops(key === 'pouring' ? 40 : 24) + (key === 'lightning-rainy' ? '<rect width="400" height="150" fill="#fff" style="animation:flash 6s linear infinite"/>' : '');
-    else if (['snowy', 'snowy-rainy', 'hail'].includes(key)) g = clouds(3, .5) + drops(26, true);
-    else if (key === 'lightning') g = clouds(3, .4) + '<rect width="400" height="150" fill="#fff" style="animation:flash 5s linear infinite"/>';
-    else if (key.startsWith('windy')) g = clouds(4, .4);
-    return `<svg class="sc" viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice">${g}</svg>`;
+  // Animiertes Wettersymbol (64×64)
+  wicon(key, day) {
+    const cloud = (x, y, k, f = '#fff', o = 1) => `<g transform="translate(${x} ${y}) scale(${k})" opacity="${o}"><ellipse cx="0" cy="6" rx="17" ry="8" fill="${f}"/><ellipse cx="-8" cy="1" rx="9" ry="8" fill="${f}"/><ellipse cx="5" cy="-3" rx="11" ry="10" fill="${f}"/></g>`;
+    const sun = (x, y, r) => `<g transform="translate(${x} ${y})"><g style="animation:spin 14s linear infinite">${[...Array(8)].map((_, i) => `<rect x="-1.6" y="${-r - 9}" width="3.2" height="6" rx="1.6" fill="#ffe28a" transform="rotate(${i * 45})"/>`).join('')}</g><circle r="${r}" fill="#ffd34d"/></g>`;
+    const moon = (x, y) => `<g transform="translate(${x} ${y})"><path d="M5,-13 A14,14 0 1 0 5,13 A10,10 0 1 1 5,-13Z" fill="#f2ecd2"/></g>`;
+    const stars = [[10, 12], [52, 10], [46, 30], [14, 44]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="1.3" fill="#fff" style="animation:tw ${1.8 + i * .5}s ease-in-out infinite"/>`).join('');
+    const drops = (snow) => [18, 28, 38, 48].map((x, i) => snow ? `<circle cx="${x}" cy="46" r="2" fill="#fff" style="animation:drop ${2.2 + i * .3}s linear ${-i * .6}s infinite"/>` : `<line x1="${x}" y1="44" x2="${x - 2}" y2="50" stroke="#8fd0ff" stroke-width="2.2" stroke-linecap="round" style="animation:drop ${.9 + i * .15}s linear ${-i * .3}s infinite"/>`).join('');
+    const bobC = (c) => `<g style="animation:bob 3s ease-in-out infinite">${c}</g>`;
+    let g;
+    if (key === 'sunny') g = sun(32, 32, 13);
+    else if (key === 'clear-night') g = stars + moon(34, 32);
+    else if (key === 'partlycloudy') g = (day ? sun(24, 24, 10) : stars + moon(24, 24)) + bobC(cloud(36, 38, 1));
+    else if (key === 'cloudy') g = bobC(cloud(24, 26, .8, '#cfd6e2', .9) + cloud(36, 36, 1));
+    else if (key === 'fog') g = [20, 30, 40, 50].map((y, i) => `<rect x="${8 + i % 2 * 4}" y="${y}" width="${48 - i % 2 * 8}" height="4" rx="2" fill="#fff" opacity=".7" style="animation:fogm ${4 + i}s ease-in-out infinite"/>`).join('');
+    else if (['rainy', 'pouring'].includes(key)) g = drops(false) + bobC(cloud(32, 26, 1.1));
+    else if (['snowy', 'snowy-rainy', 'hail'].includes(key)) g = drops(true) + bobC(cloud(32, 26, 1.1));
+    else if (key.startsWith('lightning')) g = bobC(cloud(32, 24, 1.1)) + `<path d="M34,36 L26,48 L32,48 L28,60 L40,44 L34,44 L38,36Z" fill="#ffd34d" style="animation:flash 3s linear infinite;opacity:1"/>`;
+    else g = bobC(cloud(32, 30, 1.1));
+    return `<svg viewBox="0 0 64 64">${g}</svg>`;
+  }
+  // Windkompass: Pfeil zeigt die Herkunft, Windlinien ziehen in Windrichtung, in der Mitte die Geschwindigkeit
+  compass(ws, gust, deg) {
+    const dirs = ['N', 'NNO', 'NO', 'ONO', 'O', 'OSO', 'SO', 'SSO', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'], d = deg == null ? null : ((deg % 360) + 360) % 360;
+    const name = d == null ? '' : dirs[Math.round(d / 22.5) % 16];
+    const bf = ws == null ? '' : ws < 2 ? 'windstill' : ws < 6 ? 'leiser Zug' : ws < 12 ? 'leichte Brise' : ws < 20 ? 'schwache Brise' : ws < 29 ? 'mäßiger Wind' : ws < 39 ? 'frischer Wind' : ws < 50 ? 'starker Wind' : ws < 62 ? 'steifer Wind' : 'Sturm';
+    const spd = ws == null || ws < 1 ? 0 : Math.max(.35, 3 - Math.log10(ws + 1) * 1.6);
+    const streaks = spd ? [-14, -4, 6, 16].map((o, i) => `<line x1="${o}" y1="-30" x2="${o}" y2="30" stroke="#fff" stroke-opacity=".25" stroke-width="1.3" stroke-dasharray="6 14" style="animation:streak ${(spd * (1 + i * .15)).toFixed(2)}s linear infinite"/>`).join('') : '';
+    const ticks = [...Array(16)].map((_, i) => `<line x1="0" y1="-46" x2="0" y2="${i % 4 ? -43 : -40}" stroke="#fff" stroke-opacity="${i % 4 ? .35 : .8}" stroke-width="${i % 4 ? 1 : 1.6}" transform="rotate(${i * 22.5})"/>`).join('');
+    const lbls = [['N', 0, -32], ['O', 32, 0], ['S', 0, 32], ['W', -32, 0]].map(([t, x, y]) => `<text x="${x}" y="${y + 3.5}" text-anchor="middle" style="font-size:9px;font-weight:700;opacity:.75">${t}</text>`).join('');
+    // Pfeil: sitzt auf der Herkunftsrichtung und zeigt zur Mitte (in Windrichtung)
+    const arrow = d == null ? '' : `<g transform="rotate(${d})"><g style="animation:wob2 ${spd ? Math.max(1, spd * 1.4).toFixed(2) : 4}s ease-in-out infinite;transform-origin:0 0">
+      <path d="M0,-23 L7,-34 L2.2,-33 L2.2,-47 L-2.2,-47 L-2.2,-33 L-7,-34Z" fill="#ffd34d" stroke="#3a2a00" stroke-opacity=".25" stroke-width=".6"/></g></g>`;
+    return `<svg viewBox="-52 -52 104 104"><circle r="47" fill="rgba(0,0,0,.18)" stroke="rgba(255,255,255,.35)"/>${ticks}
+      <clipPath id="cmpc"><circle r="28"/></clipPath><g clip-path="url(#cmpc)" transform="rotate(${d ?? 0})">${streaks}</g>${lbls}${arrow}
+      <circle r="21" fill="rgba(10,16,30,.55)"/><text y="1" text-anchor="middle" style="font-size:15px;font-weight:750">${ws == null ? '–' : P_fmt(ws, ws < 10 ? 1 : 0)}</text><text y="11" text-anchor="middle" style="font-size:7.5px;opacity:.8">km/h</text></svg>
+      <div style="position:absolute;left:0;right:0;bottom:-30px;text-align:center;font-size:11px;line-height:1.25;white-space:nowrap"><b>${name ? 'aus ' + name : ''}</b>${gust != null ? ` · Böen ${P_fmt(gust, 0)}` : ''}<br><span style="opacity:.8">${bf}</span></div>`;
   }
   weather() {
     const W = this.c.weather, w = this.s(W.entity), A = w ? w.attributes : {}, sun = this.s(W.sun || 'sun.sun'), day = sun ? sun.state === 'above_horizon' : (new Date().getHours() > 7 && new Date().getHours() < 17);
     let key = w ? w.state : 'cloudy'; if (key === 'sunny' && !day) key = 'clear-night';
     const [txt, , bg0] = P_WX[key] || ['–', '', ['#3d4a5e', '#66758c']], bg = day ? bg0 : ['#0f1630', '#26305a'];
-    const t = this.n(W.temperature) ?? A.temperature, mx = this.n(W.max), mn = this.n(W.min), wi = this.n(W.wind) ?? A.wind_speed, rn = this.n(W.rain_day), hu = this.n(W.humidity) ?? A.humidity;
-    const dirs = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'], dir = A.wind_bearing != null ? dirs[Math.round(A.wind_bearing / 45) % 8] : '';
+    const t = this.n(W.temperature) ?? A.temperature, mx = this.n(W.max), mn = this.n(W.min);
+    const ws = this.n(W.wind) ?? A.wind_speed, gust = this.n(W.wind_gust) ?? A.wind_gust_speed, deg = this.n(W.wind_bearing) ?? A.wind_bearing;
     const tm = (iso) => iso ? new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
-    // DWD-Warnung
-    const ws = this.s(W.warning), wa = ws ? ws.attributes : {}, wc = +(wa.warning_count || 0), pre = this.s(W.prewarning), pc = pre ? +(pre.attributes.warning_count || 0) : 0;
+    // DWD-Warnung als kurze Zeile
+    const wsn = this.s(W.warning), wa = wsn ? wsn.attributes : {}, wc = +(wa.warning_count || 0), pre = this.s(W.prewarning), pc = pre ? +(pre.attributes.warning_count || 0) : 0;
     let warn = '';
     if (wc || pc) {
-      const src = wc ? wa : pre.attributes, n = wc || pc, col = src.warning_1_color || '#ffeb3b', when = `${tm(src.warning_1_start)}–${tm(src.warning_1_end)}`;
+      const src = wc ? wa : pre.attributes, n = wc || pc, col = src.warning_1_color || '#ffeb3b';
       const ev = String(src.warning_1_name || (src.warning_1_headline || '').replace(/^.*vor\s+/i, '') || 'Wetterwarnung'), evt = ev.charAt(0) + ev.slice(1).toLowerCase();
       warn = `<div class="warn" style="background:${col}" data-act="more" data-e="${wc ? W.warning : W.prewarning}">${P_icon('mdi:alert', 15)}${wc ? '' : 'Vorwarnung: '}${P_esc(evt)} bis ${tm(src.warning_1_end)}${n > 1 ? ` (+${n - 1})` : ''}</div>`;
     }
-    // Stündliche Vorhersage
-    const fc = (this._fc || []).filter(f => new Date(f.datetime) > Date.now() - 36e5).slice(0, 6);
-    const hrs = fc.length ? `<div class="hr">${fc.map((f, i) => { const h = new Date(f.datetime).getHours(), dn = h >= 7 && h < 17, k = f.condition === 'sunny' && !dn ? 'clear-night' : f.condition, ic = (P_WX[k] || [, 'mdi:weather-cloudy'])[1];
-      return `<div class="hc ${i === 0 ? 'now' : ''}"><div class="tt">${i === 0 ? 'Jetzt' : h + ' Uhr'}</div>${P_icon(ic, 18)}<div class="tv">${P_fmt(f.temperature, 0)}°</div></div>`; }).join('')}</div>` : '';
-    return `<div class="t full wx" style="background:linear-gradient(160deg,${bg[0]},${bg[1]})">${this.scene(key, day)}
-      <div class="top ${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-p="${P_esc(W.path)}"` : ''}>
-        <div class="tp2">${P_fmt(t)}<small>°C</small></div>
-        <div><div class="cd2">${P_esc(txt)}</div><div class="mm2">${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}° ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</div></div></div>
-      ${warn}${hrs}</div>`;
+    // Regen: wann beginnt/endet er (stündliche Vorhersage, 12 Stunden)
+    const fc = (this._fc || []).filter(f => new Date(f.datetime) > Date.now() - 36e5).slice(0, 12);
+    const wet = (f) => (f.precipitation || 0) >= .1 || (f.precipitation_probability || 0) >= 50 || ['rainy', 'pouring', 'snowy', 'snowy-rainy', 'hail', 'lightning-rainy'].includes(f.condition);
+    const snowy = (f) => ['snowy', 'snowy-rainy', 'hail'].includes(f.condition) || (f.temperature != null && f.temperature <= 0.5);
+    const hr = (f) => `${new Date(f.datetime).getHours()} Uhr`, nowRain = this.n(W.rain_rate) > 0 || ['rainy', 'pouring', 'snowy', 'snowy-rainy', 'hail', 'lightning-rainy'].includes(key);
+    let rtxt = '', ric = 'mdi:weather-cloudy';
+    if (fc.length) {
+      if (nowRain || wet(fc[0])) { const e = fc.findIndex(f => !wet(f)), what = snowy(fc[0]) ? 'Schnee' : 'Regen'; ric = snowy(fc[0]) ? 'mdi:weather-snowy' : 'mdi:weather-pouring'; rtxt = e > 0 ? `${what} hört gegen ${hr(fc[e])} auf` : e === 0 ? `${what} hört bald auf` : `${what} in den nächsten ${fc.length} Std.`; }
+      else { const b = fc.findIndex(wet); if (b > 0) { const f = fc[b], what = snowy(f) ? 'Schnee' : 'Regen'; ric = snowy(f) ? 'mdi:weather-snowy' : 'mdi:umbrella'; rtxt = `${what} ab ca. ${hr(f)}${f.precipitation_probability ? ` (${f.precipitation_probability} %)` : ''}`; } else { ric = 'mdi:umbrella-closed-outline'; rtxt = `Kein Regen bis ${hr(fc[fc.length - 1])}`; } }
+    }
+    const rain = fc.length ? `<div class="rain"><div class="rt2">${P_icon(ric, 15)}${rtxt}</div>
+      <div class="bars">${fc.map(f => { const v = Math.max((f.precipitation_probability || 0) / 100, Math.min(1, (f.precipitation || 0) / 2)); return `<i class="${v < .05 ? 'z' : ''}" style="height:${Math.max(8, v * 100)}%;${snowy(f) && v >= .05 ? 'background:#e8f1ff' : ''}"></i>`; }).join('')}</div>
+      <div class="tk">${fc.map((f, i) => `<span>${i % 3 === 0 ? new Date(f.datetime).getHours() : ''}</span>`).join('')}</div></div>` : '';
+    return `<div class="t full wx" style="background:linear-gradient(160deg,${bg[0]},${bg[1]})">
+      <div class="row1"><div class="wic ${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-p="${P_esc(W.path)}"` : ''}>${this.wicon(key, day)}</div>
+        <div class="${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-p="${P_esc(W.path)}"` : ''}><div class="tp2">${P_fmt(t)}<small>°C</small></div><div class="cd2">${P_esc(txt)}</div><div class="mm2">${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}° ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</div></div>
+        <div class="cmp" data-act="more" data-e="${W.wind || W.entity}">${this.compass(ws, gust, deg)}</div></div>
+      <div style="height:26px"></div>${rain}${warn}</div>`;
   }
   door() {
     const D = this.c.door, l = this.s(D.lock), st = l ? l.state : 'unavailable', b = this.n(D.battery), ct = this.s(D.contact), open = ct && ct.state === 'on';
