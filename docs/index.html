@@ -646,12 +646,12 @@ async function viewProject(id){
       ${rf.map(item).join('')}
       ${rf.length ? `<div class="results" style="margin:6px 0 10px">
         <div class="res main"><div class="k">Fassade gesamt</div><div class="v">${fmt(sumF)} m²</div></div>
-        <div class="res main"><div class="k">Sockel gesamt</div><div class="v">${fmt(sumS)} m²</div></div>
+        ${sumS?`<div class="res main"><div class="k">Sockel gesamt</div><div class="v">${fmt(sumS)} m²</div></div>`:''}
         ${posSumme(rf).map(e=>`<div class="res"><div class="k">${esc(e.label)}</div><div class="v">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</div></div>`).join('')}
       </div>`:''}
     </div>` : ''}
 
-    ${ri.length || rf.length ? `<button class="btn block" id="fertig" style="margin-bottom:10px;background:var(--green)">✓ Aufmaß fertig – Zusammenfassung</button>
+    ${ri.length || rf.length ? `<button class="btn block" id="fertig" style="margin-bottom:10px;background:var(--green)">✓ Aufmaß fertig – Übersicht</button>
     ` : ''}
     <div class="actions noprint">
       <button class="btn sec" id="offer">📄 Angebot erstellen</button>
