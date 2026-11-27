@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aufmaß</title>
+<meta name="theme-color" content="#c41e3a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aufmaß">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+  --bg:#f4f1ec; --card:#fff; --ink:#1d1b19; --muted:#6b655e; --line:#e3ddd4;
+  --red:#c41e3a; --red-soft:#fbe9ec; --yellow:#ffd60a; --green:#1f8a4c; --green-soft:#e5f4ea;
+  --radius:14px; --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#141312; --card:#1f1d1b; --ink:#f2efe9; --muted:#a39c93; --line:#34302c;
+    --red-soft:#3a1820; --green-soft:#16301f; --shadow:none; }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font:17px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+body{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:10;background:var(--red);color:#fff;
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 12px;display:flex;align-items:center;gap:10px}
+header h1{font-size:20px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:10px;
+  font-size:16px;padding:8px 12px;font-weight:600}
+main{padding:14px 16px;max-width:760px;margin:0 auto}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:14px;margin-bottom:14px;border:1px solid var(--line)}
+.card h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+label.f{display:block;margin-bottom:10px}
+label.f span{display:block;font-size:14px;color:var(--muted);margin-bottom:4px}
+input,textarea,select{width:100%;font:inherit;font-size:18px;color:var(--ink);background:var(--bg);
+  border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--red);background:var(--card)}
+textarea{min-height:84px;resize:vertical}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;
+  font:inherit;font-weight:600;padding:13px 16px;background:var(--red);color:#fff;cursor:pointer}
+.btn.sec{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost{background:transparent;color:var(--red);padding:8px 6px}
+.btn.block{width:100%}
+.btn.small{padding:8px 12px;font-size:15px}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;
+  border-radius:999px;padding:16px 22px;font-size:18px;box-shadow:0 6px 20px rgba(196,30,58,.35)}
+.list-item{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px;box-shadow:var(--shadow);
+  text-decoration:none;color:inherit}
+.list-item .t{font-weight:650;font-size:18px}
+.list-item .s{color:var(--muted);font-size:14px;margin-top:2px}
+.list-item .grow{flex:1;min-width:0}
+.chev{color:var(--muted);font-size:22px}
+.empty{text-align:center;color:var(--muted);padding:40px 10px}
+/* Messfelder */
+.measure{position:relative}
+.measure input{font-size:24px;font-weight:650;font-variant-numeric:tabular-nums;padding-right:40px}
+.measure .unit{position:absolute;right:12px;bottom:13px;color:var(--muted);font-size:16px}
+.measure input.hot{border-color:var(--red);box-shadow:0 0 0 4px var(--red-soft)}
+.measure input.flash{animation:flash .9s}
+@keyframes flash{0%{background:var(--green-soft);border-color:var(--green)}100%{}}
+.hint{font-size:14px;color:var(--muted);background:var(--red-soft);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+/* Ergebnis */
+.results{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.res{background:var(--bg);border-radius:12px;padding:10px 12px}
+.res .k{font-size:13px;color:var(--muted)}
+.res .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.res.main{background:var(--red);color:#fff}.res.main .k{color:rgba(255,255,255,.8)}
+/* Abzüge */
+.sub{border:1px dashed var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
+.sub .head{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.sub .head select{flex:1}
+.sub .measure input{font-size:19px;padding:11px 26px 11px 9px}
+.sub .measure .unit{right:8px;font-size:14px}
+.x{border:0;background:var(--bg);color:var(--muted);border-radius:10px;width:44px;height:44px;font-size:20px;flex:none}
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.chip{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;
+  padding:9px 14px;font:inherit;font-size:15px}
+.chip.on{background:var(--red);border-color:var(--red);color:#fff}
+/* Fotos */
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.photos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block;background:var(--bg)}
+.viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:100;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px)}
+.viewer img{flex:1;min-height:0;object-fit:contain;width:100%}
+.viewer .bar{display:flex;gap:10px;margin-top:10px}
+.viewer input{background:#222;color:#fff;border-color:#444}
+.seg{display:flex;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:transparent;font:inherit;font-size:15px;padding:9px;border-radius:9px;color:var(--muted)}
+.seg button.on{background:var(--card);color:var(--ink);font-weight:650;box-shadow:var(--shadow)}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  background:#222;color:#fff;padding:10px 16px;border-radius:999px;font-size:15px;z-index:200;
+  opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.muted{color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+/* Bericht */
+.report{background:#fff;color:#111}
+.report h1{font-size:22px;margin:0 0 4px}
+.report table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 10px}
+.report td,.report th{border-bottom:1px solid #ddd;padding:5px 4px;text-align:left}
+.report td.n,.report th.n{text-align:right;font-variant-numeric:tabular-nums}
+.report .room{page-break-inside:avoid;border-top:2px solid #c41e3a;padding-top:8px;margin-top:16px}
+.report .rph{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.report .rph figure{margin:0}.report .rph img{width:100%;border-radius:4px}
+.report figcaption{font-size:11px;color:#555}
+@media print{
+  header,.fab,.noprint{display:none!important}
+  body{background:#fff;padding:0} main{padding:0;max-width:none}
+  .card{box-shadow:none;border:0;padding:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <button id="back" hidden>‹ Zurück</button>
+  <h1 id="title">Aufmaß</h1>
+  <button id="hdrAction" hidden></button>
+</header>
+<main id="app"></main>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   Datenbank (IndexedDB) – alles bleibt auf dem iPhone
+   ========================================================= */
+const DB_NAME = 'aufmass', DB_VER = 1;
+let dbp;
+function db(){
+  if (!dbp) dbp = new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, DB_VER);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      d.createObjectStore('projects', {keyPath:'id'});
+      d.createObjectStore('rooms', {keyPath:'id'}).createIndex('projectId','projectId');
+      const ph = d.createObjectStore('photos', {keyPath:'id'});
+      ph.createIndex('roomId','roomId'); ph.createIndex('projectId','projectId');
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+  return dbp;
+}
+function req(r){ return new Promise((res,rej)=>{ r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function store(name, mode='readonly'){ return (await db()).transaction(name, mode).objectStore(name); }
+const put    = async (s, v) => req((await store(s,'readwrite')).put(v));
+const get    = async (s, id) => req((await store(s)).get(id));
+const del    = async (s, id) => req((await store(s,'readwrite')).delete(id));
+const all    = async (s) => req((await store(s)).getAll());
+const byIdx  = async (s, idx, v) => req((await store(s)).index(idx).getAll(v));
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+
+/* =========================================================
+   Hilfsfunktionen
+   ========================================================= */
+const $ = (sel, el=document) => el.querySelector(sel);
+const $$ = (sel, el=document) => [...el.querySelectorAll(sel)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const app = $('#app');
+
+// Zahl aus beliebigem Text lesen: "3.245", "3,245 m", "3245 mm" ...
+function num(v){
+  if (v === null || v === undefined) return null;
+  let s = String(v).trim().toLowerCase();
+  if (!s) return null;
+  const mm = /mm\s*$/.test(s), cm = /cm\s*$/.test(s);
+  const m = s.replace(/\s/g,'').match(/-?\d+(?:[.,]\d+)?/);
+  if (!m) return null;
+  let n = parseFloat(m[0].replace(',', '.'));
+  if (isNaN(n)) return null;
+  if (mm) n /= 1000; else if (cm) n /= 100;
+  return n;
+}
+const fmt = (n, d=2) => (n === null || n === undefined || isNaN(n)) ? '–'
+  : n.toLocaleString('de-DE', {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtM = n => n == null ? '' : n.toLocaleString('de-DE', {minimumFractionDigits:3, maximumFractionDigits:3});
+const fmtDate = s => s ? new Date(s).toLocaleDateString('de-DE') : '';
+
+let toastT;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1800); }
+
+function debounce(fn, ms=400){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+const ARBEITEN = [
+  'Decke streichen','Wände streichen','Raufaser tapezieren','Vlies tapezieren','Alte Tapete entfernen',
+  'Spachteln Q2','Spachteln Q3','Spachteln Q4','Grundierung','Schimmelbehandlung','Risse ausbessern',
+  'Türen lackieren','Zargen lackieren','Fenster lackieren','Heizkörper lackieren','Sockelleisten',
+  'Abdecken / Abkleben','Möbel rücken'
+];
+
+/* =========================================================
+   Berechnung eines Raums
+   ========================================================= */
+function calc(r){
+  const L = num(r.l), B = num(r.b), H = num(r.h);
+  let umfang = null, decke = null;
+  if (r.form === 'walls'){
+    const w = (r.walls||[]).map(x=>num(x.len)).filter(x=>x!=null);
+    umfang = w.length ? w.reduce((a,b)=>a+b,0) : null;
+    decke = num(r.deckeManuell);
+  } else {
+    if (L!=null && B!=null){ umfang = 2*(L+B); decke = L*B; }
+  }
+  const brutto = (umfang!=null && H!=null) ? umfang*H : null;
+  let abzug = 0;
+  for (const a of r.abzuege||[]){
+    const ab = num(a.b), ah = num(a.h), n = num(a.n) ?? 1;
+    if (ab!=null && ah!=null) abzug += ab*ah*n;
+  }
+  const wand = brutto!=null ? Math.max(0, brutto - abzug) : null;
+  return {umfang, decke, boden: decke, brutto, abzug, wand};
+}
+
+/* =========================================================
+   Router
+   ========================================================= */
+window.addEventListener('hashchange', route);
+$('#back').onclick = () => history.length > 1 ? history.back() : (location.hash = '#/');
+
+function setHeader(title, {back=false, action=null}={}){
+  $('#title').textContent = title;
+  $('#back').hidden = !back;
+  const b = $('#hdrAction');
+  if (action){ b.hidden=false; b.textContent=action.label; b.onclick=action.fn; } else b.hidden=true;
+  document.title = title;
+}
+function clearFab(){ $$('.fab').forEach(f=>f.remove()); }
+function fab(label, fn){ clearFab(); const b=document.createElement('button'); b.className='btn fab'; b.textContent=label; b.onclick=fn; document.body.appendChild(b); }
+
+async function route(){
+  clearFab(); window.scrollTo(0,0);
+  const h = location.hash.replace(/^#\/?/, '').split('/');
+  try{
+    if (h[0]==='p' && h[1]) return await viewProject(h[1]);
+    if (h[0]==='r' && h[1]) return await viewRoom(h[1]);
+    if (h[0]==='bericht' && h[1]) return await viewReport(h[1]);
+    if (h[0]==='hilfe') return viewHelp();
+    if (h[0]==='daten') return viewData();
+    return await viewHome();
+  }catch(e){ console.error(e); app.innerHTML = `<div class="card">Fehler: ${esc(e.message)}</div>`; }
+}
+
+/* =========================================================
+   Startseite: Baustellen
+   ========================================================= */
+async function viewHome(){
+  setHeader('Aufmaß', {action:{label:'⚙︎', fn:()=>location.hash='#/daten'}});
+  const projects = (await all('projects')).sort((a,b)=>(b.updated||0)-(a.updated||0));
+  const rooms = await all('rooms');
+  app.innerHTML = `
+    ${projects.length ? '' : `<div class="empty"><div style="font-size:48px">📐</div>
+      <p><b>Noch keine Baustelle.</b><br>Tippe unten auf „+ Neue Baustelle“.</p>
+      <p><a href="#/hilfe">So verbindest du den Leica DISTO</a></p></div>`}
+    ${projects.map(p=>{
+      const n = rooms.filter(r=>r.projectId===p.id).length;
+      return `<a class="list-item" href="#/p/${p.id}"><div class="grow">
+        <div class="t">${esc(p.kunde||'Ohne Namen')}</div>
+        <div class="s">${esc(p.adresse||'')}${p.adresse?' · ':''}${fmtDate(p.datum)} · ${n} ${n===1?'Raum':'Räume'}</div>
+      </div><span class="chev">›</span></a>`;
+    }).join('')}
+    ${projects.length ? `<p style="text-align:center"><a href="#/hilfe" class="muted">Hilfe: Leica DISTO verbinden</a></p>`:''}
+  `;
+  fab('+ Neue Baustelle', async ()=>{
+    const p = {id:uid(), kunde:'', adresse:'', telefon:'', datum:new Date().toISOString().slice(0,10), notiz:'', created:Date.now(), updated:Date.now()};
+    await put('projects', p);
+    location.hash = '#/p/'+p.id;
+  });
+}
+
+/* =========================================================
+   Baustelle: Kundendaten + Räume
+   ========================================================= */
+async function viewProject(id){
+  const p = await get('projects', id);
+  if (!p){ location.hash='#/'; return; }
+  const rooms = (await byIdx('rooms','projectId',id)).sort((a,b)=>(a.order||0)-(b.order||0));
+  const photos = await byIdx('photos','projectId',id);
+  setHeader(p.kunde || 'Neue Baustelle', {back:true, action:{label:'Bericht', fn:()=>location.hash='#/bericht/'+id}});
+
+  let sumW=0, sumD=0;
+  rooms.forEach(r=>{ const c=calc(r); sumW+=c.wand||0; sumD+=c.decke||0; });
+
+  app.innerHTML = `
+    <div class="card">
+      <h2>Kunde</h2>
+      <label class="f"><span>Name</span><input id="kunde" value="${esc(p.kunde)}" placeholder="z. B. Familie Müller" autocomplete="off"></label>
+      <label class="f"><span>Adresse</span><input id="adresse" value="${esc(p.adresse)}" placeholder="Straße, Ort" autocomplete="off"></label>
+      <div class="row">
+        <label class="f"><span>Telefon</span><input id="telefon" type="tel" value="${esc(p.telefon)}"></label>
+        <label class="f"><span>Datum</span><input id="datum" type="date" value="${esc(p.datum)}"></label>
+      </div>
+      <label class="f" style="margin:0"><span>Notiz zur Baustelle</span><textarea id="notiz" placeholder="z. B. Schlüssel beim Nachbarn, Parken im Hof …">${esc(p.notiz)}</textarea></label>
+    </div>
+
+    <div class="card">
+      <h2>Räume</h2>
+      ${rooms.length ? '' : '<p class="muted" style="margin:0 0 10px">Noch keine Räume erfasst.</p>'}
+      ${rooms.map(r=>{
+        const c=calc(r); const np=photos.filter(f=>f.roomId===r.id).length;
+        return `<a class="list-item" href="#/r/${r.id}" style="box-shadow:none"><div class="grow">
+          <div class="t">${esc(r.name||'Raum ohne Namen')}</div>
+          <div class="s">Wand ${fmt(c.wand)} m² · Decke ${fmt(c.decke)} m²${np?` · 📷 ${np}`:''}</div>
+          ${(r.arbeiten||[]).length?`<div class="s">${esc(r.arbeiten.join(', '))}</div>`:''}
+        </div><span class="chev">›</span></a>`;
+      }).join('')}
+      ${rooms.length ? `<div class="results" style="margin-top:6px">
+        <div class="res main"><div class="k">Wandfläche gesamt</div><div class="v">${fmt(sumW)} m²</div></div>
+        <div class="res main"><div class="k">Deckenfläche gesamt</div><div class="v">${fmt(sumD)} m²</div></div>
+      </div>`:''}
+    </div>
+
+    <div class="actions noprint">
+      <button class="btn sec" id="share">Als Text teilen</button>
+      <button class="btn sec" id="delP" style="color:var(--red)">Baustelle löschen</button>
+    </div>
+  `;
+  const save = debounce(async ()=>{
+    ['kunde','adresse','telefon','datum','notiz'].forEach(k=>p[k]=$('#'+k).value);
+    p.updated=Date.now(); await put('projects', p);
+    $('#title').textContent = p.kunde || 'Neue Baustelle';
+  }, 300);
+  $$('#kunde,#adresse,#telefon,#datum,#notiz').forEach(el=>el.addEventListener('input', save));
+  if (!p.kunde) $('#kunde').focus();
+
+  $('#share').onclick = async ()=>{ await shareText(await projectText(id)); };
+  $('#delP').onclick = async ()=>{
+    if (!confirm(`Baustelle „${p.kunde||'ohne Namen'}“ mit allen Räumen und Fotos löschen?`)) return;
+    for (const r of rooms) await del('rooms', r.id);
+    for (const f of photos) await del('photos', f.id);
+    await del('projects', id); location.hash='#/';
+  };
+  fab('+ Raum', async ()=>{
+    const r = {id:uid(), projectId:id, name:'', form:'rect', l:'', b:'', h:'', walls:[], deckeManuell:'',
+      abzuege:[], extra:[], arbeiten:[], notiz:'', order:Date.now()};
+    await put('rooms', r); p.updated=Date.now(); await put('projects', p);
+    location.hash = '#/r/'+r.id;
+  });
+}
+
+/* =========================================================
+   Raum: Messen, Arbeiten, Fotos
+   ========================================================= */
+async function viewRoom(id){
+  const r = await get('rooms', id);
+  if (!r){ location.hash='#/'; return; }
+  r.walls ||= []; r.abzuege ||= []; r.extra ||= []; r.arbeiten ||= []; r.form ||= 'rect';
+  setHeader(r.name || 'Neuer Raum', {back:true});
+
+  const persist = debounce(async ()=>{
+    await put('rooms', r);
+    const p = await get('projects', r.projectId); if (p){ p.updated=Date.now(); await put('projects', p); }
+  }, 250);
+
+  const mField = (key, label, val, extra='') =>
+    `<label class="f measure"><span>${label}</span><input data-measure data-key="${key}" ${extra}
+      inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next"
+      value="${esc(val)}" placeholder="0,000"><span class="unit">m</span></label>`;
+
+  function render(){
+    const c = calc(r);
+    const customChips = r.arbeiten.filter(a=>!ARBEITEN.includes(a));
+    app.innerHTML = `
+      <div class="card">
+        <label class="f" style="margin:0"><span>Raumbezeichnung</span>
+          <input id="name" value="${esc(r.name)}" placeholder="z. B. Wohnzimmer EG" list="raumnamen" autocomplete="off"></label>
+        <datalist id="raumnamen">${['Wohnzimmer','Schlafzimmer','Kinderzimmer','Küche','Bad','Gäste-WC','Flur','Treppenhaus','Esszimmer','Arbeitszimmer','Abstellraum','Keller','Büro','Diele'].map(n=>`<option value="${n}">`).join('')}</datalist>
+      </div>
+
+      <div class="card">
+        <h2>Maße</h2>
+        <div class="hint">📏 Feld antippen → am DISTO messen → Wert erscheint im Feld und es geht automatisch zum nächsten Feld.</div>
+        <div class="seg">
+          <button data-form="rect" class="${r.form==='rect'?'on':''}">Rechteckig</button>
+          <button data-form="walls" class="${r.form==='walls'?'on':''}">Wände einzeln</button>
+        </div>
+        ${r.form==='rect' ? `
+          <div class="row">${mField('l','Länge',r.l)}${mField('b','Breite',r.b)}</div>
+        ` : `
+          ${r.walls.map((w,i)=>`<div class="row" style="align-items:flex-end">
+            ${mField('wall:'+i, 'Wand '+(i+1), w.len)}
+            <button class="x" data-delwall="${i}" style="margin-bottom:10px" aria-label="Wand löschen">✕</button></div>`).join('')}
+          <button class="btn sec small" id="addWall" style="margin-bottom:12px">+ Wand</button>
+          <label class="f measure"><span>Deckenfläche (falls nötig, z. B. aus DISTO-Flächenfunktion)</span>
+            <input data-measure data-key="deckeManuell" inputmode="decimal" autocomplete="off" value="${esc(r.deckeManuell)}" placeholder="0,00"><span class="unit">m²</span></label>
+        `}
+        ${mField('h','Raumhöhe',r.h)}
+      </div>
+
+      <div class="card">
+        <h2>Abzüge (Fenster, Türen …)</h2>
+        ${r.abzuege.map((a,i)=>`<div class="sub">
+          <div class="head">
+            <select data-abz-art="${i}">${['Fenster','Tür','Balkontür','Durchgang','Einbauschrank','Fliesenspiegel','Sonstiges'].map(o=>`<option ${a.art===o?'selected':''}>${o}</option>`).join('')}</select>
+            <button class="x" data-delabz="${i}" aria-label="Abzug löschen">✕</button>
+          </div>
+          <div class="row">
+            ${mField('abz:'+i+':b','Breite',a.b)}
+            ${mField('abz:'+i+':h','Höhe',a.h)}
+            <label class="f" style="max-width:80px"><span>Anzahl</span><input data-abz-n="${i}" inputmode="numeric" value="${esc(a.n ?? 1)}"></label>
+          </div></div>`).join('')}
+        <button class="btn sec small" id="addAbz">+ Abzug</button>
+      </div>
+
+      <div class="card">
+        <h2>Ergebnis</h2>
+        <div class="results" id="results">${resultsHtml(c)}</div>
+      </div>
+
+      <div class="card">
+        <h2>Weitere Maße</h2>
+        <p class="muted" style="margin:0 0 10px;font-size:14px">Für alles andere: Sockelleisten, Heizkörper, Treppengeländer, Fensterbänke …</p>
+        ${r.extra.map((x,i)=>`<div class="row" style="align-items:flex-end">
+          <label class="f"><span>Bezeichnung</span><input data-extra-label="${i}" value="${esc(x.label)}" placeholder="z. B. Sockelleiste"></label>
+          ${mField('extra:'+i, 'Maß', x.wert)}
+          <button class="x" data-delextra="${i}" style="margin-bottom:10px" aria-label="Maß löschen">✕</button></div>`).join('')}
+        <button class="btn sec small" id="addExtra">+ Maß</button>
+      </div>
+
+      <div class="card">
+        <h2>Was soll gemacht werden?</h2>
+        <div class="chips">
+          ${[...ARBEITEN, ...customChips].map(a=>`<button class="chip ${r.arbeiten.includes(a)?'on':''}" data-chip="${esc(a)}">${esc(a)}</button>`).join('')}
+        </div>
+        <div class="row" style="margin-bottom:10px">
+          <input id="newChip" placeholder="Eigene Arbeit hinzufügen …">
+          <button class="btn small" id="addChip" style="flex:none">+</button>
+        </div>
+        <label class="f" style="margin:0"><span>Notiz zum Raum</span>
+          <textarea id="rnotiz" placeholder="z. B. Farbton Weiß matt, Decke hat Wasserfleck, Kunde wünscht …">${esc(r.notiz)}</textarea></label>
+      </div>
+
+      <div class="card">
+        <h2>Fotos</h2>
+        <div class="photos" id="photos"></div>
+        <div class="row">
+          <label class="btn"><input type="file" accept="image/*" capture="environment" id="cam" hidden>📷 Foto aufnehmen</label>
+          <label class="btn sec"><input type="file" accept="image/*" multiple id="gal" hidden>Aus Galerie</label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn sec" id="nextRoom">Nächster Raum →</button>
+        <button class="btn sec" id="delRoom" style="color:var(--red)">Raum löschen</button>
+      </div>
+    `;
+    bind();
+    renderPhotos();
+  }
+
+  function resultsHtml(c){
+    return `
+      <div class="res main"><div class="k">Wandfläche (netto)</div><div class="v">${fmt(c.wand)} m²</div></div>
+      <div class="res main"><div class="k">Deckenfläche</div><div class="v">${fmt(c.decke)} m²</div></div>
+      <div class="res"><div class="k">Bodenfläche</div><div class="v">${fmt(c.boden)} m²</div></div>
+      <div class="res"><div class="k">Umfang</div><div class="v">${fmt(c.umfang)} m</div></div>
+      <div class="res"><div class="k">Wand brutto</div><div class="v">${fmt(c.brutto)} m²</div></div>
+      <div class="res"><div class="k">Abzüge</div><div class="v">${fmt(c.abzug)} m²</div></div>`;
+  }
+  const refreshResults = () => { const el=$('#results'); if (el) el.innerHTML = resultsHtml(calc(r)); };
+
+  function setVal(key, v){
+    const parts = key.split(':');
+    if (parts[0]==='wall') r.walls[+parts[1]].len = v;
+    else if (parts[0]==='abz') r.abzuege[+parts[1]][parts[2]] = v;
+    else if (parts[0]==='extra') r.extra[+parts[1]].wert = v;
+    else r[key] = v;
+  }
+
+  function bind(){
+    const nameEl = $('#name');
+    nameEl.addEventListener('input', ()=>{ r.name=nameEl.value; $('#title').textContent=r.name||'Neuer Raum'; persist(); });
+    nameEl.addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); const f=$('[data-measure]'); f && f.focus(); }});
+
+    const fields = $$('[data-measure]');
+    fields.forEach((el, idx)=>{
+      el.addEventListener('focus', ()=>{ el.classList.add('hot'); el.select(); });
+      el.addEventListener('blur', ()=>{
+        el.classList.remove('hot');
+        const n = num(el.value);
+        if (n!=null && el.dataset.key!=='deckeManuell'){ el.value = fmtM(n); setVal(el.dataset.key, el.value); persist(); }
+      });
+      el.addEventListener('input', ()=>{ setVal(el.dataset.key, el.value); persist(); refreshResults(); });
+      // Der DISTO schickt nach dem Messwert ein Enter (bzw. Tab) → nächstes Feld
+      el.addEventListener('keydown', e=>{
+        if (e.key==='Enter' || (e.key==='Tab' && !e.shiftKey)){
+          e.preventDefault();
+          el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+          const next = fields[idx+1];
+          if (next) next.focus(); else el.blur();
+        }
+      });
+    });
+
+    $$('[data-form]').forEach(b=>b.onclick=()=>{
+      r.form=b.dataset.form;
+      if (r.form==='walls' && !r.walls.length) r.walls=[{len:''},{len:''},{len:''},{len:''}];
+      persist(); render();
+    });
+    $('#addWall') && ($('#addWall').onclick=()=>{ r.walls.push({len:''}); persist(); render(); focusKey('wall:'+(r.walls.length-1)); });
+    $$('[data-delwall]').forEach(b=>b.onclick=()=>{ r.walls.splice(+b.dataset.delwall,1); persist(); render(); });
+
+    $('#addAbz').onclick=()=>{ r.abzuege.push({art:'Fenster', b:'', h:'', n:1}); persist(); render(); focusKey('abz:'+(r.abzuege.length-1)+':b'); };
+    $$('[data-delabz]').forEach(b=>b.onclick=()=>{ r.abzuege.splice(+b.dataset.delabz,1); persist(); render(); });
+    $$('[data-abz-art]').forEach(s=>s.onchange=()=>{ r.abzuege[+s.dataset.abzArt].art=s.value; persist(); });
+    $$('[data-abz-n]').forEach(s=>s.oninput=()=>{ r.abzuege[+s.dataset.abzN].n=s.value; persist(); refreshResults(); });
+
+    $('#addExtra').onclick=()=>{ r.extra.push({label:'', wert:''}); persist(); render(); const l=$(`[data-extra-label="${r.extra.length-1}"]`); l&&l.focus(); };
+    $$('[data-delextra]').forEach(b=>b.onclick=()=>{ r.extra.splice(+b.dataset.delextra,1); persist(); render(); });
+    $$('[data-extra-label]').forEach(s=>{
+      s.oninput=()=>{ r.extra[+s.dataset.extraLabel].label=s.value; persist(); };
+      s.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); focusKey('extra:'+s.dataset.extraLabel); } };
+    });
+
+    $$('[data-chip]').forEach(b=>b.onclick=()=>{
+      const a=b.dataset.chip, i=r.arbeiten.indexOf(a);
+      if (i>=0) r.arbeiten.splice(i,1); else r.arbeiten.push(a);
+      b.classList.toggle('on'); persist();
+    });
+    const addChip=()=>{ const v=$('#newChip').value.trim(); if(!v) return; if(!r.arbeiten.includes(v)) r.arbeiten.push(v); persist(); render(); };
+    $('#addChip').onclick=addChip;
+    $('#newChip').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); addChip(); } };
+    $('#rnotiz').oninput=e=>{ r.notiz=e.target.value; persist(); };
+
+    $('#cam').onchange=e=>addPhotos(e.target.files);
+    $('#gal').onchange=e=>addPhotos(e.target.files);
+
+    $('#nextRoom').onclick=async ()=>{
+      await put('rooms', r);
+      const n={id:uid(), projectId:r.projectId, name:'', form:'rect', l:'', b:'', h:r.h, walls:[], deckeManuell:'',
+        abzuege:[], extra:[], arbeiten:[], notiz:'', order:Date.now()};
+      await put('rooms', n); location.hash='#/r/'+n.id; toast('Raumhöhe übernommen');
+    };
+    $('#delRoom').onclick=async ()=>{
+      if(!confirm(`Raum „${r.name||'ohne Namen'}“ löschen?`)) return;
+      for (const f of await byIdx('photos','roomId',r.id)) await del('photos', f.id);
+      await del('rooms', r.id); location.hash='#/p/'+r.projectId;
+    };
+  }
+  function focusKey(k){ const el=$(`[data-key="${k}"]`); el && el.focus(); }
+
+  async function addPhotos(files){
+    for (const f of files){
+      try{
+        const blob = await shrink(f);
+        await put('photos', {id:uid(), roomId:r.id, projectId:r.projectId, blob, caption:'', created:Date.now()});
+      }catch(e){ console.error(e); toast('Foto konnte nicht gespeichert werden'); }
+    }
+    toast(files.length>1 ? `${files.length} Fotos gespeichert` : 'Foto gespeichert');
+    renderPhotos();
+  }
+  async function renderPhotos(){
+    const el=$('#photos'); if(!el) return;
+    const list=(await byIdx('photos','roomId',r.id)).sort((a,b)=>a.created-b.created);
+    el.innerHTML='';
+    list.forEach(p=>{
+      const img=document.createElement('img'); img.src=URL.createObjectURL(p.blob); img.alt=p.caption||'Foto';
+      img.onclick=()=>openViewer(p, renderPhotos);
+      el.appendChild(img);
+    });
+    if(!list.length) el.outerHTML='<div class="photos" id="photos"></div>';
+  }
+
+  render();
+  if (!r.name) $('#name').focus();
+}
+
+// Foto verkleinern (spart Speicher), max. 1600 px
+function shrink(file, max=1600){
+  return new Promise((res, rej)=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{
+      let w=img.naturalWidth, h=img.naturalHeight; const s=Math.min(1, max/Math.max(w,h));
+      w=Math.round(w*s); h=Math.round(h*s);
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      c.toBlob(b=>b?res(b):rej(new Error('toBlob')), 'image/jpeg', 0.82);
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(new Error('Bild nicht lesbar')); };
+    img.src=url;
+  });
+}
+
+function openViewer(p, onChange){
+  const v=document.createElement('div'); v.className='viewer';
+  v.innerHTML=`<img src="${URL.createObjectURL(p.blob)}" alt="">
+    <input id="cap" placeholder="Beschriftung (z. B. Riss über Tür)" value="${esc(p.caption)}">
+    <div class="bar"><button class="btn sec" id="vdel" style="flex:1;color:var(--red)">Löschen</button>
+    <button class="btn" id="vclose" style="flex:2">Fertig</button></div>`;
+  document.body.appendChild(v);
+  const close=async ()=>{ p.caption=$('#cap',v).value; await put('photos',p); v.remove(); onChange&&onChange(); };
+  $('#vclose',v).onclick=close;
+  $('#vdel',v).onclick=async ()=>{ if(confirm('Foto löschen?')){ await del('photos',p.id); v.remove(); onChange&&onChange(); } };
+}
+
+/* =========================================================
+   Bericht (zum Drucken / als PDF sichern)
+   ========================================================= */
+async function viewReport(id){
+  const p = await get('projects', id); if(!p){ location.hash='#/'; return; }
+  const rooms=(await byIdx('rooms','projectId',id)).sort((a,b)=>(a.order||0)-(b.order||0));
+  const photos=(await byIdx('photos','projectId',id)).sort((a,b)=>a.created-b.created);
+  setHeader('Bericht', {back:true, action:{label:'PDF / Drucken', fn:()=>window.print()}});
+  let sW=0,sD=0,sB=0;
+  const roomHtml = rooms.map(r=>{
+    const c=calc(r); sW+=c.wand||0; sD+=c.decke||0; sB+=c.boden||0;
+    const maße = r.form==='walls'
+      ? (r.walls||[]).map((w,i)=>`<tr><td>Wand ${i+1}</td><td class="n">${esc(w.len)} m</td></tr>`).join('')
+        + (r.deckeManuell?`<tr><td>Deckenfläche</td><td class="n">${esc(r.deckeManuell)} m²</td></tr>`:'')
+      : `<tr><td>Länge</td><td class="n">${esc(r.l)} m</td></tr><tr><td>Breite</td><td class="n">${esc(r.b)} m</td></tr>`;
+    const ph = photos.filter(f=>f.roomId===r.id);
+    return `<div class="room">
+      <h3 style="margin:0 0 4px">${esc(r.name||'Raum')}</h3>
+      <table><tbody>${maße}<tr><td>Höhe</td><td class="n">${esc(r.h)} m</td></tr>
+        ${(r.abzuege||[]).map(a=>`<tr><td>Abzug ${esc(a.art)} ${esc(a.n||1)}×</td><td class="n">${esc(a.b)} × ${esc(a.h)} m</td></tr>`).join('')}
+        ${(r.extra||[]).map(x=>`<tr><td>${esc(x.label||'Maß')}</td><td class="n">${esc(x.wert)} m</td></tr>`).join('')}
+      </tbody></table>
+      <table><tbody>
+        <tr><td>Umfang</td><td class="n">${fmt(c.umfang)} m</td></tr>
+        <tr><td><b>Wandfläche netto</b></td><td class="n"><b>${fmt(c.wand)} m²</b></td></tr>
+        <tr><td><b>Deckenfläche</b></td><td class="n"><b>${fmt(c.decke)} m²</b></td></tr>
+        <tr><td>Bodenfläche</td><td class="n">${fmt(c.boden)} m²</td></tr>
+      </tbody></table>
+      ${(r.arbeiten||[]).length?`<p><b>Arbeiten:</b> ${esc(r.arbeiten.join(', '))}</p>`:''}
+      ${r.notiz?`<p><b>Notiz:</b> ${esc(r.notiz).replace(/\n/g,'<br>')}</p>`:''}
+      ${ph.length?`<div class="rph">${ph.map(f=>`<figure><img src="${URL.createObjectURL(f.blob)}">${f.caption?`<figcaption>${esc(f.caption)}</figcaption>`:''}</figure>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+  app.innerHTML = `<div class="card report">
+    <h1>Aufmaß ${esc(p.kunde)}</h1>
+    <div>${esc(p.adresse)}${p.telefon?' · Tel. '+esc(p.telefon):''}</div>
+    <div style="color:#555">Datum: ${fmtDate(p.datum)}</div>
+    ${p.notiz?`<p>${esc(p.notiz).replace(/\n/g,'<br>')}</p>`:''}
+    <table style="margin-top:12px"><thead><tr><th>Raum</th><th class="n">Wand m²</th><th class="n">Decke m²</th><th class="n">Boden m²</th></tr></thead><tbody>
+      ${rooms.map(r=>{const c=calc(r); return `<tr><td>${esc(r.name||'Raum')}</td><td class="n">${fmt(c.wand)}</td><td class="n">${fmt(c.decke)}</td><td class="n">${fmt(c.boden)}</td></tr>`;}).join('')}
+      <tr><td><b>Summe</b></td><td class="n"><b>${fmt(sW)}</b></td><td class="n"><b>${fmt(sD)}</b></td><td class="n"><b>${fmt(sB)}</b></td></tr>
+    </tbody></table>
+    ${roomHtml}
+  </div>
+  <p class="muted noprint" style="font-size:14px">Tipp: „PDF / Drucken“ → im Druckmenü mit zwei Fingern auf die Vorschau auseinanderziehen → Teilen → „In Dateien sichern“ oder per Mail schicken.</p>`;
+}
+
+async function projectText(id){
+  const p=await get('projects',id);
+  const rooms=(await byIdx('rooms','projectId',id)).sort((a,b)=>(a.order||0)-(b.order||0));
+  let t=`AUFMASS ${p.kunde||''}\n${p.adresse||''}\nDatum: ${fmtDate(p.datum)}\n${p.notiz?p.notiz+'\n':''}\n`;
+  let sW=0,sD=0;
+  for (const r of rooms){
+    const c=calc(r); sW+=c.wand||0; sD+=c.decke||0;
+    t+=`— ${r.name||'Raum'} —\n`;
+    if (r.form==='walls') t+=`Wände: ${(r.walls||[]).map(w=>w.len).join(' + ')} m, Höhe ${r.h} m\n`;
+    else t+=`L ${r.l} × B ${r.b} m, Höhe ${r.h} m\n`;
+    for (const a of r.abzuege||[]) t+=`Abzug ${a.art} ${a.n||1}× ${a.b} × ${a.h} m\n`;
+    for (const x of r.extra||[]) t+=`${x.label||'Maß'}: ${x.wert} m\n`;
+    t+=`Wandfläche netto: ${fmt(c.wand)} m² | Decke: ${fmt(c.decke)} m² | Umfang: ${fmt(c.umfang)} m\n`;
+    if ((r.arbeiten||[]).length) t+=`Arbeiten: ${r.arbeiten.join(', ')}\n`;
+    if (r.notiz) t+=`Notiz: ${r.notiz}\n`;
+    t+='\n';
+  }
+  t+=`SUMME Wand: ${fmt(sW)} m² | Decke: ${fmt(sD)} m²\n`;
+  return t;
+}
+async function shareText(text){
+  if (navigator.share){ try{ await navigator.share({text}); return; }catch(e){ if(e.name==='AbortError') return; } }
+  try{ await navigator.clipboard.writeText(text); toast('In Zwischenablage kopiert'); }
+  catch{ prompt('Text kopieren:', text); }
+}
+
+/* =========================================================
+   Datensicherung
+   ========================================================= */
+function viewData(){
+  setHeader('Daten & Sicherung', {back:true});
+  app.innerHTML = `
+    <div class="card">
+      <h2>Sicherung</h2>
+      <p style="margin-top:0">Alle Daten liegen <b>nur auf diesem iPhone</b>. Mach ab und zu eine Sicherung (z. B. in iCloud Drive oder per Mail an dich).</p>
+      <button class="btn block" id="exp" style="margin-bottom:10px">Sicherung erstellen</button>
+      <label class="btn sec block"><input type="file" accept=".json,application/json" id="imp" hidden>Sicherung einspielen</label>
+      <p class="muted" id="usage" style="font-size:14px;margin-bottom:0"></p>
+    </div>
+    <div class="card"><h2>Hilfe</h2><a href="#/hilfe">Leica DISTO verbinden & benutzen</a></div>`;
+  if (navigator.storage?.estimate) navigator.storage.estimate().then(e=>{
+    $('#usage').textContent=`Belegter Speicher: ${(e.usage/1048576).toFixed(1)} MB`;
+  });
+  $('#exp').onclick = exportAll;
+  $('#imp').onchange = e => importAll(e.target.files[0]);
+}
+const blobToB64 = b => new Promise(r=>{ const f=new FileReader(); f.onload=()=>r(f.result); f.readAsDataURL(b); });
+async function exportAll(){
+  toast('Sicherung wird erstellt …');
+  const photos = await Promise.all((await all('photos')).map(async p=>({...p, blob: await blobToB64(p.blob)})));
+  const data = {app:'aufmass', version:1, exported:new Date().toISOString(),
+    projects: await all('projects'), rooms: await all('rooms'), photos};
+  const file = new File([JSON.stringify(data)], `Aufmass-Sicherung-${new Date().toISOString().slice(0,10)}.json`, {type:'application/json'});
+  if (navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:'Aufmaß-Sicherung'}); return; }catch(e){ if(e.name==='AbortError') return; }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click();
+}
+async function importAll(file){
+  if(!file) return;
+  try{
+    const data = JSON.parse(await file.text());
+    if (data.app!=='aufmass') throw new Error('Keine Aufmaß-Sicherung');
+    if (!confirm(`${data.projects.length} Baustellen einspielen? Vorhandene Einträge mit gleicher ID werden überschrieben.`)) return;
+    for (const p of data.projects) await put('projects', p);
+    for (const r of data.rooms) await put('rooms', r);
+    for (const ph of data.photos){ ph.blob = await (await fetch(ph.blob)).blob(); await put('photos', ph); }
+    toast('Sicherung eingespielt'); location.hash='#/';
+  }catch(e){ alert('Fehler beim Einspielen: '+e.message); }
+}
+
+/* =========================================================
+   Hilfe
+   ========================================================= */
+function viewHelp(){
+  setHeader('Leica DISTO verbinden', {back:true});
+  app.innerHTML = `
+    <div class="card">
+      <h2>1 · Einmalig koppeln</h2>
+      <ol style="padding-left:20px;margin:0">
+        <li>Am DISTO Bluetooth einschalten (Bluetooth-Symbol oben im Display muss zu sehen sein).</li>
+        <li>Am iPhone: <b>Einstellungen → Bluetooth</b> → unter „Andere Geräte“ den <b>DISTO</b> antippen.</li>
+        <li>Wenn er dort nicht auftaucht: am DISTO im Menü (FUNC bzw. Einstellungen) nach „Bluetooth“ / „Tastatur-Modus“ (Keyboard / HID) suchen und einschalten.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>2 · Messen</h2>
+      <ol style="padding-left:20px;margin:0">
+        <li>In der App ein Maß-Feld antippen (es wird rot umrandet).</li>
+        <li>Am DISTO messen (DIST-Taste). Der Wert wird ins Feld geschrieben.</li>
+        <li>Die App springt automatisch ins nächste Feld: Länge → Breite → Höhe → Abzüge …</li>
+      </ol>
+      <p class="muted" style="font-size:14px">Ist der DISTO als Tastatur verbunden, blendet das iPhone die Bildschirm-Tastatur aus. Zum Tippen von Namen/Notizen kurz die Tastatur-Taste unten rechts antippen oder Bluetooth am DISTO kurz ausschalten.</p>
+    </div>
+    <div class="card">
+      <h2>Testfeld</h2>
+      <label class="f measure"><span>Hier antippen und am DISTO messen</span>
+        <input id="test" inputmode="decimal" autocomplete="off" placeholder="0,000"><span class="unit">m</span></label>
+      <div id="testlog" class="muted" style="font-size:14px"></div>
+    </div>
+    <div class="card">
+      <h2>Klappt die Übertragung nicht?</h2>
+      <p style="margin:0">Dann einfach die Zahl vom DISTO-Display ins Feld tippen. Das Komma ist egal (3,25 oder 3.25). Die App rechnet trotzdem alles aus und alles ist sauber lesbar.</p>
+    </div>`;
+  const t=$('#test'), log=$('#testlog');
+  t.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key==='Tab'){ e.preventDefault();
+    const n=num(t.value); log.innerHTML = n!=null ? `✅ Empfangen: <b>${fmtM(n)} m</b> (Rohwert „${esc(t.value)}“)` : `Rohwert: „${esc(t.value)}“`;
+    t.value=''; } });
+}
+
+/* =========================================================
+   Start
+   ========================================================= */
+if ('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js');
+if (navigator.storage?.persist) navigator.storage.persist();
+route();
+</script>
+</body>
+</html>
