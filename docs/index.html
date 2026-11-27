@@ -307,6 +307,7 @@ const POS_VORLAGEN_FASSADE = [
 // Ältere Daten auf den aktuellen Stand bringen
 function migrateRoom(r){
   r.typ ||= 'raum';
+  if (r.typ==='fassade' && !r.fform) r.fform = r.gh ? 'giebel' : 'seite';
   if (!r.pos){
     r.pos = (r.extra||[]).filter(x=>x.label||x.wert).map(x=>({id:uid(), label:x.label||'', art:'lfm', werte:[x.wert||'']}));
     r.extra = [];
@@ -344,6 +345,40 @@ function posSumme(rooms){
 }
 
 /* =========================================================
+   Skizze Fassade: zeigt, welches Maß gemeint ist
+   ========================================================= */
+function fassadenSkizze(r, aktiv){
+  const G = r.fform==='giebel';
+  const wert = k => { const n = num(r[k]); return n!=null ? fmt(n)+' m' : ''; };
+  const farbe = k => aktiv===k ? '#c41e3a' : '#8a837b';
+  const dick  = k => aktiv===k ? 3.5 : 1.6;
+  const txt = (x, y, k, name, anchor='middle') => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${aktiv===k?15:13}"
+      font-weight="${aktiv===k?800:600}" fill="${farbe(k)}">${name}${wert(k)?' = '+wert(k):''}</text>`;
+  const pfeil = (x1,y1,x2,y2,k) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${farbe(k)}" stroke-width="${dick(k)}" marker-start="url(#pf-${k})" marker-end="url(#pf-${k})"/>`;
+  const marker = k => `<marker id="pf-${k}" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="${k==='sockelH'?3:4}" markerHeight="${k==='sockelH'?3:4}" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${farbe(k)}"/></marker>`;
+  // Hausumriss
+  const L = 70, R = 262, T = G ? 110 : 50, U = 200, M = (L+R)/2, F = 25;
+  const wand = 'var(--card)', linie = 'var(--ink)';
+  const giebel = G ? `<polygon points="${L},${T} ${M},${F} ${R},${T}" fill="${aktiv==='gh'?'rgba(196,30,58,.12)':wand}" stroke="${linie}" stroke-width="2"/>` : '';
+  const sockelH = 20;
+  return `<svg viewBox="0 0 390 250" width="100%" style="max-width:400px;display:block;margin:0 auto 10px" role="img" aria-label="Skizze ${G?'Giebelseite':'Fassadenseite'}">
+    <defs>${['b','h','gh','sockelH'].map(marker).join('')}</defs>
+    ${giebel}
+    <rect x="${L}" y="${T}" width="${R-L}" height="${U-T}" fill="${aktiv==='h'||aktiv==='b'?'rgba(196,30,58,.06)':wand}" stroke="${linie}" stroke-width="2"/>
+    <rect x="${L}" y="${U-sockelH}" width="${R-L}" height="${sockelH}" fill="${aktiv==='sockelH'?'rgba(196,30,58,.25)':'rgba(128,128,128,.25)'}" stroke="${linie}" stroke-width="1"/>
+    ${G?`<line x1="${L}" y1="${T}" x2="${R}" y2="${T}" stroke="${linie}" stroke-width="1" stroke-dasharray="4 3"/>`:''}
+    <!-- B: Breite -->
+    ${pfeil(L, U+18, R, U+18, 'b')}${txt(M, U+38, 'b', 'B Breite')}
+    <!-- H: Höhe bis Traufe -->
+    ${pfeil(R+16, U, R+16, T, 'h')}${txt(R+22, (T+U)/2+4, 'h', 'H', 'start')}
+    <text x="${R+22}" y="${(T+U)/2+20}" font-size="11" fill="${farbe('h')}">${G?'bis Traufe':'Höhe'}</text>
+    ${G ? `<!-- G: Giebelhöhe -->${pfeil(M, T, M, F+4, 'gh')}${txt(M+7, T-12, 'gh', 'G', 'start')}` : ''}
+    <!-- S: Sockel -->
+    ${pfeil(L-14, U, L-14, U-sockelH, 'sockelH')}${txt(L-24, U-5, 'sockelH', 'S', 'end')}
+  </svg>`;
+}
+
+/* =========================================================
    Berechnung: Raum (innen) und Fassadenseite
    ========================================================= */
 function oeffnungenSumme(r){
@@ -376,7 +411,8 @@ function calcRaum(r){
   return {typ:'raum', umfang, decke, boden: decke, brutto, ...o, wand, fl:{decke, wand}};
 }
 function calcFassade(r){
-  const B = num(r.b), H = num(r.h), GH = num(r.gh), GB = num(r.gb) ?? B, S = num(r.sockelH);
+  const B = num(r.b), H = num(r.h), S = num(r.sockelH);
+  const GH = r.fform==='giebel' ? num(r.gh) : null, GB = num(r.gb) ?? B;
   const rechteck = (B!=null && H!=null) ? B*H : null;
   const giebel = (GB!=null && GH!=null) ? GB*GH/2 : 0;
   const o = oeffnungenSumme(r);
@@ -480,6 +516,7 @@ const Disto = {
   setTarget(el){
     $$('.measure input.target').forEach(x=>x.classList.remove('target'));
     this.target = el;
+    if (this.onTarget) this.onTarget(el);
     if (el){ const d=el.closest('details'); if (d && !d.open) d.open = true;
       el.classList.add('target'); el.scrollIntoView({block:'center', behavior:'smooth'}); }
   }
@@ -522,7 +559,7 @@ function fab(label, fn){ clearFab(); const b=document.createElement('button'); b
 async function route(){
   if (offenesSpeichern){ try{ await offenesSpeichern.flush(); }catch(e){ console.error(e); } offenesSpeichern = null; }
   clearFab(); window.scrollTo(0,0);
-  Disto.target = null; Disto.onRaw = null; Disto.onFilled = null;
+  Disto.target = null; Disto.onRaw = null; Disto.onFilled = null; Disto.onTarget = null;
   Disto.show(/^#\/(r|hilfe)/.test(location.hash));
   const h = location.hash.replace(/^#\/?/, '').split('/');
   try{
@@ -738,11 +775,20 @@ async function viewRoom(id){
                   : ['Wohnzimmer','Schlafzimmer','Kinderzimmer','Küche','Bad','Gäste-WC','Flur','Treppenhaus','Esszimmer','Arbeitszimmer','Abstellraum','Keller','Büro','Diele'];
 
   function masseHtml(){
-    if (F) return `
-      <div class="row">${mField('b','Breite',r.b)}${mField('h','Höhe bis Traufe',r.h)}</div>
-      <div class="row">${mField('gh','Giebelhöhe (über Traufe)',r.gh)}${mField('gb','Giebelbreite',r.gb)}</div>
-      <p class="muted" style="font-size:13px;margin:-4px 0 10px">Giebel als Dreieck. Giebelbreite leer = Breite der Seite.</p>
-      ${mField('sockelH','Sockelhöhe',r.sockelH)}`;
+    if (F){
+      const G = r.fform==='giebel';
+      return `
+      <div class="seg">
+        <button data-fform="seite" class="${G?'':'on'}">▭ Seite</button>
+        <button data-fform="giebel" class="${G?'on':''}">⌂ Giebel</button>
+      </div>
+      <div id="skizze">${fassadenSkizze(r, null)}</div>
+      <div class="row">${mField('b','B · Breite',r.b)}${mField('h', G?'H · Höhe bis Traufe':'H · Höhe',r.h)}</div>
+      ${G ? `${mField('gh','G · Giebelhöhe (Traufe bis First)',r.gh)}
+        <details class="vor" ${r.gb?'open':''}><summary>Giebel schmaler als B?</summary>
+        ${mField('gb','Giebelbreite unten',r.gb)}</details>` : ''}
+      ${mField('sockelH','S · Sockelhöhe',r.sockelH)}`;
+    }
     return `
       <div class="seg">
         <button data-form="rect" class="${r.form==='rect'?'on':''}">Rechteckig</button>
@@ -961,7 +1007,14 @@ async function viewRoom(id){
     const gb = $('[data-key="gb"]'); if (gb){ gb.placeholder = 'wie Breite'; }
 
     const fields = $$('[data-measure]');
+    let skizzeAktiv = null;
+    const skizze = k => { if (k!==undefined) skizzeAktiv = k; const s=$('#skizze'); if (s) s.innerHTML = fassadenSkizze(r, skizzeAktiv); };
+    if (F){
+      Disto.onTarget = el => skizze(el ? el.dataset.key : null);
+      $$('[data-fform]').forEach(b=>b.onclick=()=>{ r.fform=b.dataset.fform; persist(); render(); });
+    }
     fields.forEach((el, idx)=>{
+      if (F){ el.addEventListener('focus', ()=>skizze(el.dataset.key)); el.addEventListener('input', ()=>skizze()); }
       el.addEventListener('focus', ()=>{
         if (Disto.connected){ Disto.setTarget(el); el.blur(); return; }
         el.classList.add('hot'); el.select(); Disto.target = el;
@@ -1066,6 +1119,7 @@ async function viewRoom(id){
     });
     // DISTO: Leibung überspringen, wenn übermessen; nach letztem Teilstück ein neues anlegen
     Disto.onFilled = el => {
+      if (el.dataset.key==='gh') return $('[data-key="sockelH"]');
       const k = /^abz:(\d+):h$/.exec(el.dataset.key||'');
       if (k){
         const o = oeffnung(r.abzuege[+k[1]]);
@@ -1219,7 +1273,7 @@ async function viewReport(id){
   const detail = r => {
     const c = calc(r), ph = photos.filter(f=>f.roomId===r.id);
     const masse = r.typ==='fassade'
-      ? `${esc(r.b)} × ${esc(r.h)} m${r.gh?` · Giebel ${esc(r.gh)} m`:''}${r.sockelH?` · Sockel ${esc(r.sockelH)} m`:''}`
+      ? `${r.fform==='giebel'?'Giebel · ':''}${esc(r.b)} × ${esc(r.h)} m${r.fform==='giebel'&&r.gh?` + G ${esc(r.gh)} m`:''}${r.sockelH?` · Sockel ${esc(r.sockelH)} m`:''}`
       : r.form==='walls' ? `Wände ${(r.walls||[]).map(w=>esc(w.len)).join(' + ')} m · H ${esc(r.h)} m`
       : `${esc(r.l)} × ${esc(r.b)} m · H ${esc(r.h)} m`;
     const arb = flaechenVon(r).map(([k,t])=>{ const x=flaecheText(r.flaechen[k]); return x?`<b>${t}:</b> ${esc(x.replace(/Brillux /g,''))}`:''; }).filter(Boolean)
