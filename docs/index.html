@@ -403,6 +403,7 @@ async function route(){
     if (h[0]==='p' && h[1]) return await viewProject(h[1]);
     if (h[0]==='r' && h[1]) return await viewRoom(h[1]);
     if (h[0]==='bericht' && h[1]) return await viewReport(h[1]);
+    if (h[0]==='angebot' && h[1]) return await viewOffer(h[1]);
     if (h[0]==='hilfe') return viewHelp();
     if (h[0]==='daten') return viewData();
     return await viewHome();
@@ -480,6 +481,7 @@ async function viewProject(id){
     </div>
 
     <div class="actions noprint">
+      <button class="btn block" id="offer">📄 Angebot erstellen</button>
       <button class="btn sec" id="share">Als Text teilen</button>
       <button class="btn sec" id="delP" style="color:var(--red)">Baustelle löschen</button>
     </div>
@@ -493,6 +495,7 @@ async function viewProject(id){
   if (!p.kunde) $('#kunde').focus();
 
   $('#share').onclick = async ()=>{ await shareText(await projectText(id)); };
+  $('#offer').onclick = ()=>{ location.hash = '#/angebot/'+id; };
   $('#delP').onclick = async ()=>{
     if (!confirm(`Baustelle „${p.kunde||'ohne Namen'}“ mit allen Räumen und Fotos löschen?`)) return;
     for (const r of rooms) await del('rooms', r.id);
@@ -916,6 +919,95 @@ async function viewReport(id){
     ${roomHtml}
   </div>
   <p class="muted noprint" style="font-size:14px">Tipp: „PDF / Drucken“ → im Druckmenü mit zwei Fingern auf die Vorschau auseinanderziehen → Teilen → „In Dateien sichern“ oder per Mail schicken.</p>`;
+}
+
+/* =========================================================
+   Angebot: Leistungsliste aus dem Aufmaß
+   ========================================================= */
+// Welche Menge gehört zu welcher Arbeit?
+function mengeFuer(arbeit, r, c){
+  const pos = label => migrateRoom(r).pos.filter(x=>x.label.toLowerCase().includes(label)).reduce((s,x)=>s+posMenge(x),0);
+  const tueren = (r.abzuege||[]).filter(a=>/Tür/.test(a.art)).reduce((s,a)=>s+(num(a.n)??1),0);
+  const fenster = (r.abzuege||[]).filter(a=>/Fenster/.test(a.art)).reduce((s,a)=>s+(num(a.n)??1),0);
+  switch (arbeit){
+    case 'Decke streichen': return [c.decke, 'm²'];
+    case 'Wände streichen': case 'Raufaser tapezieren': case 'Vlies tapezieren':
+    case 'Alte Tapete entfernen': case 'Spachteln Q2': case 'Spachteln Q3': case 'Spachteln Q4':
+      return [c.wand, 'm²'];
+    case 'Grundierung': return [(c.wand||0) + ((r.arbeiten||[]).includes('Decke streichen') ? (c.decke||0) : 0), 'm²'];
+    case 'Abdecken / Abkleben': return [c.boden, 'm²'];
+    case 'Türen lackieren': return [pos('tür') || tueren, 'Stk'];
+    case 'Zargen lackieren': return [pos('zarge') || pos('tür') || tueren, 'Stk'];
+    case 'Fenster lackieren': return [pos('fenster') || fenster, 'Stk'];
+    case 'Heizkörper lackieren': { const st = migrateRoom(r).pos.filter(x=>/heizk/i.test(x.label)&&x.art==='stk').reduce((s,x)=>s+posMenge(x),0);
+      return st ? [st,'Stk'] : [pos('heizk')||null, 'm²']; }
+    case 'Sockelleisten': return [pos('sockel') || null, 'lfm'];
+    default: return [null, 'psch'];
+  }
+}
+async function leistungen(id){
+  const rooms=(await byIdx('rooms','projectId',id)).sort((a,b)=>(a.order||0)-(b.order||0));
+  const map = new Map();
+  for (const r of rooms){
+    const c = calc(r);
+    for (const a of r.arbeiten||[]){
+      const [m, einheit] = mengeFuer(a, r, c);
+      const key = a+'|'+einheit;
+      const e = map.get(key) || {arbeit:a, einheit, menge:0, raeume:[]};
+      if (m) e.menge += m;
+      e.raeume.push({name: r.name||'Raum', menge: m});
+      map.set(key, e);
+    }
+  }
+  return {rooms, liste:[...map.values()]};
+}
+const fmtE = (m, einheit) => m ? (einheit==='Stk' ? fmt(m,0) : fmt(m)) + ' ' + einheit : (einheit==='psch' ? 'pauschal / nach Aufwand' : '– '+einheit);
+
+async function viewOffer(id){
+  const p = await get('projects', id); if(!p){ location.hash='#/'; return; }
+  setHeader('Angebot', {back:true});
+  const {rooms, liste} = await leistungen(id);
+  p.angebotHinweis ||= '';
+  app.innerHTML = `
+    <div class="card">
+      <h2>Leistungen aus dem Aufmaß</h2>
+      ${liste.length ? liste.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+          <div style="display:flex;justify-content:space-between;gap:10px"><b>${esc(e.arbeit)}</b><b style="white-space:nowrap">${fmtE(e.menge,e.einheit)}</b></div>
+          <div class="muted" style="font-size:13px">${e.raeume.map(x=>esc(x.name)+(x.menge?` ${e.einheit==='Stk'?fmt(x.menge,0):fmt(x.menge)}`:'')).join(' · ')}</div>
+        </div>`).join('')
+      : `<p class="muted" style="margin:0">Noch keine Arbeiten ausgewählt. Wähle in jedem Raum unter „Was soll gemacht werden?“ die Arbeiten aus.</p>`}
+      ${posSumme(rooms).length ? `<p class="muted" style="font-size:13px;margin:10px 0 0">Zusätzlich gemessen: ${posSumme(rooms).map(e=>`${esc(e.label)} ${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}`).join(' · ')}</p>`:''}
+    </div>
+    <div class="card">
+      <h2>Hinweise fürs Angebot</h2>
+      <label class="f" style="margin:0"><span>Farbe, Material, Termin, Besonderheiten, Preise …</span>
+        <textarea id="hinweis" placeholder="z. B. Brillux Superlux weiß, Ausführung KW 12, Möbel räumt Kunde selbst">${esc(p.angebotHinweis)}</textarea></label>
+    </div>
+    <button class="btn block" id="send" style="margin-bottom:10px">An Claude senden</button>
+    <button class="btn sec block" id="copy">Text kopieren</button>
+    <p class="muted" style="font-size:14px">„An Claude senden“ öffnet das Teilen-Menü. Dort die <b>Claude-App</b> auswählen. Claude schreibt daraus das Angebot mit deinem Briefkopf als PDF.</p>`;
+  $('#hinweis').oninput = debounce(async e=>{ p.angebotHinweis=e.target.value; await put('projects', p); }, 300);
+  const text = async () => {
+    p.angebotHinweis = $('#hinweis').value; await put('projects', p);
+    return angebotText(p, rooms, liste) + '\n\n' + await projectText(id);
+  };
+  $('#send').onclick = async ()=> shareText(await text());
+  $('#copy').onclick = async ()=>{ const t=await text();
+    try{ await navigator.clipboard.writeText(t); toast('Kopiert – jetzt in Claude einfügen'); }catch{ prompt('Text kopieren:', t); } };
+}
+function angebotText(p, rooms, liste){
+  let t = `Bitte erstelle ein Angebot für meinen Malerbetrieb.\n\n`;
+  t += `KUNDE: ${p.kunde||''}\n${p.adresse?`ADRESSE: ${p.adresse}\n`:''}${p.telefon?`TELEFON: ${p.telefon}\n`:''}AUFMASS VOM: ${fmtDate(p.datum)}\n\n`;
+  t += `LEISTUNGEN (Mengen aus dem Aufmaß, Wandflächen nach VOB):\n`;
+  liste.forEach((e,i)=>{
+    t += `${i+1}. ${e.arbeit}: ${fmtE(e.menge,e.einheit)}`;
+    t += ` (${e.raeume.map(x=>x.name+(x.menge?` ${e.einheit==='Stk'?fmt(x.menge,0):fmt(x.menge)}`:'')).join(', ')})\n`;
+  });
+  const extra = posSumme(rooms);
+  if (extra.length) t += `\nWEITERE GEMESSENE POSITIONEN:\n` + extra.map(e=>`- ${e.label}: ${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}`).join('\n') + '\n';
+  if (p.angebotHinweis) t += `\nHINWEISE: ${p.angebotHinweis}\n`;
+  t += `\n--- Aufmaß im Detail ---`;
+  return t;
 }
 
 async function projectText(id){
