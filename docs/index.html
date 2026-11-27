@@ -22,6 +22,7 @@
     --red-soft:#3a1820; --green-soft:#16301f; --shadow:none; }
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
 html,body{margin:0;background:var(--bg);color:var(--ink);
   font:17px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
 body{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
@@ -112,9 +113,22 @@ textarea{min-height:84px;resize:vertical}
 a{color:var(--red)}
 @media (prefers-color-scheme: dark){ a{color:#ff6b81} }
 .actions{display:flex;gap:10px;flex-wrap:wrap}
+.lbl{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 6px}
+.sub.fl{border-style:solid;background:var(--card)}
+.sub.fl .chips{margin-bottom:4px}
+.sub.fl .chip{padding:8px 12px;font-size:14px}
+/* Foto-Messung */
+.mov{position:fixed;inset:0;z-index:150;background:#111;display:flex;flex-direction:column}
+.mtop{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 10px 8px;background:#1d1b19}
+.mhint{flex:1;color:#fff;font-size:13px;line-height:1.3;text-align:center}
+.mstage{flex:1;min-height:0;position:relative;overflow:hidden;touch-action:none}
+.mstage canvas#mc{display:block;touch-action:none}
+#mloupe{position:absolute;top:10px;width:150px;height:150px;border-radius:50%;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.5);pointer-events:none}
+.mbar{background:var(--card);color:var(--ink);padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);max-height:42vh;overflow:auto}
 /* Bericht */
 .report{background:#fff;color:#111}
 .report h1{font-size:22px;margin:0 0 4px}
+.report h2.rh{font-size:15px;text-transform:uppercase;letter-spacing:.05em;color:#c41e3a;margin:18px 0 4px}
 .report table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0 10px}
 .report td,.report th{border-bottom:1px solid #ddd;padding:5px 4px;text-align:left}
 .report td.n,.report th.n{text-align:right;font-variant-numeric:tabular-nums}
@@ -202,12 +216,33 @@ function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('sh
 
 function debounce(fn, ms=400){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
 
-const ARBEITEN = [
-  'Decke streichen','Wände streichen','Raufaser tapezieren','Vlies tapezieren','Alte Tapete entfernen',
-  'Spachteln Q2','Spachteln Q3','Spachteln Q4','Grundierung','Schimmelbehandlung','Risse ausbessern',
-  'Türen lackieren','Zargen lackieren','Fenster lackieren','Heizkörper lackieren','Sockelleisten',
-  'Abdecken / Abkleben','Möbel rücken'
-];
+/* =========================================================
+   Arbeiten & Material (immer Brillux)
+   ========================================================= */
+const SONSTIGES = ['Türen lackieren','Zargen lackieren','Fenster lackieren','Heizkörper lackieren','Sockelleisten',
+  'Abdecken / Abkleben','Möbel rücken'];
+const SONSTIGES_FASSADE = ['Fensterbänke streichen','Dachuntersicht streichen','Ortgang/Dachkasten streichen',
+  'Fensterläden lackieren','Fallrohre lackieren','Abdecken / Abkleben','Gerüst'];
+const VORARBEITEN = ['Alte Tapete entfernen','Untergrund reinigen','Risse ausbessern','Spachteln Q2','Spachteln Q3',
+  'Spachteln Q4','Grundierung','Schimmelbehandlung'];
+const VORARBEITEN_FASSADE = ['Reinigen (Hochdruck)','Algen-/Pilzbehandlung','Risse sanieren','Putz ausbessern',
+  'Grundierung','Armierung mit Gewebe'];
+const BELAEGE = ['Raufaser','Lightvlies 130','Vlies (andere)'];
+const ANSTRICHE_INNEN = ['Brillux Superlux','Brillux Intromatt','Brillux Raulan'];
+const ANSTRICHE_FASSADE = ['Brillux Fassadenfarbe Acryl','Brillux Fassadenfarbe Silikon','Brillux Fassadenfarbe Silikat'];
+// Raufaser → Intromatt, glatte Flächen (Lightvlies 130, ohne Tapete) → Superlux
+const standardAnstrich = belag => belag==='Raufaser' ? 'Brillux Intromatt' : 'Brillux Superlux';
+const neueFlaeche = () => ({vor:[], belag:'', anstrich:'', anzahl:2, manuell:false});
+const RAUM_FLAECHEN    = [['decke','Decke'], ['wand','Wände']];
+const FASSADE_FLAECHEN = [['fassade','Fassade'], ['sockel','Sockel']];
+const flaechenVon = r => r.typ==='fassade' ? FASSADE_FLAECHEN : RAUM_FLAECHEN;
+
+// Kurzbeschreibung einer Fläche, z. B. "Spachteln Q2 · Raufaser · 2× Brillux Intromatt"
+function flaecheText(f){
+  if (!f) return '';
+  return [...(f.vor||[]), f.belag ? f.belag+' tapezieren' : '', f.anstrich ? `${f.anzahl||2}× ${f.anstrich}` : '']
+    .filter(Boolean).join(' · ');
+}
 
 /* =========================================================
    Positionen: laufende Meter, Stück, Einzelflächen
@@ -218,10 +253,28 @@ const POS_VORLAGEN = [
   ['Fensterbank','lfm'], ['Acrylfuge','lfm'], ['Treppengeländer','lfm'], ['Rohrleitung','lfm'],
   ['Kantenschutz','lfm'], ['Steckdose/Schalter abkleben','stk'], ['Heizkörper (Fläche)','m2']
 ];
+const POS_VORLAGEN_FASSADE = [
+  ['Fensterbank','lfm'], ['Dachuntersicht','m2'], ['Ortgang/Dachkasten','lfm'], ['Fallrohr','lfm'],
+  ['Fensterläden','stk'], ['Gesims','lfm'], ['Gerüst','m2']
+];
+// Ältere Daten auf den aktuellen Stand bringen
 function migrateRoom(r){
+  r.typ ||= 'raum';
   if (!r.pos){
     r.pos = (r.extra||[]).filter(x=>x.label||x.wert).map(x=>({id:uid(), label:x.label||'', art:'lfm', werte:[x.wert||'']}));
     r.extra = [];
+  }
+  r.abzuege ||= []; r.arbeiten ||= []; r.fotoFlaechen ||= [];
+  if (!r.flaechen){
+    const alt = r.arbeiten, decke = neueFlaeche(), wand = neueFlaeche();
+    if (alt.includes('Decke streichen')) decke.anstrich = 'Brillux Superlux';
+    if (alt.includes('Raufaser tapezieren')) wand.belag = 'Raufaser';
+    else if (alt.includes('Vlies tapezieren')) wand.belag = 'Lightvlies 130';
+    if (alt.includes('Wände streichen') || wand.belag) wand.anstrich = standardAnstrich(wand.belag);
+    wand.vor = alt.filter(a=>VORARBEITEN.includes(a));
+    const weg = ['Decke streichen','Wände streichen','Raufaser tapezieren','Vlies tapezieren', ...VORARBEITEN];
+    r.arbeiten = alt.filter(a=>!weg.includes(a));
+    r.flaechen = r.typ==='fassade' ? {fassade:neueFlaeche(), sockel:neueFlaeche()} : {decke, wand};
   }
   return r;
 }
@@ -243,9 +296,23 @@ function posSumme(rooms){
 }
 
 /* =========================================================
-   Berechnung eines Raums
+   Berechnung: Raum (innen) und Fassadenseite
    ========================================================= */
+function oeffnungenSumme(r){
+  let abzug = 0, leibung = 0, uebermessen = 0;
+  for (const a of r.abzuege||[]){
+    const o = oeffnung(a); if (!o) continue;
+    if (o.abziehen){ abzug += o.gesamt; leibung += o.leibung; } else uebermessen += o.gesamt;
+  }
+  let fotoPlus = 0, fotoMinus = 0;
+  for (const f of r.fotoFlaechen||[]){ const m = num(f.m2)||0; if (f.typ==='minus') fotoMinus += m; else fotoPlus += m; }
+  return {abzug, leibung, uebermessen, fotoPlus, fotoMinus};
+}
 function calc(r){
+  migrateRoom(r);
+  return r.typ==='fassade' ? calcFassade(r) : calcRaum(r);
+}
+function calcRaum(r){
   const L = num(r.l), B = num(r.b), H = num(r.h);
   let umfang = null, decke = null;
   if (r.form === 'walls'){
@@ -256,13 +323,20 @@ function calc(r){
     if (L!=null && B!=null){ umfang = 2*(L+B); decke = L*B; }
   }
   const brutto = (umfang!=null && H!=null) ? umfang*H : null;
-  let abzug = 0, leibung = 0, uebermessen = 0;
-  for (const a of r.abzuege||[]){
-    const o = oeffnung(a); if (!o) continue;
-    if (o.abziehen){ abzug += o.gesamt; leibung += o.leibung; } else uebermessen += o.gesamt;
-  }
-  const wand = brutto!=null ? Math.max(0, brutto - abzug + leibung) : null;
-  return {umfang, decke, boden: decke, brutto, abzug, leibung, uebermessen, wand};
+  const o = oeffnungenSumme(r);
+  const wand = brutto!=null ? Math.max(0, brutto - o.abzug + o.leibung + o.fotoPlus - o.fotoMinus) : null;
+  return {typ:'raum', umfang, decke, boden: decke, brutto, ...o, wand, fl:{decke, wand}};
+}
+function calcFassade(r){
+  const B = num(r.b), H = num(r.h), GH = num(r.gh), GB = num(r.gb) ?? B, S = num(r.sockelH);
+  const rechteck = (B!=null && H!=null) ? B*H : null;
+  const giebel = (GB!=null && GH!=null) ? GB*GH/2 : 0;
+  const o = oeffnungenSumme(r);
+  const brutto = (rechteck!=null || giebel || o.fotoPlus) ? (rechteck||0) + giebel + o.fotoPlus : null;
+  const sockel = (B!=null && S!=null) ? B*S : 0;
+  const fassade = brutto!=null ? Math.max(0, brutto - sockel - o.abzug + o.leibung - o.fotoMinus) : null;
+  return {typ:'fassade', rechteck, giebel, brutto, sockel, ...o, fassade, wand:null, decke:null, boden:null, umfang:null,
+    fl:{fassade, sockel}};
 }
 
 /* Öffnungen nach VOB/C DIN 18363:
@@ -349,6 +423,7 @@ const Disto = {
     el.value = fmtM(meters);
     el.dispatchEvent(new Event('input', {bubbles:true}));
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    if (el.hasAttribute('data-solo')){ this.setTarget(el); return; }
     const hooked = this.onFilled ? this.onFilled(el) : undefined;
     if (hooked !== undefined){ this.setTarget(hooked); return; }
     const fields = $$('[data-measure]'), next = fields[fields.indexOf(el)+1];
@@ -402,7 +477,7 @@ async function route(){
   try{
     if (h[0]==='p' && h[1]) return await viewProject(h[1]);
     if (h[0]==='r' && h[1]) return await viewRoom(h[1]);
-    if (h[0]==='bericht' && h[1]) return await viewReport(h[1]);
+    if ((h[0]==='bericht' || h[0]==='zusammenfassung') && h[1]) return await viewReport(h[1]);
     if (h[0]==='angebot' && h[1]) return await viewOffer(h[1]);
     if (h[0]==='hilfe') return viewHelp();
     if (h[0]==='daten') return viewData();
@@ -422,10 +497,10 @@ async function viewHome(){
       <p><b>Noch keine Baustelle.</b><br>Tippe unten auf „+ Neue Baustelle“.</p>
       <p><a href="#/hilfe">So verbindest du den Leica DISTO</a></p></div>`}
     ${projects.map(p=>{
-      const n = rooms.filter(r=>r.projectId===p.id).length;
+      const pr = rooms.filter(r=>r.projectId===p.id), n = pr.filter(r=>r.typ!=='fassade').length, nf = pr.length - n;
       return `<a class="list-item" href="#/p/${p.id}"><div class="grow">
         <div class="t">${esc(p.kunde||'Ohne Namen')}</div>
-        <div class="s">${esc(p.adresse||'')}${p.adresse?' · ':''}${fmtDate(p.datum)} · ${n} ${n===1?'Raum':'Räume'}</div>
+        <div class="s">${esc(p.adresse||'')}${p.adresse?' · ':''}${fmtDate(p.datum)} · ${n} ${n===1?'Raum':'Räume'}${nf?` · ${nf} Fassade`:''}${p.fertig?' · <b style="color:var(--green)">✓ fertig</b>':''}</div>
       </div><span class="chev">›</span></a>`;
     }).join('')}
     ${projects.length ? `<p style="text-align:center"><a href="#/hilfe" class="muted">Hilfe: Leica DISTO verbinden</a></p>`:''}
@@ -438,19 +513,50 @@ async function viewHome(){
 }
 
 /* =========================================================
-   Baustelle: Kundendaten + Räume
+   Baustelle: Kundendaten, Räume, Fassade
    ========================================================= */
+const sortiert = list => list.sort((a,b)=>(a.order||0)-(b.order||0));
+const innen   = rooms => rooms.filter(r=>migrateRoom(r).typ!=='fassade');
+const fassaden = rooms => rooms.filter(r=>migrateRoom(r).typ==='fassade');
+
+function neuerRaum(projectId, extra={}){
+  return {id:uid(), projectId, typ:'raum', name:'', form:'rect', l:'', b:'', h:'', walls:[], deckeManuell:'',
+    abzuege:[], pos:[], arbeiten:[], fotoFlaechen:[], flaechen:{decke:neueFlaeche(), wand:neueFlaeche()},
+    notiz:'', order:Date.now(), ...extra};
+}
+function neueFassade(projectId, extra={}){
+  return {id:uid(), projectId, typ:'fassade', name:'', b:'', h:'', gh:'', gb:'', sockelH:'',
+    abzuege:[], pos:[], arbeiten:[], fotoFlaechen:[], flaechen:{fassade:neueFlaeche(), sockel:neueFlaeche()},
+    notiz:'', order:Date.now(), ...extra};
+}
+
 async function viewProject(id){
   const p = await get('projects', id);
   if (!p){ location.hash='#/'; return; }
-  const rooms = (await byIdx('rooms','projectId',id)).sort((a,b)=>(a.order||0)-(b.order||0));
+  const rooms = sortiert(await byIdx('rooms','projectId',id));
   const photos = await byIdx('photos','projectId',id);
-  setHeader(p.kunde || 'Neue Baustelle', {back:true, action:{label:'Bericht', fn:()=>location.hash='#/bericht/'+id}});
+  const ri = innen(rooms), rf = fassaden(rooms);
+  setHeader(p.kunde || 'Neue Baustelle', {back:true, action:{label:'Zusammenfassung', fn:()=>location.hash='#/zusammenfassung/'+id}});
 
-  let sumW=0, sumD=0;
-  rooms.forEach(r=>{ const c=calc(r); sumW+=c.wand||0; sumD+=c.decke||0; });
+  let sumW=0, sumD=0, sumF=0, sumS=0;
+  ri.forEach(r=>{ const c=calc(r); sumW+=c.wand||0; sumD+=c.decke||0; });
+  rf.forEach(r=>{ const c=calc(r); sumF+=c.fassade||0; sumS+=c.sockel||0; });
+
+  const item = r => {
+    const c=calc(r), np=photos.filter(f=>f.roomId===r.id).length;
+    const zeile = r.typ==='fassade'
+      ? `Fassade ${fmt(c.fassade)} m²${c.sockel?` · Sockel ${fmt(c.sockel)} m²`:''}`
+      : `Wand ${fmt(c.wand)} m² · Decke ${fmt(c.decke)} m²`;
+    const arb = flaechenVon(r).map(([k,t])=>{ const s=flaecheText(r.flaechen[k]); return s?`${t}: ${s}`:''; }).filter(Boolean).join(' | ');
+    return `<a class="list-item" href="#/r/${r.id}" style="box-shadow:none"><div class="grow">
+      <div class="t">${esc(r.name||(r.typ==='fassade'?'Fassadenseite':'Raum ohne Namen'))}</div>
+      <div class="s">${zeile}${np?` · 📷 ${np}`:''}</div>
+      ${arb?`<div class="s">${esc(arb)}</div>`:''}
+    </div><span class="chev">›</span></a>`;
+  };
 
   app.innerHTML = `
+    ${p.fertig ? `<div class="hint" style="background:var(--green-soft)">✓ Aufmaß abgeschlossen am ${fmtDate(p.fertig)}. Du kannst trotzdem weiter ändern.</div>` : ''}
     <div class="card">
       <h2>Kunde</h2>
       <label class="f"><span>Name</span><input id="kunde" value="${esc(p.kunde)}" placeholder="z. B. Familie Müller" autocomplete="off"></label>
@@ -463,25 +569,29 @@ async function viewProject(id){
     </div>
 
     <div class="card">
-      <h2>Räume</h2>
-      ${rooms.length ? '' : '<p class="muted" style="margin:0 0 10px">Noch keine Räume erfasst.</p>'}
-      ${rooms.map(r=>{
-        const c=calc(r); const np=photos.filter(f=>f.roomId===r.id).length;
-        return `<a class="list-item" href="#/r/${r.id}" style="box-shadow:none"><div class="grow">
-          <div class="t">${esc(r.name||'Raum ohne Namen')}</div>
-          <div class="s">Wand ${fmt(c.wand)} m² · Decke ${fmt(c.decke)} m²${np?` · 📷 ${np}`:''}</div>
-          ${(r.arbeiten||[]).length?`<div class="s">${esc(r.arbeiten.join(', '))}</div>`:''}
-        </div><span class="chev">›</span></a>`;
-      }).join('')}
-      ${rooms.length ? `<div class="results" style="margin-top:6px">
+      <h2>Räume (innen)</h2>
+      ${ri.length ? ri.map(item).join('') : '<p class="muted" style="margin:0 0 10px">Noch keine Räume erfasst.</p>'}
+      ${ri.length ? `<div class="results" style="margin-top:6px">
         <div class="res main"><div class="k">Wandfläche gesamt</div><div class="v">${fmt(sumW)} m²</div></div>
         <div class="res main"><div class="k">Deckenfläche gesamt</div><div class="v">${fmt(sumD)} m²</div></div>
-        ${posSumme(rooms).map(e=>`<div class="res"><div class="k">${esc(e.label)}</div><div class="v">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</div></div>`).join('')}
+        ${posSumme(ri).map(e=>`<div class="res"><div class="k">${esc(e.label)}</div><div class="v">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</div></div>`).join('')}
       </div>`:''}
     </div>
 
+    <div class="card">
+      <h2>Fassade</h2>
+      ${rf.length ? rf.map(item).join('') : '<p class="muted" style="margin:0 0 10px">Keine Fassade erfasst.</p>'}
+      ${rf.length ? `<div class="results" style="margin:6px 0 10px">
+        <div class="res main"><div class="k">Fassade gesamt</div><div class="v">${fmt(sumF)} m²</div></div>
+        <div class="res main"><div class="k">Sockel gesamt</div><div class="v">${fmt(sumS)} m²</div></div>
+        ${posSumme(rf).map(e=>`<div class="res"><div class="k">${esc(e.label)}</div><div class="v">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</div></div>`).join('')}
+      </div>`:''}
+      <button class="btn sec" id="addFassade">+ Fassadenseite</button>
+    </div>
+
+    <button class="btn block" id="fertig" style="margin-bottom:10px;background:var(--green)">✓ Aufmaß fertig – Zusammenfassung</button>
     <div class="actions noprint">
-      <button class="btn block" id="offer">📄 Angebot erstellen</button>
+      <button class="btn sec" id="offer">📄 Angebot erstellen</button>
       <button class="btn sec" id="share">Als Text teilen</button>
       <button class="btn sec" id="delP" style="color:var(--red)">Baustelle löschen</button>
     </div>
@@ -496,28 +606,39 @@ async function viewProject(id){
 
   $('#share').onclick = async ()=>{ await shareText(await projectText(id)); };
   $('#offer').onclick = ()=>{ location.hash = '#/angebot/'+id; };
+  $('#fertig').onclick = ()=> aufmassFertig(id);
   $('#delP').onclick = async ()=>{
-    if (!confirm(`Baustelle „${p.kunde||'ohne Namen'}“ mit allen Räumen und Fotos löschen?`)) return;
+    if (!confirm(`Baustelle „${p.kunde||'ohne Namen'}“ mit allen Räumen, Fassaden und Fotos löschen?`)) return;
     for (const r of rooms) await del('rooms', r.id);
     for (const f of photos) await del('photos', f.id);
     await del('projects', id); location.hash='#/';
   };
+  $('#addFassade').onclick = async ()=>{
+    const r = neueFassade(id); await put('rooms', r); location.hash = '#/r/'+r.id;
+  };
   fab('+ Raum', async ()=>{
-    const r = {id:uid(), projectId:id, name:'', form:'rect', l:'', b:'', h:'', walls:[], deckeManuell:'',
-      abzuege:[], pos:[], arbeiten:[], notiz:'', order:Date.now()};
+    const r = neuerRaum(id);
     await put('rooms', r); p.updated=Date.now(); await put('projects', p);
     location.hash = '#/r/'+r.id;
   });
 }
+async function aufmassFertig(projectId){
+  const p = await get('projects', projectId);
+  if (p){ p.fertig = p.fertig || Date.now(); p.updated = Date.now(); await put('projects', p); }
+  location.hash = '#/zusammenfassung/'+projectId;
+}
 
 /* =========================================================
-   Raum: Messen, Arbeiten, Fotos
+   Raum bzw. Fassadenseite: Messen, Arbeiten, Fotos
    ========================================================= */
 async function viewRoom(id){
   const r = await get('rooms', id);
   if (!r){ location.hash='#/'; return; }
-  r.walls ||= []; r.abzuege ||= []; r.arbeiten ||= []; r.form ||= 'rect'; migrateRoom(r);
-  setHeader(r.name || 'Neuer Raum', {back:true});
+  migrateRoom(r);
+  r.walls ||= []; r.form ||= 'rect';
+  const F = r.typ==='fassade';
+  const neuName = F ? 'Neue Fassadenseite' : 'Neuer Raum';
+  setHeader(r.name || neuName, {back:true});
 
   const persist = debounce(async ()=>{
     await put('rooms', r);
@@ -529,43 +650,88 @@ async function viewRoom(id){
       inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next"
       value="${esc(val)}" placeholder="0,000"><span class="unit">m</span></label>`;
 
+  const ABZ_ARTEN = F ? ['Fenster','Haustür','Balkontür','Garagentor','Schaufenster','Sonstiges']
+                      : ['Fenster','Tür','Balkontür','Durchgang','Einbauschrank','Fliesenspiegel','Sonstiges'];
+  const NAMEN = F ? ['Straßenseite','Gartenseite','Hofseite','Giebel Nord','Giebel Süd','Giebel Ost','Giebel West','Nordseite','Südseite','Ostseite','Westseite']
+                  : ['Wohnzimmer','Schlafzimmer','Kinderzimmer','Küche','Bad','Gäste-WC','Flur','Treppenhaus','Esszimmer','Arbeitszimmer','Abstellraum','Keller','Büro','Diele'];
+
+  function masseHtml(){
+    if (F) return `
+      <div class="row">${mField('b','Breite',r.b)}${mField('h','Höhe bis Traufe',r.h)}</div>
+      <div class="row">${mField('gh','Giebelhöhe (über Traufe)',r.gh)}${mField('gb','Giebelbreite',r.gb)}</div>
+      <p class="muted" style="font-size:13px;margin:-4px 0 10px">Giebel als Dreieck. Giebelbreite leer = Breite der Seite.</p>
+      ${mField('sockelH','Sockelhöhe',r.sockelH)}`;
+    return `
+      <div class="seg">
+        <button data-form="rect" class="${r.form==='rect'?'on':''}">Rechteckig</button>
+        <button data-form="walls" class="${r.form==='walls'?'on':''}">Wände einzeln</button>
+      </div>
+      ${r.form==='rect' ? `<div class="row">${mField('l','Länge',r.l)}${mField('b','Breite',r.b)}</div>` : `
+        ${r.walls.map((w,i)=>`<div class="row" style="align-items:flex-end">
+          ${mField('wall:'+i, 'Wand '+(i+1), w.len)}
+          <button class="x" data-delwall="${i}" style="margin-bottom:10px" aria-label="Wand löschen">✕</button></div>`).join('')}
+        <button class="btn sec small" id="addWall" style="margin-bottom:12px">+ Wand</button>
+        <label class="f measure"><span>Deckenfläche (falls nötig, z. B. aus DISTO-Flächenfunktion)</span>
+          <input data-measure data-key="deckeManuell" inputmode="decimal" autocomplete="off" value="${esc(r.deckeManuell)}" placeholder="0,00"><span class="unit">m²</span></label>`}
+      ${mField('h','Raumhöhe',r.h)}`;
+  }
+
+  function fotoFlaechenHtml(){
+    if (!r.fotoFlaechen.length) return '';
+    return `<div style="margin-top:6px"><div class="lbl">Flächen aus Foto-Messung</div>
+      ${r.fotoFlaechen.map((f,i)=>`<div class="row" style="align-items:center;margin-bottom:6px">
+        <div style="flex:3">${esc(f.label||'Fläche')}</div>
+        <div style="flex:2;text-align:right;font-weight:700">${f.typ==='minus'?'−':'+'}${fmt(num(f.m2))} m²</div>
+        <button class="x" data-delfoto="${i}" style="flex:none" aria-label="Fläche löschen">✕</button></div>`).join('')}</div>`;
+  }
+
+  function flaecheHtml(key, titel, menge){
+    const f = r.flaechen[key] ||= neueFlaeche();
+    const vorList = F ? VORARBEITEN_FASSADE : VORARBEITEN;
+    const anstriche = F ? ANSTRICHE_FASSADE : ANSTRICHE_INNEN;
+    const frei = f.anstrich && !anstriche.includes(f.anstrich) ? f.anstrich : '';
+    return `<div class="sub fl">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+        <b style="font-size:18px">${titel}</b><span class="muted" id="fm-${key}">${fmt(menge)} m²</span></div>
+      <div class="lbl">Vorarbeiten</div>
+      <div class="chips">${vorList.map(v=>`<button class="chip ${f.vor.includes(v)?'on':''}" data-vor="${key}|${esc(v)}">${esc(v)}</button>`).join('')}</div>
+      ${F ? '' : `<div class="lbl">Tapezieren</div>
+      <div class="chips">${['', ...BELAEGE].map(b=>`<button class="chip ${f.belag===b?'on':''}" data-belag="${key}|${esc(b)}">${b?esc(b):'Keine Tapete'}</button>`).join('')}</div>`}
+      <div class="lbl">Anstrich (Brillux)</div>
+      <div class="chips">${['', ...anstriche].map(a=>`<button class="chip ${f.anstrich===a && (a||!frei)?'on':''}" data-an="${key}|${esc(a)}">${a?esc(a.replace('Brillux ','')):'Kein Anstrich'}</button>`).join('')}</div>
+      <div class="row" style="align-items:center">
+        <input data-anfrei="${key}" value="${esc(frei)}" placeholder="Anderes Brillux-Produkt …" style="flex:3">
+        <select data-anz="${key}" style="flex:1">${[1,2,3].map(n=>`<option value="${n}" ${(+f.anzahl||2)===n?'selected':''}>${n}×</option>`).join('')}</select>
+      </div>
+    </div>`;
+  }
+
   function render(){
     const c = calc(r);
-    const customChips = r.arbeiten.filter(a=>!ARBEITEN.includes(a));
+    const sonst = F ? SONSTIGES_FASSADE : SONSTIGES;
+    const customChips = r.arbeiten.filter(a=>!sonst.includes(a));
     app.innerHTML = `
       <div class="card">
-        <label class="f" style="margin:0"><span>Raumbezeichnung</span>
-          <input id="name" value="${esc(r.name)}" placeholder="z. B. Wohnzimmer EG" list="raumnamen" autocomplete="off"></label>
-        <datalist id="raumnamen">${['Wohnzimmer','Schlafzimmer','Kinderzimmer','Küche','Bad','Gäste-WC','Flur','Treppenhaus','Esszimmer','Arbeitszimmer','Abstellraum','Keller','Büro','Diele'].map(n=>`<option value="${n}">`).join('')}</datalist>
+        <label class="f" style="margin:0"><span>${F?'Fassadenseite':'Raumbezeichnung'}</span>
+          <input id="name" value="${esc(r.name)}" placeholder="${F?'z. B. Straßenseite':'z. B. Wohnzimmer EG'}" list="namen" autocomplete="off"></label>
+        <datalist id="namen">${NAMEN.map(n=>`<option value="${n}">`).join('')}</datalist>
       </div>
 
       <div class="card">
-        <h2>Maße</h2>
+        <h2>Maße${F?' Fassade':''}</h2>
         <div class="hint">📏 ${Disto.supported
           ? 'Unten links „DISTO verbinden“ → Feld antippen → am DISTO messen. Der Wert landet im Feld, danach ist automatisch das nächste Feld dran.'
-          : 'Zahl vom DISTO eintippen. <b>Direkte Übertragung:</b> diese Seite im Browser „Bluefy“ öffnen (siehe Hilfe).'}</div>
-        <div class="seg">
-          <button data-form="rect" class="${r.form==='rect'?'on':''}">Rechteckig</button>
-          <button data-form="walls" class="${r.form==='walls'?'on':''}">Wände einzeln</button>
-        </div>
-        ${r.form==='rect' ? `
-          <div class="row">${mField('l','Länge',r.l)}${mField('b','Breite',r.b)}</div>
-        ` : `
-          ${r.walls.map((w,i)=>`<div class="row" style="align-items:flex-end">
-            ${mField('wall:'+i, 'Wand '+(i+1), w.len)}
-            <button class="x" data-delwall="${i}" style="margin-bottom:10px" aria-label="Wand löschen">✕</button></div>`).join('')}
-          <button class="btn sec small" id="addWall" style="margin-bottom:12px">+ Wand</button>
-          <label class="f measure"><span>Deckenfläche (falls nötig, z. B. aus DISTO-Flächenfunktion)</span>
-            <input data-measure data-key="deckeManuell" inputmode="decimal" autocomplete="off" value="${esc(r.deckeManuell)}" placeholder="0,00"><span class="unit">m²</span></label>
-        `}
-        ${mField('h','Raumhöhe',r.h)}
+          : 'Zahl vom DISTO eintippen. <b>Direkte Übertragung:</b> diese Seite im Browser „Bluefy“ öffnen (siehe Hilfe).'}
+          ${F?'<br>📷 Nicht erreichbare Maße (Giebel, Höhe): Foto von vorne machen → Foto antippen → <b>„Ausmessen“</b>.':''}</div>
+        ${masseHtml()}
+        ${fotoFlaechenHtml()}
       </div>
 
       <div class="card">
-        <h2>Abzüge (Fenster, Türen …)</h2>
+        <h2>Abzüge (${F?'Fenster, Türen, Tore':'Fenster, Türen'} …)</h2>
         ${r.abzuege.map((a,i)=>`<div class="sub">
           <div class="head">
-            <select data-abz-art="${i}">${['Fenster','Tür','Balkontür','Durchgang','Einbauschrank','Fliesenspiegel','Sonstiges'].map(o=>`<option ${a.art===o?'selected':''}>${o}</option>`).join('')}</select>
+            <select data-abz-art="${i}">${ABZ_ARTEN.concat(ABZ_ARTEN.includes(a.art)?[]:[a.art]).map(o=>`<option ${a.art===o?'selected':''}>${esc(o)}</option>`).join('')}</select>
             <button class="x" data-delabz="${i}" aria-label="Abzug löschen">✕</button>
           </div>
           <div class="row">
@@ -590,25 +756,27 @@ async function viewRoom(id){
       </div>
 
       <div class="card">
-        <h2>Positionen (lfm · Stück · m²)</h2>
-        ${r.pos.map((x,i)=>posHtml(x,i)).join('')}
-        <div class="chips" style="margin:4px 0 0">
-          ${POS_VORLAGEN.map(([l,a])=>`<button class="chip" data-addpos="${esc(l)}|${a}">+ ${esc(l)} <span class="muted">${POS_UNITS[a]}</span></button>`).join('')}
-          <button class="chip" data-addpos="|lfm">+ Eigene …</button>
-        </div>
-      </div>
-
-      <div class="card">
         <h2>Was soll gemacht werden?</h2>
+        ${flaechenVon(r).map(([k,t])=>flaecheHtml(k, t, c.fl[k])).join('')}
+        <div class="lbl" style="margin-top:6px">Sonstiges</div>
         <div class="chips">
-          ${[...ARBEITEN, ...customChips].map(a=>`<button class="chip ${r.arbeiten.includes(a)?'on':''}" data-chip="${esc(a)}">${esc(a)}</button>`).join('')}
+          ${[...sonst, ...customChips].map(a=>`<button class="chip ${r.arbeiten.includes(a)?'on':''}" data-chip="${esc(a)}">${esc(a)}</button>`).join('')}
         </div>
         <div class="row" style="margin-bottom:10px">
           <input id="newChip" placeholder="Eigene Arbeit hinzufügen …">
           <button class="btn small" id="addChip" style="flex:none">+</button>
         </div>
-        <label class="f" style="margin:0"><span>Notiz zum Raum</span>
-          <textarea id="rnotiz" placeholder="z. B. Farbton Weiß matt, Decke hat Wasserfleck, Kunde wünscht …">${esc(r.notiz)}</textarea></label>
+        <label class="f" style="margin:0"><span>Notiz</span>
+          <textarea id="rnotiz" placeholder="${F?'z. B. Farbton, Gerüst nötig, Putzschäden an der Ecke …':'z. B. Farbton Weiß matt, Decke hat Wasserfleck, Kunde wünscht …'}">${esc(r.notiz)}</textarea></label>
+      </div>
+
+      <div class="card">
+        <h2>Positionen (lfm · Stück · m²)</h2>
+        ${r.pos.map((x,i)=>posHtml(x,i)).join('')}
+        <div class="chips" style="margin:4px 0 0">
+          ${(F?POS_VORLAGEN_FASSADE:POS_VORLAGEN).map(([l,a])=>`<button class="chip" data-addpos="${esc(l)}|${a}">+ ${esc(l)} <span class="muted">${POS_UNITS[a]}</span></button>`).join('')}
+          <button class="chip" data-addpos="|lfm">+ Eigene …</button>
+        </div>
       </div>
 
       <div class="card">
@@ -618,11 +786,13 @@ async function viewRoom(id){
           <label class="btn"><input type="file" accept="image/*" capture="environment" id="cam" hidden>📷 Foto aufnehmen</label>
           <label class="btn sec"><input type="file" accept="image/*" multiple id="gal" hidden>Aus Galerie</label>
         </div>
+        <p class="muted" style="font-size:13px;margin:8px 0 0">Foto antippen → „📐 Ausmessen“: Strecken und Flächen im Foto über ein Referenzmaß bestimmen.</p>
       </div>
 
+      <button class="btn block" id="nextRoom" style="margin-bottom:10px">${F?'Nächste Fassadenseite →':'Nächster Raum →'}</button>
+      <button class="btn block" id="fertig" style="margin-bottom:10px;background:var(--green)">✓ Fertig – kein weiterer ${F?'Teil':'Raum'}</button>
       <div class="actions">
-        <button class="btn sec" id="nextRoom">Nächster Raum →</button>
-        <button class="btn sec" id="delRoom" style="color:var(--red)">Raum löschen</button>
+        <button class="btn sec" id="delRoom" style="color:var(--red)">${F?'Fassadenseite':'Raum'} löschen</button>
       </div>
     `;
     bind();
@@ -642,7 +812,7 @@ async function viewRoom(id){
           ${x.werte.length>1?`<button class="x" data-delw="${i}:${j}" style="margin-bottom:10px" aria-label="Teilstück löschen">✕</button>`:''}</div>`).join('')
         + `<div class="actions" style="margin-bottom:8px">
             <button class="btn sec small" data-addw="${i}">+ Teilstück</button>
-            <button class="btn sec small" data-umfang="${i}">Umfang − Türen</button></div>`;
+            ${F?'':`<button class="btn sec small" data-umfang="${i}">Umfang − Türen</button>`}</div>`;
     } else if (x.art==='stk'){
       body = `<div class="row" style="align-items:center;margin-bottom:8px">
           <button class="btn sec" data-stk="${i}:-1" style="flex:none;width:64px;font-size:24px">−</button>
@@ -658,19 +828,22 @@ async function viewRoom(id){
   const refreshPos = () => r.pos.forEach((x,i)=>{ const el=$('#postot-'+i); if (el) el.textContent=fmtMenge(x); });
 
   function resultsHtml(c){
-    return `
-      <div class="res main"><div class="k">Wandfläche (VOB)</div><div class="v">${fmt(c.wand)} m²</div></div>
-      <div class="res main"><div class="k">Deckenfläche</div><div class="v">${fmt(c.decke)} m²</div></div>
-      <div class="res"><div class="k">Bodenfläche</div><div class="v">${fmt(c.boden)} m²</div></div>
-      <div class="res"><div class="k">Umfang</div><div class="v">${fmt(c.umfang)} m</div></div>
-      <div class="res"><div class="k">Wand brutto</div><div class="v">${fmt(c.brutto)} m²</div></div>
-      <div class="res"><div class="k">Abzüge (&gt; 2,5 m²)</div><div class="v">−${fmt(c.abzug)} m²</div></div>
-      <div class="res"><div class="k">Leibungen</div><div class="v">+${fmt(c.leibung)} m²</div></div>
-      <div class="res"><div class="k">Übermessen (≤ 2,5 m²)</div><div class="v">${fmt(c.uebermessen)} m²</div></div>`;
+    const tile = (k, v, main) => `<div class="res${main?' main':''}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+    const foto = (c.fotoPlus ? tile('Foto-Flächen', `+${fmt(c.fotoPlus)} m²`) : '') + (c.fotoMinus ? tile('Foto-Abzüge', `−${fmt(c.fotoMinus)} m²`) : '');
+    if (F) return tile('Fassade (VOB)', fmt(c.fassade)+' m²', true) + tile('Sockel', fmt(c.sockel)+' m²', true)
+      + tile('Rechteck B × H', fmt(c.rechteck)+' m²') + tile('Giebel', fmt(c.giebel)+' m²')
+      + tile('Abzüge (&gt; 2,5 m²)', `−${fmt(c.abzug)} m²`) + tile('Leibungen', `+${fmt(c.leibung)} m²`)
+      + tile('Übermessen (≤ 2,5 m²)', fmt(c.uebermessen)+' m²') + foto;
+    return tile('Wandfläche (VOB)', fmt(c.wand)+' m²', true) + tile('Deckenfläche', fmt(c.decke)+' m²', true)
+      + tile('Bodenfläche', fmt(c.boden)+' m²') + tile('Umfang', fmt(c.umfang)+' m')
+      + tile('Wand brutto', fmt(c.brutto)+' m²') + tile('Abzüge (&gt; 2,5 m²)', `−${fmt(c.abzug)} m²`)
+      + tile('Leibungen', `+${fmt(c.leibung)} m²`) + tile('Übermessen (≤ 2,5 m²)', fmt(c.uebermessen)+' m²') + foto;
   }
   const refreshResults = () => {
-    const el=$('#results'); if (el) el.innerHTML = resultsHtml(calc(r)); refreshPos();
+    const c = calc(r);
+    const el=$('#results'); if (el) el.innerHTML = resultsHtml(c); refreshPos();
     r.abzuege.forEach((a,i)=>{ const x=$('#abzinfo-'+i); if (x) x.innerHTML = oeffnungInfo(a); });
+    for (const [k] of flaechenVon(r)){ const x=$('#fm-'+k); if (x) x.textContent = fmt(c.fl[k])+' m²'; }
   };
 
   function setVal(key, v){
@@ -684,8 +857,9 @@ async function viewRoom(id){
 
   function bind(){
     const nameEl = $('#name');
-    nameEl.addEventListener('input', ()=>{ r.name=nameEl.value; $('#title').textContent=r.name||'Neuer Raum'; persist(); });
+    nameEl.addEventListener('input', ()=>{ r.name=nameEl.value; $('#title').textContent=r.name||neuName; persist(); });
     nameEl.addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); const f=$('[data-measure]'); f && f.focus(); }});
+    const gb = $('[data-key="gb"]'); if (gb){ gb.placeholder = 'wie Breite'; }
 
     const fields = $$('[data-measure]');
     fields.forEach((el, idx)=>{
@@ -719,6 +893,7 @@ async function viewRoom(id){
     });
     $('#addWall') && ($('#addWall').onclick=()=>{ r.walls.push({len:''}); persist(); render(); focusKey('wall:'+(r.walls.length-1)); });
     $$('[data-delwall]').forEach(b=>b.onclick=()=>{ r.walls.splice(+b.dataset.delwall,1); persist(); render(); });
+    $$('[data-delfoto]').forEach(b=>b.onclick=()=>{ r.fotoFlaechen.splice(+b.dataset.delfoto,1); persist(); render(); });
 
     $('#addAbz').onclick=()=>{ r.abzuege.push({art:'Fenster', b:'', h:'', n:1}); persist(); render(); focusKey('abz:'+(r.abzuege.length-1)+':b'); };
     $$('[data-delabz]').forEach(b=>b.onclick=()=>{ r.abzuege.splice(+b.dataset.delabz,1); persist(); render(); });
@@ -726,11 +901,36 @@ async function viewRoom(id){
     $$('[data-abz-n]').forEach(s=>s.oninput=()=>{ r.abzuege[+s.dataset.abzN].n=s.value; persist(); refreshResults(); });
     $$('[data-abz-s]').forEach(s=>s.onchange=()=>{ r.abzuege[+s.dataset.abzS].seiten=+s.value; persist(); refreshResults(); });
 
+    // Arbeiten je Fläche (Decke / Wände bzw. Fassade / Sockel)
+    const fl = k => r.flaechen[k] ||= neueFlaeche();
+    $$('[data-vor]').forEach(b=>b.onclick=()=>{
+      const [k,v]=b.dataset.vor.split('|'), f=fl(k), i=f.vor.indexOf(v);
+      if (i>=0) f.vor.splice(i,1); else f.vor.push(v);
+      b.classList.toggle('on'); persist();
+    });
+    $$('[data-belag]').forEach(b=>b.onclick=()=>{
+      const [k,v]=b.dataset.belag.split('|'), f=fl(k);
+      f.belag = v;
+      // Passender Brillux-Anstrich, solange nicht von Hand gewählt
+      if (!f.manuell && (v || f.anstrich)) f.anstrich = standardAnstrich(v);
+      persist(); render();
+      if (v && !f.manuell) toast(`Anstrich: ${f.anstrich}`);
+    });
+    $$('[data-an]').forEach(b=>b.onclick=()=>{
+      const [k,v]=b.dataset.an.split('|'), f=fl(k);
+      f.anstrich = v; f.manuell = true; persist(); render();
+    });
+    $$('[data-anfrei]').forEach(s=>s.oninput=()=>{
+      const f=fl(s.dataset.anfrei); f.anstrich = s.value.trim(); f.manuell = true; persist();
+      $$(`[data-an^="${s.dataset.anfrei}|"]`).forEach(c=>c.classList.toggle('on', !f.anstrich && c.dataset.an.endsWith('|')));
+    });
+    $$('[data-anz]').forEach(s=>s.onchange=()=>{ fl(s.dataset.anz).anzahl = +s.value; persist(); });
+
     // Positionen
     const lastPos = () => r.pos.length-1;
     $$('[data-addpos]').forEach(b=>b.onclick=()=>{
       const [label, art] = b.dataset.addpos.split('|');
-      r.pos.push({id:uid(), label, art, werte:[''], n: art==='stk'?1:1, b:'', h:''});
+      r.pos.push({id:uid(), label, art, werte:[''], n:1, b:'', h:''});
       persist(); render();
       const i=lastPos();
       if (!label) $(`[data-pos-label="${i}"]`).focus();
@@ -761,7 +961,7 @@ async function viewRoom(id){
       persist(); render();
       toast(tueren ? `Umfang ${fmt(c.umfang)} m − Türen ${fmt(tueren)} m` : 'Umfang übernommen (keine Türen bei Abzügen)');
     });
-    // DISTO: nach letztem Teilstück automatisch ein neues anlegen
+    // DISTO: Leibung überspringen, wenn übermessen; nach letztem Teilstück ein neues anlegen
     Disto.onFilled = el => {
       const k = /^abz:(\d+):h$/.exec(el.dataset.key||'');
       if (k){
@@ -795,17 +995,33 @@ async function viewRoom(id){
 
     $('#nextRoom').onclick=async ()=>{
       await put('rooms', r);
-      const n={id:uid(), projectId:r.projectId, name:'', form:'rect', l:'', b:'', h:r.h, walls:[], deckeManuell:'',
-        abzuege:[], pos:[], arbeiten:[], notiz:'', order:Date.now()};
-      await put('rooms', n); location.hash='#/r/'+n.id; toast('Raumhöhe übernommen');
+      // Raumhöhe bzw. Fassadenhöhe und Arbeiten werden übernommen
+      const kopie = JSON.parse(JSON.stringify(r.flaechen));
+      const n = F ? neueFassade(r.projectId, {h:r.h, sockelH:r.sockelH, flaechen:kopie})
+                  : neuerRaum(r.projectId, {h:r.h, flaechen:kopie});
+      await put('rooms', n); location.hash='#/r/'+n.id;
+      toast(F ? 'Höhe und Arbeiten übernommen' : 'Raumhöhe und Arbeiten übernommen');
     };
+    $('#fertig').onclick=async ()=>{ await put('rooms', r); aufmassFertig(r.projectId); };
     $('#delRoom').onclick=async ()=>{
-      if(!confirm(`Raum „${r.name||'ohne Namen'}“ löschen?`)) return;
+      if(!confirm(`„${r.name||'ohne Namen'}“ löschen?`)) return;
       for (const f of await byIdx('photos','roomId',r.id)) await del('photos', f.id);
       await del('rooms', r.id); location.hash='#/p/'+r.projectId;
     };
   }
   function focusKey(k){ const el=$(`[data-key="${k}"]`); el && el.focus(); }
+
+  // Verbindung zur Foto-Messung
+  const messCtx = {
+    fields: () => $$('[data-measure]').filter(el=>!el.dataset.key.startsWith('deckeManuell')).map(el=>{
+      const lab = el.closest('label')?.querySelector('span')?.textContent || el.dataset.key;
+      const sub = el.closest('.sub'); const kopf = sub && (sub.querySelector('.head select')?.value || sub.querySelector('.head input')?.value);
+      return {key: el.dataset.key, label: (kopf ? kopf+': ' : '') + lab};
+    }),
+    setLength: (key, m) => { setVal(key, fmtM(m)); persist(); },
+    addArea: (label, m2, typ) => { r.fotoFlaechen.push({label, m2: fmt(m2), typ}); persist(); },
+    done: () => render()
+  };
 
   async function addPhotos(files){
     for (const f of files){
@@ -822,11 +1038,10 @@ async function viewRoom(id){
     const list=(await byIdx('photos','roomId',r.id)).sort((a,b)=>a.created-b.created);
     el.innerHTML='';
     list.forEach(p=>{
-      const img=document.createElement('img'); img.src=URL.createObjectURL(p.blob); img.alt=p.caption||'Foto';
-      img.onclick=()=>openViewer(p, renderPhotos);
+      const img=document.createElement('img'); img.src=URL.createObjectURL(p.annot || p.blob); img.alt=p.caption||'Foto';
+      img.onclick=()=>openViewer(p, renderPhotos, messCtx);
       el.appendChild(img);
     });
-    if(!list.length) el.outerHTML='<div class="photos" id="photos"></div>';
   }
 
   render();
@@ -850,114 +1065,178 @@ function shrink(file, max=1600){
   });
 }
 
-function openViewer(p, onChange){
+function openViewer(p, onChange, messCtx){
   const v=document.createElement('div'); v.className='viewer';
-  v.innerHTML=`<img src="${URL.createObjectURL(p.blob)}" alt="">
+  v.innerHTML=`<img src="${URL.createObjectURL(p.annot || p.blob)}" alt="">
     <input id="cap" placeholder="Beschriftung (z. B. Riss über Tür)" value="${esc(p.caption)}">
     <div class="bar"><button class="btn sec" id="vdel" style="flex:1;color:var(--red)">Löschen</button>
-    <button class="btn" id="vclose" style="flex:2">Fertig</button></div>`;
+    ${messCtx?'<button class="btn sec" id="vmess" style="flex:1.4">📐 Ausmessen</button>':''}
+    <button class="btn" id="vclose" style="flex:1">Fertig</button></div>`;
   document.body.appendChild(v);
   const close=async ()=>{ p.caption=$('#cap',v).value; await put('photos',p); v.remove(); onChange&&onChange(); };
   $('#vclose',v).onclick=close;
   $('#vdel',v).onclick=async ()=>{ if(confirm('Foto löschen?')){ await del('photos',p.id); v.remove(); onChange&&onChange(); } };
+  const m=$('#vmess',v); if (m) m.onclick=async ()=>{ await close(); openMeasure(p, messCtx, onChange); };
 }
 
 /* =========================================================
-   Bericht (zum Drucken / als PDF sichern)
+   Zusammenfassung (fertiges Aufmaß, zum Drucken / als PDF)
    ========================================================= */
 async function viewReport(id){
   const p = await get('projects', id); if(!p){ location.hash='#/'; return; }
-  const rooms=(await byIdx('rooms','projectId',id)).sort((a,b)=>(a.order||0)-(b.order||0));
+  const rooms=sortiert(await byIdx('rooms','projectId',id));
   const photos=(await byIdx('photos','projectId',id)).sort((a,b)=>a.created-b.created);
-  setHeader('Bericht', {back:true, action:{label:'PDF / Drucken', fn:()=>window.print()}});
-  let sW=0,sD=0,sB=0;
-  const roomHtml = rooms.map(r=>{
-    const c=calc(r); sW+=c.wand||0; sD+=c.decke||0; sB+=c.boden||0;
+  const ri = innen(rooms), rf = fassaden(rooms);
+  const {liste} = await leistungen(id);
+  setHeader('Übersicht', {back:true, action:{label:'PDF / Drucken', fn:()=>window.print()}});
+
+  let sW=0,sD=0,sB=0,sF=0,sS=0;
+  ri.forEach(r=>{ const c=calc(r); sW+=c.wand||0; sD+=c.decke||0; sB+=c.boden||0; });
+  rf.forEach(r=>{ const c=calc(r); sF+=c.fassade||0; sS+=c.sockel||0; });
+
+  const abzRows = r => (r.abzuege||[]).map(a=>{ const o=oeffnung(a); return `<tr><td>${esc(a.art)} ${esc(a.n||1)}× ${esc(a.b)} × ${esc(a.h)} m</td><td class="n">${
+    !o ? '' : !o.abziehen ? 'übermessen' : `−${fmt(o.gesamt)} m²${o.leibung?` · Leibung +${fmt(o.leibung)} m²`:''}`}</td></tr>`; }).join('')
+    + (r.fotoFlaechen||[]).map(f=>`<tr><td>${esc(f.label||'Fläche')} (aus Foto)</td><td class="n">${f.typ==='minus'?'−':'+'}${fmt(num(f.m2))} m²</td></tr>`).join('');
+  const posTable = r => r.pos.length ? `<table><thead><tr><th>Position</th><th>Maße</th><th class="n">Menge</th></tr></thead><tbody>
+      ${r.pos.map(x=>`<tr><td>${esc(x.label||'Position')}</td><td>${
+        x.art==='lfm' ? esc((x.werte||[]).filter(Boolean).join(' + ')) + ' m'
+        : x.art==='m2' ? `${esc(x.b)} × ${esc(x.h)} m × ${esc(x.n??1)}` : ''
+      }</td><td class="n">${fmtMenge(x)} ${POS_UNITS[x.art]}</td></tr>`).join('')}
+    </tbody></table>` : '';
+  const arbeitenHtml = r => flaechenVon(r).map(([k,t])=>{ const s=flaecheText(r.flaechen[k]); return s?`<p style="margin:4px 0"><b>${t}:</b> ${esc(s)}</p>`:''; }).join('')
+    + ((r.arbeiten||[]).length?`<p style="margin:4px 0"><b>Sonstiges:</b> ${esc(r.arbeiten.join(', '))}</p>`:'');
+  const fotosHtml = r => { const ph = photos.filter(f=>f.roomId===r.id); return ph.length?`<div class="rph">${ph.map(f=>`<figure><img src="${URL.createObjectURL(f.annot||f.blob)}">${f.caption?`<figcaption>${esc(f.caption)}</figcaption>`:''}</figure>`).join('')}</div>`:''; };
+
+  const detail = r => {
+    const c = calc(r);
+    if (r.typ==='fassade') return `<div class="room">
+      <h3 style="margin:0 0 4px">Fassade: ${esc(r.name||'Seite')}</h3>
+      <table><tbody>
+        <tr><td>Breite × Höhe bis Traufe</td><td class="n">${esc(r.b)} × ${esc(r.h)} m = ${fmt(c.rechteck)} m²</td></tr>
+        ${c.giebel?`<tr><td>Giebel (Breite ${esc(r.gb||r.b)} × Höhe ${esc(r.gh)} m ÷ 2)</td><td class="n">+${fmt(c.giebel)} m²</td></tr>`:''}
+        ${c.sockel?`<tr><td>Sockel (Höhe ${esc(r.sockelH)} m)</td><td class="n">−${fmt(c.sockel)} m² (separat)</td></tr>`:''}
+        ${abzRows(r)}
+        <tr><td><b>Fassadenfläche (VOB)</b></td><td class="n"><b>${fmt(c.fassade)} m²</b></td></tr>
+        ${c.sockel?`<tr><td><b>Sockelfläche</b></td><td class="n"><b>${fmt(c.sockel)} m²</b></td></tr>`:''}
+      </tbody></table>
+      ${posTable(r)}${arbeitenHtml(r)}
+      ${r.notiz?`<p><b>Notiz:</b> ${esc(r.notiz).replace(/\n/g,'<br>')}</p>`:''}
+      ${fotosHtml(r)}</div>`;
     const maße = r.form==='walls'
       ? (r.walls||[]).map((w,i)=>`<tr><td>Wand ${i+1}</td><td class="n">${esc(w.len)} m</td></tr>`).join('')
         + (r.deckeManuell?`<tr><td>Deckenfläche</td><td class="n">${esc(r.deckeManuell)} m²</td></tr>`:'')
-      : `<tr><td>Länge</td><td class="n">${esc(r.l)} m</td></tr><tr><td>Breite</td><td class="n">${esc(r.b)} m</td></tr>`;
-    const ph = photos.filter(f=>f.roomId===r.id);
+      : `<tr><td>Länge × Breite</td><td class="n">${esc(r.l)} × ${esc(r.b)} m</td></tr>`;
     return `<div class="room">
       <h3 style="margin:0 0 4px">${esc(r.name||'Raum')}</h3>
       <table><tbody>${maße}<tr><td>Höhe</td><td class="n">${esc(r.h)} m</td></tr>
-        ${(r.abzuege||[]).map(a=>{ const o=oeffnung(a); return `<tr><td>${esc(a.art)} ${esc(a.n||1)}× ${esc(a.b)} × ${esc(a.h)} m</td><td class="n">${
-          !o ? '' : !o.abziehen ? 'übermessen' : `−${fmt(o.gesamt)} m²${o.leibung?` · Leibung +${fmt(o.leibung)} m²`:''}`}</td></tr>`; }).join('')}
-      </tbody></table>
-      ${migrateRoom(r).pos.length?`<table><thead><tr><th>Position</th><th>Maße</th><th class="n">Menge</th></tr></thead><tbody>
-        ${r.pos.map(x=>`<tr><td>${esc(x.label||'Position')}</td><td>${
-          x.art==='lfm' ? esc((x.werte||[]).filter(Boolean).join(' + ')) + ' m'
-          : x.art==='m2' ? `${esc(x.b)} × ${esc(x.h)} m × ${esc(x.n??1)}` : ''
-        }</td><td class="n">${fmtMenge(x)} ${POS_UNITS[x.art]}</td></tr>`).join('')}
-      </tbody></table>`:''}
-      <table><tbody>
         <tr><td>Umfang</td><td class="n">${fmt(c.umfang)} m</td></tr>
         <tr><td>Wand brutto</td><td class="n">${fmt(c.brutto)} m²</td></tr>
-        ${c.abzug?`<tr><td>Abzüge (&gt; 2,5 m²)</td><td class="n">−${fmt(c.abzug)} m²</td></tr>`:''}
-        ${c.leibung?`<tr><td>Leibungen</td><td class="n">+${fmt(c.leibung)} m²</td></tr>`:''}
+        ${abzRows(r)}
         <tr><td><b>Wandfläche (VOB)</b></td><td class="n"><b>${fmt(c.wand)} m²</b></td></tr>
         <tr><td><b>Deckenfläche</b></td><td class="n"><b>${fmt(c.decke)} m²</b></td></tr>
-        <tr><td>Bodenfläche</td><td class="n">${fmt(c.boden)} m²</td></tr>
       </tbody></table>
-      ${(r.arbeiten||[]).length?`<p><b>Arbeiten:</b> ${esc(r.arbeiten.join(', '))}</p>`:''}
+      ${posTable(r)}${arbeitenHtml(r)}
       ${r.notiz?`<p><b>Notiz:</b> ${esc(r.notiz).replace(/\n/g,'<br>')}</p>`:''}
-      ${ph.length?`<div class="rph">${ph.map(f=>`<figure><img src="${URL.createObjectURL(f.blob)}">${f.caption?`<figcaption>${esc(f.caption)}</figcaption>`:''}</figure>`).join('')}</div>`:''}
-    </div>`;
-  }).join('');
+      ${fotosHtml(r)}</div>`;
+  };
+
+  const posAll = posSumme(rooms);
   app.innerHTML = `<div class="card report">
     <h1>Aufmaß ${esc(p.kunde)}</h1>
     <div>${esc(p.adresse)}${p.telefon?' · Tel. '+esc(p.telefon):''}</div>
-    <div style="color:#555">Datum: ${fmtDate(p.datum)}</div>
+    <div style="color:#555">Aufmaß vom ${fmtDate(p.datum)}${p.fertig?` · abgeschlossen am ${fmtDate(p.fertig)}`:''}</div>
     ${p.notiz?`<p>${esc(p.notiz).replace(/\n/g,'<br>')}</p>`:''}
-    <table style="margin-top:12px"><thead><tr><th>Raum</th><th class="n">Wand m²</th><th class="n">Decke m²</th><th class="n">Boden m²</th></tr></thead><tbody>
-      ${rooms.map(r=>{const c=calc(r); return `<tr><td>${esc(r.name||'Raum')}</td><td class="n">${fmt(c.wand)}</td><td class="n">${fmt(c.decke)}</td><td class="n">${fmt(c.boden)}</td></tr>`;}).join('')}
-      <tr><td><b>Summe</b></td><td class="n"><b>${fmt(sW)}</b></td><td class="n"><b>${fmt(sD)}</b></td><td class="n"><b>${fmt(sB)}</b></td></tr>
-    </tbody></table>
-    ${(()=>{ const ps=posSumme(rooms); return ps.length ? `<table><thead><tr><th>Positionen gesamt</th><th class="n">Menge</th></tr></thead><tbody>
-      ${ps.map(e=>`<tr><td>${esc(e.label)}</td><td class="n">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</td></tr>`).join('')}
-    </tbody></table>` : ''; })()}
-    ${roomHtml}
+
+    <h2 class="rh">Leistungsübersicht</h2>
+    ${liste.length ? `<table><thead><tr><th>Leistung</th><th class="n">Menge</th></tr></thead><tbody>
+      ${liste.map(e=>`<tr><td>${esc(e.arbeit)}<div style="color:#777;font-size:12px">${e.raeume.map(x=>esc(x.name)).join(', ')}</div></td><td class="n">${fmtE(e.menge,e.einheit)}</td></tr>`).join('')}
+    </tbody></table>` : '<p style="color:#777">Noch keine Arbeiten ausgewählt.</p>'}
+
+    ${ri.length?`<h2 class="rh">Räume</h2>
+    <table><thead><tr><th>Raum</th><th class="n">Decke m²</th><th class="n">Wand m²</th></tr></thead><tbody>
+      ${ri.map(r=>{const c=calc(r); return `<tr><td>${esc(r.name||'Raum')}
+        <div style="color:#777;font-size:12px">${['decke','wand'].map(k=>{const s=flaecheText(r.flaechen[k]); return s?(k==='decke'?'Decke: ':'Wände: ')+esc(s):'';}).filter(Boolean).join('<br>')}</div></td>
+        <td class="n">${fmt(c.decke)}</td><td class="n">${fmt(c.wand)}</td></tr>`;}).join('')}
+      <tr><td><b>Summe</b></td><td class="n"><b>${fmt(sD)}</b></td><td class="n"><b>${fmt(sW)}</b></td></tr>
+    </tbody></table>`:''}
+
+    ${rf.length?`<h2 class="rh">Fassade</h2>
+    <table><thead><tr><th>Seite</th><th class="n">Fassade m²</th><th class="n">Sockel m²</th></tr></thead><tbody>
+      ${rf.map(r=>{const c=calc(r); return `<tr><td>${esc(r.name||'Seite')}
+        <div style="color:#777;font-size:12px">${['fassade','sockel'].map(k=>{const s=flaecheText(r.flaechen[k]); return s?(k==='fassade'?'Fassade: ':'Sockel: ')+esc(s):'';}).filter(Boolean).join('<br>')}</div></td>
+        <td class="n">${fmt(c.fassade)}</td><td class="n">${fmt(c.sockel)}</td></tr>`;}).join('')}
+      <tr><td><b>Summe</b></td><td class="n"><b>${fmt(sF)}</b></td><td class="n"><b>${fmt(sS)}</b></td></tr>
+    </tbody></table>`:''}
+
+    ${posAll.length ? `<h2 class="rh">Positionen gesamt</h2><table><tbody>
+      ${posAll.map(e=>`<tr><td>${esc(e.label)}</td><td class="n">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</td></tr>`).join('')}
+    </tbody></table>` : ''}
+
+    <h2 class="rh">Einzelaufstellung</h2>
+    ${rooms.map(detail).join('')}
+  </div>
+  <div class="noprint" style="margin-bottom:12px">
+    <button class="btn block" id="rpdf" style="margin-bottom:10px">PDF / Drucken</button>
+    <div class="actions"><button class="btn sec" id="roffer">📄 Angebot erstellen</button>
+    <button class="btn sec" id="rshare">Als Text teilen</button></div>
   </div>
   <p class="muted noprint" style="font-size:14px">Tipp: „PDF / Drucken“ → im Druckmenü mit zwei Fingern auf die Vorschau auseinanderziehen → Teilen → „In Dateien sichern“ oder per Mail schicken.</p>`;
+  $('#rpdf').onclick = ()=>window.print();
+  $('#roffer').onclick = ()=>{ location.hash='#/angebot/'+id; };
+  $('#rshare').onclick = async ()=>shareText(await projectText(id));
 }
 
 /* =========================================================
    Angebot: Leistungsliste aus dem Aufmaß
    ========================================================= */
-// Welche Menge gehört zu welcher Arbeit?
-function mengeFuer(arbeit, r, c){
-  const pos = label => migrateRoom(r).pos.filter(x=>x.label.toLowerCase().includes(label)).reduce((s,x)=>s+posMenge(x),0);
+// Leistungen einer Fläche: Vorarbeiten, Tapete, Anstrich – jeweils mit der Flächenmenge
+function flaechenLeistungen(titel, f, menge){
+  if (!f) return [];
+  const out = [];
+  for (const v of f.vor||[]) out.push([`${titel}: ${v}`, menge, 'm²']);
+  if (f.belag) out.push([`${titel} tapezieren: ${f.belag}`, menge, 'm²']);
+  if (f.anstrich) out.push([`${titel} streichen ${f.anzahl||2}×: ${f.anstrich}`, menge, 'm²']);
+  return out;
+}
+// Mengen für sonstige Arbeiten
+function mengeFuer(arbeit, r){
+  const treffer = re => migrateRoom(r).pos.filter(x=>re.test(x.label||''));
+  const pos = (re, art) => { const t = treffer(re).filter(x=>!art || x.art===art);
+    return t.length ? [t.reduce((s,x)=>s+posMenge(x),0), POS_UNITS[t[0].art]] : null; };
   const tueren = (r.abzuege||[]).filter(a=>/Tür/.test(a.art)).reduce((s,a)=>s+(num(a.n)??1),0);
   const fenster = (r.abzuege||[]).filter(a=>/Fenster/.test(a.art)).reduce((s,a)=>s+(num(a.n)??1),0);
+  const c = calc(r);
   switch (arbeit){
-    case 'Decke streichen': return [c.decke, 'm²'];
-    case 'Wände streichen': case 'Raufaser tapezieren': case 'Vlies tapezieren':
-    case 'Alte Tapete entfernen': case 'Spachteln Q2': case 'Spachteln Q3': case 'Spachteln Q4':
-      return [c.wand, 'm²'];
-    case 'Grundierung': return [(c.wand||0) + ((r.arbeiten||[]).includes('Decke streichen') ? (c.decke||0) : 0), 'm²'];
-    case 'Abdecken / Abkleben': return [c.boden, 'm²'];
-    case 'Türen lackieren': return [pos('tür') || tueren, 'Stk'];
-    case 'Zargen lackieren': return [pos('zarge') || pos('tür') || tueren, 'Stk'];
-    case 'Fenster lackieren': return [pos('fenster') || fenster, 'Stk'];
-    case 'Heizkörper lackieren': { const st = migrateRoom(r).pos.filter(x=>/heizk/i.test(x.label)&&x.art==='stk').reduce((s,x)=>s+posMenge(x),0);
-      return st ? [st,'Stk'] : [pos('heizk')||null, 'm²']; }
-    case 'Sockelleisten': return [pos('sockel') || null, 'lfm'];
+    case 'Abdecken / Abkleben': return r.typ==='fassade' ? [null,'psch'] : [c.boden, 'm²'];
+    case 'Türen lackieren': return pos(/tür/i,'stk') || [tueren||null, 'Stk'];
+    case 'Zargen lackieren': return pos(/zarge/i,'stk') || pos(/tür/i,'stk') || [tueren||null, 'Stk'];
+    case 'Fenster lackieren': return pos(/fenster(?!bank)/i,'stk') || [fenster||null, 'Stk'];
+    case 'Heizkörper lackieren': return pos(/heizk/i,'stk') || pos(/heizk/i) || [null,'Stk'];
+    case 'Sockelleisten': return pos(/sockel/i) || [null,'lfm'];
+    case 'Fensterbänke streichen': return pos(/fensterbank/i) || [null,'lfm'];
+    case 'Dachuntersicht streichen': return pos(/dachunter/i) || [null,'m²'];
+    case 'Ortgang/Dachkasten streichen': return pos(/ortgang|dachkasten/i) || [null,'lfm'];
+    case 'Fensterläden lackieren': return pos(/läden|laden/i) || [null,'Stk'];
+    case 'Fallrohre lackieren': return pos(/fallrohr|rohr/i) || [null,'lfm'];
+    case 'Gerüst': return pos(/gerüst/i) || [null,'m²'];
     default: return [null, 'psch'];
   }
 }
 async function leistungen(id){
-  const rooms=(await byIdx('rooms','projectId',id)).sort((a,b)=>(a.order||0)-(b.order||0));
+  const rooms=sortiert(await byIdx('rooms','projectId',id));
   const map = new Map();
+  const add = (arbeit, menge, einheit, name) => {
+    const key = arbeit+'|'+einheit;
+    const e = map.get(key) || {arbeit, einheit, menge:0, raeume:[]};
+    if (menge) e.menge += menge;
+    e.raeume.push({name, menge});
+    map.set(key, e);
+  };
   for (const r of rooms){
-    const c = calc(r);
-    for (const a of r.arbeiten||[]){
-      const [m, einheit] = mengeFuer(a, r, c);
-      const key = a+'|'+einheit;
-      const e = map.get(key) || {arbeit:a, einheit, menge:0, raeume:[]};
-      if (m) e.menge += m;
-      e.raeume.push({name: r.name||'Raum', menge: m});
-      map.set(key, e);
-    }
+    const c = calc(r), name = r.name || (r.typ==='fassade'?'Fassade':'Raum');
+    for (const [k,t] of flaechenVon(r))
+      for (const [a,m,u] of flaechenLeistungen(t, r.flaechen[k], c.fl[k])) add(a, m, u, name);
+    for (const a of r.arbeiten||[]){ const [m,u] = mengeFuer(a, r); add(a, m, u, name); }
   }
   return {rooms, liste:[...map.values()]};
 }
@@ -980,8 +1259,8 @@ async function viewOffer(id){
     </div>
     <div class="card">
       <h2>Hinweise fürs Angebot</h2>
-      <label class="f" style="margin:0"><span>Farbe, Material, Termin, Besonderheiten, Preise …</span>
-        <textarea id="hinweis" placeholder="z. B. Brillux Superlux weiß, Ausführung KW 12, Möbel räumt Kunde selbst">${esc(p.angebotHinweis)}</textarea></label>
+      <label class="f" style="margin:0"><span>Farbton, Termin, Besonderheiten, Preise …</span>
+        <textarea id="hinweis" placeholder="z. B. Farbton weiß, Ausführung KW 12, Möbel räumt Kunde selbst">${esc(p.angebotHinweis)}</textarea></label>
     </div>
     <button class="btn block" id="send" style="margin-bottom:10px">An Claude senden</button>
     <button class="btn sec block" id="copy">Text kopieren</button>
@@ -998,7 +1277,8 @@ async function viewOffer(id){
 function angebotText(p, rooms, liste){
   let t = `Bitte erstelle ein Angebot für meinen Malerbetrieb.\n\n`;
   t += `KUNDE: ${p.kunde||''}\n${p.adresse?`ADRESSE: ${p.adresse}\n`:''}${p.telefon?`TELEFON: ${p.telefon}\n`:''}AUFMASS VOM: ${fmtDate(p.datum)}\n\n`;
-  t += `LEISTUNGEN (Mengen aus dem Aufmaß, Wandflächen nach VOB):\n`;
+  t += `MATERIAL: ausschließlich Brillux. Raufaser mit Brillux Intromatt oder Raulan, glatte Flächen (Lightvlies 130) mit Brillux Superlux.\n\n`;
+  t += `LEISTUNGEN (Mengen aus dem Aufmaß, Flächen nach VOB):\n`;
   liste.forEach((e,i)=>{
     t += `${i+1}. ${e.arbeit}: ${fmtE(e.menge,e.einheit)}`;
     t += ` (${e.raeume.map(x=>x.name+(x.menge?` ${e.einheit==='Stk'?fmt(x.menge,0):fmt(x.menge)}`:'')).join(', ')})\n`;
@@ -1012,23 +1292,37 @@ function angebotText(p, rooms, liste){
 
 async function projectText(id){
   const p=await get('projects',id);
-  const rooms=(await byIdx('rooms','projectId',id)).sort((a,b)=>(a.order||0)-(b.order||0));
+  const rooms=sortiert(await byIdx('rooms','projectId',id));
   let t=`AUFMASS ${p.kunde||''}\n${p.adresse||''}\nDatum: ${fmtDate(p.datum)}\n${p.notiz?p.notiz+'\n':''}\n`;
-  let sW=0,sD=0;
+  let sW=0,sD=0,sF=0,sS=0;
   for (const r of rooms){
-    const c=calc(r); sW+=c.wand||0; sD+=c.decke||0;
-    t+=`— ${r.name||'Raum'} —\n`;
-    if (r.form==='walls') t+=`Wände: ${(r.walls||[]).map(w=>w.len).join(' + ')} m, Höhe ${r.h} m\n`;
-    else t+=`L ${r.l} × B ${r.b} m, Höhe ${r.h} m\n`;
+    const c=calc(r);
+    if (r.typ==='fassade'){
+      sF+=c.fassade||0; sS+=c.sockel||0;
+      t+=`— Fassade: ${r.name||'Seite'} —\n`;
+      t+=`B ${r.b} × H ${r.h} m = ${fmt(c.rechteck)} m²`;
+      if (c.giebel) t+=` + Giebel ${fmt(c.giebel)} m² (B ${r.gb||r.b} × H ${r.gh} m ÷ 2)`;
+      t+='\n';
+      if (c.sockel) t+=`Sockel: Höhe ${r.sockelH} m = ${fmt(c.sockel)} m²\n`;
+    } else {
+      sW+=c.wand||0; sD+=c.decke||0;
+      t+=`— ${r.name||'Raum'} —\n`;
+      if (r.form==='walls') t+=`Wände: ${(r.walls||[]).map(w=>w.len).join(' + ')} m, Höhe ${r.h} m\n`;
+      else t+=`L ${r.l} × B ${r.b} m, Höhe ${r.h} m\n`;
+    }
     for (const a of r.abzuege||[]){ const o=oeffnung(a);
       t+=`${a.art} ${a.n||1}× ${a.b} × ${a.h} m: ${!o?'':!o.abziehen?'übermessen':`abgezogen −${fmt(o.gesamt)} m²${o.leibung?`, Leibung +${fmt(o.leibung)} m² (Tiefe ${a.t} m, ${o.seiten} Seiten)`:''}`}\n`; }
-    for (const x of migrateRoom(r).pos) t+=`${x.label||'Position'}: ${fmtMenge(x)} ${POS_UNITS[x.art]}${x.art==='lfm'&&(x.werte||[]).filter(Boolean).length>1?` (${x.werte.filter(Boolean).join(' + ')})`:''}\n`;
-    t+=`Wandfläche (VOB): ${fmt(c.wand)} m² | Decke: ${fmt(c.decke)} m² | Umfang: ${fmt(c.umfang)} m\n`;
-    if ((r.arbeiten||[]).length) t+=`Arbeiten: ${r.arbeiten.join(', ')}\n`;
+    for (const f of r.fotoFlaechen||[]) t+=`${f.label||'Fläche'} (aus Foto): ${f.typ==='minus'?'−':'+'}${f.m2} m²\n`;
+    for (const x of r.pos) t+=`${x.label||'Position'}: ${fmtMenge(x)} ${POS_UNITS[x.art]}${x.art==='lfm'&&(x.werte||[]).filter(Boolean).length>1?` (${x.werte.filter(Boolean).join(' + ')})`:''}\n`;
+    if (r.typ==='fassade') t+=`Fassadenfläche (VOB): ${fmt(c.fassade)} m²${c.sockel?` | Sockel: ${fmt(c.sockel)} m²`:''}\n`;
+    else t+=`Wandfläche (VOB): ${fmt(c.wand)} m² | Decke: ${fmt(c.decke)} m² | Umfang: ${fmt(c.umfang)} m\n`;
+    for (const [k,tt] of flaechenVon(r)){ const s=flaecheText(r.flaechen[k]); if (s) t+=`${tt}: ${s}\n`; }
+    if ((r.arbeiten||[]).length) t+=`Sonstiges: ${r.arbeiten.join(', ')}\n`;
     if (r.notiz) t+=`Notiz: ${r.notiz}\n`;
     t+='\n';
   }
-  t+=`SUMME Wand: ${fmt(sW)} m² | Decke: ${fmt(sD)} m²\n`;
+  if (sW||sD) t+=`SUMME Wände: ${fmt(sW)} m² | Decken: ${fmt(sD)} m²\n`;
+  if (sF||sS) t+=`SUMME Fassade: ${fmt(sF)} m² | Sockel: ${fmt(sS)} m²\n`;
   for (const e of posSumme(rooms)) t+=`SUMME ${e.label}: ${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}\n`;
   return t;
 }
@@ -1036,6 +1330,232 @@ async function shareText(text){
   if (navigator.share){ try{ await navigator.share({text}); return; }catch(e){ if(e.name==='AbortError') return; } }
   try{ await navigator.clipboard.writeText(text); toast('In Zwischenablage kopiert'); }
   catch{ prompt('Text kopieren:', text); }
+}
+
+/* =========================================================
+   Foto ausmessen mit Referenzmaß
+   (z. B. Fassadenbreite mit DISTO messen → im Foto als Referenz
+   markieren → Giebelhöhe, Flächen usw. im Foto abgreifen)
+   ========================================================= */
+function openMeasure(photo, ctx, onChange){
+  const ov = document.createElement('div'); ov.className = 'mov';
+  ov.innerHTML = `
+    <div class="mtop"><button class="btn sec small" id="mx">Abbrechen</button>
+      <div id="mhint" class="mhint"></div>
+      <button class="btn small" id="mok">Speichern</button></div>
+    <div class="mstage" id="mstage"><canvas id="mc"></canvas><canvas id="mloupe" width="300" height="300" hidden></canvas></div>
+    <div class="mbar">
+      <div class="seg" id="mtools" style="margin-bottom:8px">
+        <button data-t="ref">① Referenz</button><button data-t="line">Strecke</button><button data-t="area">Fläche</button></div>
+      <div class="row" style="align-items:flex-end">
+        <label class="f measure" style="margin:0"><span>Referenzmaß (echte Länge)</span>
+          <input id="mref" data-solo inputmode="decimal" autocomplete="off" placeholder="z. B. 8,50"><span class="unit">m</span></label>
+        <button class="btn sec small" id="mundo" style="flex:none;margin-bottom:2px">↶</button>
+        <button class="btn small" id="mclose" style="flex:none;margin-bottom:2px" hidden>Fläche schließen</button>
+      </div>
+      <div id="mlist" style="margin-top:8px"></div>
+    </div>`;
+  document.body.appendChild(ov);
+  document.body.style.overflow = 'hidden';
+
+  const stage = $('#mstage', ov), cv = $('#mc', ov), cx = cv.getContext('2d');
+  const loupe = $('#mloupe', ov), lx = loupe.getContext('2d');
+  const refIn = $('#mref', ov);
+  const M = JSON.parse(JSON.stringify(photo.messung || {ref:null, refLen:'', items:[]}));
+  refIn.value = M.refLen || '';
+  let tool = M.ref ? 'line' : 'ref', cur = [];
+  let W=0, H=0, dpr=1, scale=1, ox=0, oy=0, fitScale=1;
+  const img = new Image();
+
+  const pxPerM = () => { const L = num(refIn.value); return (M.ref && L) ? dist(M.ref[0], M.ref[1]) / L : null; };
+  const dist = (a,b) => Math.hypot(a[0]-b[0], a[1]-b[1]);
+  const areaPx = pts => Math.abs(pts.reduce((s,p,i)=>{ const q=pts[(i+1)%pts.length]; return s + p[0]*q[1] - q[0]*p[1]; },0))/2;
+  const toScreen = p => [p[0]*scale+ox, p[1]*scale+oy];
+  const toImage  = (x,y) => [(x-ox)/scale, (y-oy)/scale];
+  const valueOf = it => { const k = pxPerM(); if (!k) return null;
+    return it.t==='line' ? dist(it.pts[0], it.pts[1])/k : areaPx(it.pts)/(k*k); };
+
+  function resize(){
+    const r = stage.getBoundingClientRect(); dpr = window.devicePixelRatio || 1;
+    W = r.width; H = r.height; cv.width = W*dpr; cv.height = H*dpr;
+    cv.style.width = W+'px'; cv.style.height = H+'px';
+  }
+  function fit(){
+    fitScale = scale = Math.min(W/img.naturalWidth, H/img.naturalHeight);
+    ox = (W - img.naturalWidth*scale)/2; oy = (H - img.naturalHeight*scale)/2;
+  }
+
+  // Zeichnen (für Bildschirm und für das gespeicherte Bild)
+  function drawOverlay(g, tf, lw, fs){
+    const line = (a,b,col,dash) => { g.save(); g.strokeStyle=col; g.lineWidth=lw; if(dash) g.setLineDash([lw*3,lw*2]);
+      g.beginPath(); g.moveTo(...tf(a)); g.lineTo(...tf(b)); g.stroke(); g.restore(); };
+    const dot = (p,col) => { const s=tf(p); g.beginPath(); g.arc(s[0],s[1],lw*2.2,0,7); g.fillStyle='#fff'; g.fill();
+      g.lineWidth=lw*0.8; g.strokeStyle=col; g.stroke(); };
+    const label = (p, txt, col) => { const s=tf(p); g.font=`700 ${fs}px -apple-system,Segoe UI,sans-serif`;
+      const w=g.measureText(txt).width+fs*0.8, h=fs*1.5; g.fillStyle=col; g.beginPath();
+      g.roundRect ? g.roundRect(s[0]-w/2, s[1]-h-fs*0.4, w, h, fs*0.3) : g.rect(s[0]-w/2, s[1]-h-fs*0.4, w, h); g.fill();
+      g.fillStyle = col==='#ffd60a' ? '#000' : '#fff'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(txt, s[0], s[1]-h/2-fs*0.4); };
+    const mid = (a,b) => [(a[0]+b[0])/2, (a[1]+b[1])/2];
+    const k = pxPerM();
+    M.items.forEach((it,i)=>{
+      const v = valueOf(it), nr = `${i+1}`;
+      if (it.t==='line'){ line(it.pts[0], it.pts[1], '#e5243b'); it.pts.forEach(p=>dot(p,'#e5243b'));
+        label(mid(it.pts[0], it.pts[1]), `${nr}: ${v!=null?fmt(v)+' m':'?'}`, '#e5243b'); }
+      else { g.save(); g.beginPath(); it.pts.forEach((p,j)=>{ const s=tf(p); j?g.lineTo(...s):g.moveTo(...s); }); g.closePath();
+        g.fillStyle='rgba(229,36,59,.25)'; g.fill(); g.lineWidth=lw; g.strokeStyle='#e5243b'; g.stroke(); g.restore();
+        it.pts.forEach(p=>dot(p,'#e5243b'));
+        const c=[it.pts.reduce((s,p)=>s+p[0],0)/it.pts.length, it.pts.reduce((s,p)=>s+p[1],0)/it.pts.length];
+        label(c, `${nr}: ${v!=null?fmt(v)+' m²':'?'}`, '#e5243b'); }
+    });
+    if (M.ref){ line(M.ref[0], M.ref[1], '#ffd60a'); M.ref.forEach(p=>dot(p,'#d4a800'));
+      label(mid(M.ref[0], M.ref[1]), `Referenz ${k?fmt(num(refIn.value))+' m':'?'}`, '#ffd60a'); }
+    if (cur.length){
+      for (let i=1;i<cur.length;i++) line(cur[i-1], cur[i], tool==='ref'?'#ffd60a':'#4da3ff', true);
+      cur.forEach(p=>dot(p, '#4da3ff'));
+    }
+  }
+  function draw(){
+    cx.setTransform(dpr,0,0,dpr,0,0); cx.clearRect(0,0,W,H);
+    cx.fillStyle='#111'; cx.fillRect(0,0,W,H);
+    if (img.complete) cx.drawImage(img, ox, oy, img.naturalWidth*scale, img.naturalHeight*scale);
+    drawOverlay(cx, toScreen, 2.5, 13);
+  }
+  function drawLoupe(p, sx, sy){
+    loupe.hidden = false;
+    const z = Math.max(scale*3, fitScale*4), S = 300, half = S/(2*z);
+    lx.setTransform(1,0,0,1,0,0); lx.clearRect(0,0,S,S); lx.fillStyle='#111'; lx.fillRect(0,0,S,S);
+    lx.drawImage(img, p[0]-half, p[1]-half, half*2, half*2, 0, 0, S, S);
+    const tf = q => [(q[0]-p[0]+half)*z, (q[1]-p[1]+half)*z];
+    drawOverlay(lx, tf, 3, 18);
+    lx.strokeStyle='#fff'; lx.lineWidth=2; lx.beginPath(); lx.moveTo(S/2-25,S/2); lx.lineTo(S/2+25,S/2); lx.moveTo(S/2,S/2-25); lx.lineTo(S/2,S/2+25); lx.stroke();
+    loupe.style.left = (sx < W/2 ? W-160 : 10) + 'px';
+  }
+
+  function hint(){
+    const h = $('#mhint', ov);
+    if (tool==='ref') h.textContent = M.ref && !cur.length ? 'Referenz gesetzt. Maß unten eintragen oder neu antippen.' :
+      'Anfang und Ende einer bekannten Länge antippen (z. B. Fassadenbreite, mit DISTO gemessen).';
+    else if (!pxPerM()) h.textContent = 'Zuerst ① Referenz setzen und echtes Maß eintragen.';
+    else if (tool==='line') h.textContent = 'Anfang und Ende der Strecke antippen.';
+    else h.textContent = cur.length>=3 ? 'Weitere Ecken antippen oder „Fläche schließen“.' : 'Ecken der Fläche nacheinander antippen.';
+    $$('#mtools button', ov).forEach(b=>b.classList.toggle('on', b.dataset.t===tool));
+    $('#mclose', ov).hidden = !(tool==='area' && cur.length>=3);
+  }
+
+  function list(){
+    const fields = ctx.fields();
+    $('#mlist', ov).innerHTML = M.items.length ? M.items.map((it,i)=>{
+      const v = valueOf(it);
+      return `<div class="sub" style="margin-bottom:8px">
+        <div class="head"><b style="flex:none">${i+1}</b>
+          <input data-ml="${i}" value="${esc(it.label||'')}" placeholder="${it.t==='line'?'z. B. Giebelhöhe':'z. B. Giebelfläche'}">
+          <b style="flex:none;white-space:nowrap">${v!=null ? fmt(v)+(it.t==='line'?' m':' m²') : '–'}</b>
+          <button class="x" data-mdel="${i}">✕</button></div>
+        ${v==null ? '' : it.t==='line'
+          ? `<select data-mset="${i}"><option value="">→ In Feld übernehmen …</option>${fields.map(f=>`<option value="${esc(f.key)}">${esc(f.label)}</option>`).join('')}</select>`
+          : `<div class="actions"><button class="btn sec small" data-madd="${i}|plus">+ zur Fläche</button>
+             <button class="btn sec small" data-madd="${i}|minus">− abziehen</button></div>`}
+      </div>`; }).join('')
+      : '<p class="muted" style="font-size:13px;margin:0">Noch keine Messungen. Tipp: Foto möglichst gerade von vorne aufnehmen – die Referenz muss in derselben Ebene liegen wie das, was du misst.</p>';
+    $$('[data-ml]', ov).forEach(s=>s.oninput=()=>{ M.items[+s.dataset.ml].label = s.value; });
+    $$('[data-mdel]', ov).forEach(b=>b.onclick=()=>{ M.items.splice(+b.dataset.mdel,1); list(); draw(); });
+    $$('[data-mset]', ov).forEach(s=>s.onchange=()=>{
+      if (!s.value) return; const it=M.items[+s.dataset.mset];
+      ctx.setLength(s.value, valueOf(it)); toast(`${fmt(valueOf(it))} m übernommen`);
+      it.label ||= s.options[s.selectedIndex].text; list();
+    });
+    $$('[data-madd]', ov).forEach(b=>b.onclick=()=>{
+      const [i,typ]=b.dataset.madd.split('|'), it=M.items[+i];
+      if (!(valueOf(it) > 0)){ toast('Fläche ist 0 – Ecken prüfen'); return; }
+      ctx.addArea(it.label || `Fläche ${+i+1} aus Foto`, valueOf(it), typ);
+      toast(typ==='minus' ? 'Als Abzug übernommen' : 'Zur Fläche addiert'); b.disabled = true;
+    });
+  }
+  const update = () => { draw(); hint(); list(); };
+
+  function addPoint(p){
+    cur.push(p);
+    if (tool==='ref' && cur.length===2){ M.ref = cur; cur = []; if (!num(refIn.value)) refIn.focus(); tool = 'line'; if (!num(refIn.value)) tool='ref'; }
+    else if (tool==='line' && cur.length===2){ M.items.push({t:'line', pts:cur, label:''}); cur = []; }
+    update();
+  }
+
+  // Touch: Tippen = Punkt, Punkt ziehen = verschieben (mit Lupe), 1 Finger ziehen = Bild verschieben, 2 Finger = Zoom
+  const ptrs = new Map(); let drag=null, pan=null, pinch=null, moved=false;
+  const allPts = () => [...(M.ref||[]), ...M.items.flatMap(i=>i.pts), ...cur];
+  const pos = e => { const r=stage.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
+  cv.addEventListener('pointerdown', e=>{
+    cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, pos(e)); moved=false;
+    if (ptrs.size===2){
+      drag=null; pan=null; const [a,b]=[...ptrs.values()];
+      pinch={d:dist(a,b), c:[(a[0]+b[0])/2,(a[1]+b[1])/2], s:scale, ox, oy}; return;
+    }
+    const s = pos(e);
+    drag = allPts().find(p=>dist(toScreen(p), s) < 26) || null;
+    pan = drag ? null : {s, ox, oy};
+  });
+  cv.addEventListener('pointermove', e=>{
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId, pos(e));
+    if (pinch && ptrs.size===2){
+      const [a,b]=[...ptrs.values()], d=dist(a,b), c=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+      const ns = Math.min(fitScale*15, Math.max(fitScale*0.5, pinch.s*d/pinch.d));
+      const ix=(pinch.c[0]-pinch.ox)/pinch.s, iy=(pinch.c[1]-pinch.oy)/pinch.s;
+      scale=ns; ox=c[0]-ix*ns; oy=c[1]-iy*ns; moved=true; draw(); return;
+    }
+    const s = pos(e);
+    if (drag){ const ip = toImage(...s); drag[0]=ip[0]; drag[1]=ip[1]; moved=true; draw(); drawLoupe(drag, s[0], s[1]); return; }
+    if (pan && dist(s, pan.s) > 8){ moved=true; ox = pan.ox + s[0]-pan.s[0]; oy = pan.oy + s[1]-pan.s[1]; draw(); }
+  });
+  const up = e=>{
+    if (!ptrs.has(e.pointerId)) return;
+    const s = pos(e); ptrs.delete(e.pointerId);
+    if (pinch){ if (ptrs.size===0) pinch=null; return; }
+    loupe.hidden = true;
+    if (drag){ const d=drag; drag=null; if (!moved) addPoint([d[0], d[1]]); else update(); pan=null; return; }
+    if (!moved && e.type==='pointerup') addPoint(toImage(...s));
+    pan=null;
+  };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  stage.addEventListener('wheel', e=>{ e.preventDefault(); const s=pos(e), f=e.deltaY<0?1.15:1/1.15;
+    const ns=Math.min(fitScale*15, Math.max(fitScale*0.5, scale*f)); ox=s[0]-(s[0]-ox)*ns/scale; oy=s[1]-(s[1]-oy)*ns/scale; scale=ns; draw(); }, {passive:false});
+
+  $$('#mtools button', ov).forEach(b=>b.onclick=()=>{ tool=b.dataset.t; cur=[]; update(); });
+  $('#mundo', ov).onclick = ()=>{ if (cur.length) cur.pop(); else if (M.items.length) M.items.pop(); else M.ref=null; update(); };
+  $('#mclose', ov).onclick = ()=>{ if (cur.length<3) return; M.items.push({t:'area', pts:cur, label:''}); cur=[]; update(); };
+  refIn.addEventListener('input', ()=>{
+    M.refLen = refIn.value;
+    if (tool==='ref' && M.ref && num(refIn.value) && !cur.length) tool = 'line';
+    update();
+  });
+  refIn.addEventListener('blur', ()=>{ const n=num(refIn.value); if (n!=null){ refIn.value = fmtM(n); M.refLen = refIn.value; }
+    if (tool==='ref' && M.ref && n) { tool='line'; update(); } });
+  // DISTO: Referenzmaß direkt messen
+  const alteZiel = Disto.target;
+  if (Disto.connected) Disto.setTarget(refIn);
+  refIn.addEventListener('focus', ()=>{ if (Disto.connected){ Disto.setTarget(refIn); refIn.blur(); } });
+
+  const schliessen = () => { document.body.style.overflow=''; Disto.setTarget(null); Disto.target = null; ov.remove(); window.removeEventListener('resize', onResize); };
+  $('#mx', ov).onclick = ()=>{ schliessen(); ctx.done(); };
+  $('#mok', ov).onclick = async ()=>{
+    M.refLen = refIn.value;
+    photo.messung = M;
+    // Bild mit eingezeichneten Maßen speichern (für Bericht und Vorschau)
+    if (M.ref || M.items.length){
+      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      const base = Math.max(c.width, c.height);
+      drawOverlay(g, p=>p, Math.max(2, base/400), Math.max(14, base/45));
+      photo.annot = await new Promise(r=>c.toBlob(r, 'image/jpeg', 0.85));
+    } else delete photo.annot;
+    await put('photos', photo);
+    schliessen(); toast('Messung gespeichert');
+    ctx.done(); onChange && onChange();
+  };
+  const onResize = () => { resize(); fit(); draw(); };
+  window.addEventListener('resize', onResize);
+  img.onload = () => { resize(); fit(); update(); };
+  img.src = URL.createObjectURL(photo.blob);
 }
 
 /* =========================================================
@@ -1061,7 +1581,7 @@ function viewData(){
 const blobToB64 = b => new Promise(r=>{ const f=new FileReader(); f.onload=()=>r(f.result); f.readAsDataURL(b); });
 async function exportAll(){
   toast('Sicherung wird erstellt …');
-  const photos = await Promise.all((await all('photos')).map(async p=>({...p, blob: await blobToB64(p.blob)})));
+  const photos = await Promise.all((await all('photos')).map(async p=>({...p, blob: await blobToB64(p.blob), annot: p.annot ? await blobToB64(p.annot) : undefined})));
   const data = {app:'aufmass', version:1, exported:new Date().toISOString(),
     projects: await all('projects'), rooms: await all('rooms'), photos};
   const file = new File([JSON.stringify(data)], `Aufmass-Sicherung-${new Date().toISOString().slice(0,10)}.json`, {type:'application/json'});
@@ -1078,7 +1598,7 @@ async function importAll(file){
     if (!confirm(`${data.projects.length} Baustellen einspielen? Vorhandene Einträge mit gleicher ID werden überschrieben.`)) return;
     for (const p of data.projects) await put('projects', p);
     for (const r of data.rooms) await put('rooms', r);
-    for (const ph of data.photos){ ph.blob = await (await fetch(ph.blob)).blob(); await put('photos', ph); }
+    for (const ph of data.photos){ ph.blob = await (await fetch(ph.blob)).blob(); if (ph.annot) ph.annot = await (await fetch(ph.annot)).blob(); await put('photos', ph); }
     toast('Sicherung eingespielt'); location.hash='#/';
   }catch(e){ alert('Fehler beim Einspielen: '+e.message); }
 }
