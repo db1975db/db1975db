@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.6)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.7)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -220,45 +220,68 @@ class HandyCard extends HTMLElement {
     const pvOn = pv > 15, flowW = (w) => Math.min(5, 1.6 + w / 1200);
     const lbl = (x, y, v, l, col, ent, anc = 'middle') => { const wd = Math.max(v.length, l.length) * 6.6 + 14, x0 = anc === 'start' ? x : anc === 'end' ? x - wd : x - wd / 2;
       return `<g class="lbl" data-act="more" data-e="${ent}"><rect x="${x0}" y="${y - 13}" width="${wd}" height="30" rx="9" fill="rgba(10,14,24,.55)" stroke="${col}" stroke-opacity=".7"/><text x="${x0 + wd / 2}" y="${y + 1}" text-anchor="middle">${v}</text><text class="lb" x="${x0 + wd / 2}" y="${y + 12}" text-anchor="middle">${l}</text></g>`; };
-    // Eigene Stadtvilla von vorne (nach Foto): Walmdach mit Schornstein, Fassade grau/rot, Haustür mit 2 Lampen; Varta-Speicher hinter dem HWR-Fenster rechts unten
-    const red = isDay ? '#c8553f' : '#6e3428', grey = isDay ? '#a9afbd' : '#565a68', greyL = isDay ? '#b9bfcc' : '#61667a', frame = isDay ? '#8e95a3' : '#474b57', roofC = isDay ? '#5b5f69' : '#2c2e35';
-    const lit = home > 150 ? '#ffd88a' : (isDay ? '#9fb4cf' : '#2c3240'), soc0 = Math.max(0, Math.min(100, soc || 0)), batCol = soc0 < 15 ? '#e34948' : soc0 < 40 ? '#e2b400' : '#3ddc97', batAct = chg > 15 || dis > 15;
-    const win = (x1, y1, x2, y2, dbl) => `<rect x="${x1}" y="${y1}" width="${x2 - x1}" height="${y2 - y1}" fill="${frame}"/><rect x="${x1 + 1.6}" y="${y1 + 1.6}" width="${x2 - x1 - 3.2}" height="${y2 - y1 - 3.2}" fill="${lit}"/>${dbl ? `<rect x="${(x1 + x2) / 2 - .8}" y="${y1}" width="1.6" height="${y2 - y1}" fill="${frame}"/>` : ''}<rect x="${x1 - 1}" y="${y2}" width="${x2 - x1 + 2}" height="1.8" fill="#d9d6d0"/>`;
-    const panels = [0, 1, 2, 3, 4, 5, 6].map(c => `<path d="M${168 + c * 15},44 l14,0 l1.5,8 l-14,0Z" fill="${pvOn ? '#3b6fd6' : '#1d2a48'}" stroke="#9cb8ef" stroke-width=".5" ${pvOn ? `style="animation:glow ${2 + c * .3}s ease-in-out infinite"` : ''}/>`).join('');
-    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="330" y1="30" x2="${228 + k * 24}" y2="48" stroke="#ffd65a" stroke-width="${flowW(pv)}" stroke-dasharray="6 6" stroke-linecap="round" opacity=".75" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
-    const lamp = (x) => `${!isDay ? `<ellipse cx="${x}" cy="148" rx="8" ry="11" fill="#ffd88a" opacity=".3"/>` : ''}<rect x="${x - 1.5}" y="144.5" width="3" height="5" rx="1" fill="${!isDay ? '#fff1c4' : '#e9edf3'}"/>`;
-    const wire = 'M18,112 Q40,128 61,140';
+    // Eigene Stadtvilla von vorne (nach Foto): symmetrisch – rote Flächen links (ohne Fenster) und rechts gleich breit, graue Mitte mit Haustür,
+    // Walmdach mit Ziegelreihen, Graten, Überstand, Rinne und Fallrohr; Varta-Speicher hinter dem HWR-Fenster rechts unten
+    const D = isDay, lit = home > 150 ? 1 : 0, soc0 = Math.max(0, Math.min(100, soc || 0)), batCol = soc0 < 15 ? '#e34948' : soc0 < 40 ? '#e2b400' : '#3ddc97', batAct = chg > 15 || dis > 15;
+    const C = D ? { red: ['#cf5c45', '#b44a36'], grey: ['#b6bcc8', '#a2a8b5'], edge: ['#c4c9d3', '#aeb3bf'], frame: '#8b919e', roof: ['#55585f', '#3f4248'], fascia: '#e6e8ec', sill: '#e2e0dc' }
+                : { red: ['#6c3428', '#57291f'], grey: ['#575b69', '#4a4e5b'], edge: ['#5f6372', '#50545f'], frame: '#424652', roof: ['#2d2f35', '#232429'], fascia: '#4a4d55', sill: '#6a6966' };
+    const glass = (id) => lit ? `url(#${id}l)` : `url(#${id}g)`;
+    const win = (x, y, w, h, dbl) => `<rect x="${x - 1}" y="${y - 1}" width="${w + 2}" height="${h + 2}" fill="${C.frame}" opacity=".55"/><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${C.frame}"/>
+      <rect x="${x + 1.8}" y="${y + 1.8}" width="${w - 3.6}" height="${h - 3.6}" fill="${glass('ewin')}"/>${!lit && D ? `<path d="M${x + 2.5},${y + h - 4} L${x + w * .55},${y + 2.5} L${x + w * .75},${y + 2.5} L${x + 2.5},${y + h * .9}Z" fill="#fff" opacity=".22"/>` : ''}
+      ${dbl ? `<rect x="${x + w / 2 - .9}" y="${y}" width="1.8" height="${h}" fill="${C.frame}"/>` : ''}<rect x="${x - 2}" y="${y + h}" width="${w + 4}" height="2.2" rx=".6" fill="${C.sill}"/>`;
+    const roofL = (y) => 36 + (80 - y) * 2.8, roofR = (y) => 324 - (80 - y) * 2.8;
+    const tiles = [54, 58, 62, 66, 70, 74, 78].map(y => `<line x1="${roofL(y)}" y1="${y}" x2="${roofR(y)}" y2="${y}" stroke="#000" stroke-opacity=".22" stroke-width=".7"/>`).join('');
+    const panel = (x, y) => `<g ${pvOn ? `style="animation:glow ${2 + (x % 7) * .25}s ease-in-out infinite"` : ''}><rect x="${x}" y="${y}" width="12.5" height="7.4" fill="${pvOn ? 'url(#epv)' : '#1b2640'}" stroke="#a9bde6" stroke-width=".45"/><line x1="${x + 6.25}" y1="${y}" x2="${x + 6.25}" y2="${y + 7.4}" stroke="#a9bde6" stroke-width=".25"/></g>`;
+    const panels = [0, 1, 2, 3, 4, 5].map(c => panel(176 + c * 13, 59)).join('') + [0, 1, 2, 3, 4, 5, 6].map(c => panel(170 + c * 13, 68)).join('');
+    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="330" y1="30" x2="${200 + k * 28}" y2="62" stroke="#ffd65a" stroke-width="${flowW(pv)}" stroke-dasharray="6 6" stroke-linecap="round" opacity=".7" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
+    const lamp = (x) => `${!D ? `<ellipse cx="${x}" cy="166" rx="9" ry="13" fill="#ffd88a" opacity=".3"/>` : ''}<rect x="${x - 1.6}" y="162" width="3.2" height="5.5" rx="1" fill="${!D ? '#fff1c4' : '#eef1f5'}"/><rect x="${x - 1.6}" y="167" width="3.2" height="1" fill="#8b919e"/>`;
+    const wire = 'M18,112 Q36,126 50,136';
     const gridFlow = imp > 15 || exp > 15 ? `<path d="${wire}" fill="none" stroke="${exp > imp ? '#3ddc97' : '#ff7a6b'}" stroke-width="${flowW(Math.max(imp, exp))}" stroke-dasharray="5 7" stroke-linecap="round" style="animation:${exp > imp ? 'dashr' : 'dash'} ${sp(Math.max(imp, exp))}s linear infinite"/>` : '';
-    const sunG = isDay ? `<g transform="translate(340 24)"><circle r="${18 + Math.min(10, pv / 300)}" fill="#ffd65a" opacity="${pvOn ? .25 : .1}" style="animation:glow 3s ease-in-out infinite"/><g style="animation:spin ${pvOn ? Math.max(6, 40 - pv / 150) : 80}s linear infinite">${[...Array(10)].map((_, i) => `<rect x="-2" y="-${20 + Math.min(5, pv / 600)}" width="4" height="7" rx="2" fill="#ffe28a" transform="rotate(${i * 36})"/>`).join('')}</g><circle r="12" fill="${pvOn ? '#ffd34d' : '#e8d9a0'}"/></g>`
-      : `<g transform="translate(340 24)"><path d="M5,-12 A13,13 0 1 0 5,12 A9,9 0 1 1 5,-12Z" fill="#f2ecd2"/></g>${[...Array(12)].map((_, i) => `<circle cx="${(i * 61) % 360}" cy="${(i * 23) % 50 + 6}" r="1.2" fill="#fff" style="animation:tw ${2 + i % 3}s ease-in-out ${i * .4}s infinite"/>`).join('')}`;
-    // Varta Element backup im HWR (durchs Fenster gesehen): Schrank mit grünem Streifen und Ladestand
-    const varta = `<rect x="232.8" y="160.4" width="20" height="30.6" fill="${isDay ? '#3b4250' : '#1c2029'}"/>
-      ${batAct ? `<rect x="232.8" y="160.4" width="20" height="30.6" fill="${batCol}" opacity=".18" style="animation:glow 1.6s ease-in-out infinite"/>` : ''}
-      <rect x="236.5" y="165" width="12.5" height="26" fill="#eef0f2"/><rect x="236" y="164" width="13.5" height="2" fill="#fafafa"/><rect x="236.5" y="166" width="12.5" height="1.2" fill="#2a2d33"/>
-      <path d="M237.5,169 l5,0 l-1,1.6 l-4,0Z M237.5,171 l4.4,0 l-1,1.6 l-3.4,0Z" fill="#3fae49"/>
-      <rect x="245.8" y="169" width="2.2" height="20" rx="1" fill="#c9ccd2"/><rect x="245.8" y="${169 + 20 - 20 * soc0 / 100}" width="2.2" height="${20 * soc0 / 100}" rx="1" fill="${batCol}"/>`;
-    const scene = `<svg viewBox="0 0 360 236"><defs><linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
+    const sunG = D ? `<g transform="translate(340 24)"><circle r="${18 + Math.min(10, pv / 300)}" fill="#ffd65a" opacity="${pvOn ? .25 : .1}" style="animation:glow 3s ease-in-out infinite"/><g style="animation:spin ${pvOn ? Math.max(6, 40 - pv / 150) : 80}s linear infinite">${[...Array(10)].map((_, i) => `<rect x="-2" y="-${20 + Math.min(5, pv / 600)}" width="4" height="7" rx="2" fill="#ffe28a" transform="rotate(${i * 36})"/>`).join('')}</g><circle r="12" fill="${pvOn ? '#ffd34d' : '#e8d9a0'}"/></g>`
+      : `<g transform="translate(340 24)"><path d="M5,-12 A13,13 0 1 0 5,12 A9,9 0 1 1 5,-12Z" fill="#f2ecd2"/></g>${[...Array(12)].map((_, i) => `<circle cx="${(i * 61) % 360}" cy="${(i * 23) % 40 + 6}" r="1.2" fill="#fff" style="animation:tw ${2 + i % 3}s ease-in-out ${i * .4}s infinite"/>`).join('')}`;
+    // Varta Element backup im HWR (durchs Fenster gesehen)
+    const varta = `<rect x="254.8" y="159.8" width="22.4" height="31.4" fill="${D ? '#3b4250' : '#1c2029'}"/>
+      ${batAct ? `<rect x="254.8" y="159.8" width="22.4" height="31.4" fill="${batCol}" opacity=".2" style="animation:glow 1.6s ease-in-out infinite"/>` : ''}
+      <rect x="259" y="165" width="14" height="26.2" fill="#eef0f2"/><rect x="258.4" y="164" width="15.2" height="2" fill="#fafafa"/><rect x="259" y="166" width="14" height="1.2" fill="#2a2d33"/>
+      <path d="M260,169.5 l5.5,0 l-1,1.6 l-4.5,0Z M260,171.6 l4.8,0 l-1,1.6 l-3.8,0Z" fill="#3fae49"/>
+      <rect x="269.6" y="169" width="2.2" height="20" rx="1" fill="#c9ccd2"/><rect x="269.6" y="${169 + 20 - 20 * soc0 / 100}" width="2.2" height="${20 * soc0 / 100}" rx="1" fill="${batCol}"/>`;
+    const scene = `<svg viewBox="0 0 360 236"><defs>
+      <linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient>
+      <linearGradient id="ered" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${C.red[0]}"/><stop offset="1" stop-color="${C.red[1]}"/></linearGradient>
+      <linearGradient id="egry" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${C.grey[0]}"/><stop offset="1" stop-color="${C.grey[1]}"/></linearGradient>
+      <linearGradient id="eedg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${C.edge[0]}"/><stop offset="1" stop-color="${C.edge[1]}"/></linearGradient>
+      <linearGradient id="eroof" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.roof[1]}"/><stop offset="1" stop-color="${C.roof[0]}"/></linearGradient>
+      <linearGradient id="eeave" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
+      <linearGradient id="ewing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${D ? '#cfe0f2' : '#26304a'}"/><stop offset="1" stop-color="${D ? '#7f98b8' : '#1a2032'}"/></linearGradient>
+      <linearGradient id="ewinl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#f5b45a"/></linearGradient>
+      <linearGradient id="epv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5d8ef0"/><stop offset="1" stop-color="#2a4fae"/></linearGradient></defs>
       <rect width="360" height="236" fill="url(#esk)"/>${sunG}
-      <path d="M0,206 Q120,200 200,205 T360,202 L360,236 L0,236Z" fill="${grass}"/>
+      <path d="M0,205 Q120,199 200,204 T360,201 L360,236 L0,236Z" fill="${grass}"/><path d="M168,206 L186,206 L194,236 L160,236Z" fill="${D ? '#8d9099' : '#3b3e46'}"/>
       <g stroke="#3a3530" stroke-width="3" stroke-linecap="round"><line x1="14" y1="106" x2="14" y2="214"/><line x1="4" y1="114" x2="24" y2="114"/><line x1="6" y1="124" x2="22" y2="124"/></g>
       <path d="${wire}" fill="none" stroke="#2a2622" stroke-width="1.5"/>${gridFlow}
-      <rect x="187" y="30" width="9" height="14" fill="${isDay ? '#6f737d' : '#3a3c44'}"/><rect x="273" y="34" width="4" height="10" fill="#2e3036"/>
-      <path d="M40,76 L70,42 L290,42 L319,76Z" fill="${roofC}"/>${panels}
-      <rect x="38" y="74" width="283" height="4" rx="1" fill="${isDay ? '#7b7f88' : '#3a3c44'}"/>
-      <rect x="60" y="78" width="240" height="129" fill="${greyL}"/><rect x="65.3" y="78" width="38.3" height="129" fill="${red}"/><rect x="207.4" y="78" width="81.3" height="129" fill="${red}"/>
-      <rect x="103.6" y="77" width="103.8" height="130" fill="${grey}"/>
-      ${win(113.4, 91.1, 129.4, 115.2)}${win(142.4, 90.2, 167.3, 120.5)}${win(180.2, 89, 197.1, 114.3)}${win(215.8, 88.5, 253.1, 120.5, true)}
-      ${win(112.5, 159.7, 129.1, 183.3)}${win(180.2, 159.7, 197.1, 183.3)}
-      <rect x="231.2" y="158.8" width="23.2" height="33.8" fill="${frame}"/>${varta}<rect x="231.2" y="192.6" width="25" height="1.8" fill="#d9d6d0"/>
-      <rect x="141.9" y="159.7" width="24.9" height="47.3" fill="${frame}"/><rect x="143.6" y="161.4" width="21.5" height="45.6" fill="${isDay ? '#b3b9c5' : '#4c5160'}"/>
-      ${[0, 1, 2, 3].map(k => `<rect x="151.5" y="${166 + k * 9.5}" width="6" height="6" fill="${home > 150 && !isDay ? '#ffd88a' : '#3a3f4a'}"/>`).join('')}<rect x="146.2" y="171" width="1.2" height="26" fill="#d0d4db"/>
-      ${lamp(133.9)}${lamp(173.6)}
-      <text x="279" y="157" text-anchor="middle" style="font-size:7px;font-weight:600;fill:${isDay ? '#e9e4dc' : '#a39f99'}">32c</text>
-      <rect x="58" y="205" width="244" height="3" fill="#5a3c38"/>
+      <rect x="181" y="38" width="12" height="14" fill="${D ? '#7a7e88' : '#3a3c44'}"/><rect x="179.5" y="36" width="15" height="3" fill="${D ? '#5f636c' : '#2e3036'}"/><rect x="266" y="42" width="3.4" height="12" fill="#26282e"/>
+      <path d="M36,80 L120,50 L240,50 L324,80Z" fill="url(#eroof)"/>${tiles}
+      <line x1="36" y1="80" x2="120" y2="50" stroke="#2a2c31" stroke-width="1.6"/><line x1="324" y1="80" x2="240" y2="50" stroke="#2a2c31" stroke-width="1.6"/><line x1="120" y1="50" x2="240" y2="50" stroke="#2a2c31" stroke-width="2"/>
+      ${panels}
+      <rect x="34" y="79" width="292" height="4.5" fill="${C.fascia}"/><rect x="34" y="83.5" width="292" height="2.4" rx="1.2" fill="${D ? '#c3c7ce' : '#3d4048'}"/>
+      <rect x="50" y="86" width="260" height="120" fill="url(#egry)"/>
+      <rect x="50" y="86" width="8" height="120" fill="url(#eedg)"/><rect x="302" y="86" width="8" height="120" fill="url(#eedg)"/>
+      <rect x="58" y="86" width="65" height="120" fill="url(#ered)"/><rect x="237" y="86" width="65" height="120" fill="url(#ered)"/>
+      <rect x="123" y="85.4" width="114" height="120.6" fill="url(#egry)"/><line x1="123" y1="86" x2="123" y2="206" stroke="#000" stroke-opacity=".12"/><line x1="237" y1="86" x2="237" y2="206" stroke="#000" stroke-opacity=".12"/>
+      <rect x="50" y="86" width="260" height="9" fill="url(#eeave)"/>
+      <rect x="44" y="86" width="2.6" height="118" rx="1.3" fill="${D ? '#c3c7ce' : '#3d4048'}"/>
+      ${win(131, 96, 16, 24)}${win(162, 95, 28, 32)}${win(212, 94, 16, 24)}${win(246, 95, 44, 32, true)}
+      ${win(131, 161, 16, 23)}${win(212, 161, 16, 23)}
+      <rect x="253.2" y="158.2" width="25.6" height="34.6" fill="${C.frame}"/>${varta}<rect x="251.4" y="192.8" width="29.2" height="2.2" rx=".6" fill="${C.sill}"/>
+      <rect x="161" y="158" width="30" height="48" fill="${C.frame}"/><rect x="163" y="160" width="26" height="46" fill="${D ? '#b8bec9' : '#4c5160'}"/>
+      ${[0, 1, 2, 3].map(k => `<rect x="173" y="${165 + k * 9.6}" width="6.4" height="6.4" fill="${lit && !D ? '#ffd88a' : '#363b46'}"/>`).join('')}<rect x="167" y="170" width="1.4" height="28" rx=".7" fill="#e3e6eb"/>
+      ${lamp(154)}${lamp(198)}
+      <text x="294" y="155" text-anchor="middle" style="font-size:7px;font-weight:600;fill:${D ? '#ece7df' : '#a39f99'}">32c</text>
+      <rect x="48" y="204" width="264" height="3.5" fill="${D ? '#5d3e39' : '#3a2723'}"/><rect x="156" y="205" width="40" height="3" fill="${D ? '#c9ccd2' : '#4a4d55'}"/>
       ${rays}
       ${lbl(268, 20, kw(pv), 'Solar', '#ffd65a', E.pv)}
       ${lbl(8, 217, exp > imp ? kw(exp) : kw(imp), exp > imp ? 'Einspeisung' : 'Netzbezug', exp > imp ? '#3ddc97' : '#ff7a6b', exp > imp ? E.grid_export : E.grid_import, 'start')}
-      ${lbl(158, 217, kw(home), 'Haus', '#5aa9ff', E.home)}
+      ${lbl(118, 217, kw(home), 'Haus', '#5aa9ff', E.home)}
       ${lbl(354, 217, soc != null ? `Varta ${P_fmt(soc, 0)} %` : 'Varta', chg > 15 ? 'lädt ' + kw(chg) : dis > 15 ? 'liefert ' + kw(dis) : `${P_fmt(E.battery_capacity || 6.5, 1)} kWh`, batCol, E.battery_soc, 'end')}
     </svg>`;
     return `<div class="t full en"><div style="position:relative">${scene}<div class="eh"><span>${P_icon('mdi:lightning-bolt', 14)}Energie</span></div></div>
