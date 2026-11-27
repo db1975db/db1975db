@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.3)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.4)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -30,24 +30,47 @@ const P_CSS = `
 .av i{position:absolute;right:-3px;bottom:-3px;width:20px;height:20px;border-radius:50%;border:2px solid var(--p-card);background:#5b6375;display:flex;align-items:center;justify-content:center;color:#fff}
 .pp.home .av i{background:var(--p-ok)}
 .pp .n{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp .s{font-size:11.5px;color:var(--p-fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wx{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;color:#fff;border:none}
-.wx .ic{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center}
-.wx .tp{font-size:34px;font-weight:300;line-height:1}.wx .tp small{font-size:16px;opacity:.8}
-.wx .cd{font-size:13px;font-weight:650;margin-top:3px}
-.wx .mm{text-align:right;font-size:12.5px;line-height:1.55;opacity:.92}
-.wx .mm span{display:inline-flex;align-items:center;gap:3px}
+.wx{color:#fff;border:none;padding:0}
+.wx .sc{position:absolute;inset:0;width:100%;height:150px;pointer-events:none}
+.wx .top{position:relative;display:grid;grid-template-columns:1fr auto;gap:8px;padding:14px 14px 8px;min-height:120px}
+.wx .lc{font-size:12px;opacity:.85;display:flex;align-items:center;gap:4px}
+.wx .tp2{font-size:52px;font-weight:200;line-height:1;margin-top:4px;letter-spacing:-1px}.wx .tp2 small{font-size:20px;font-weight:300;vertical-align:top;margin-left:2px}
+.wx .cd2{font-size:14px;font-weight:650;margin-top:2px}
+.wx .rt{text-align:right;font-size:12.5px;line-height:1.7;align-self:end;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+.wx .rt span{display:inline-flex;align-items:center;gap:3px}
+.wx .warn{position:relative;margin:0 10px 8px;border-radius:12px;padding:8px 10px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.35;color:#1d1a10;cursor:pointer}
+.wx .warn b{display:block;font-size:13px}
+.wx .hr{position:relative;display:flex;gap:4px;overflow-x:auto;padding:4px 10px 8px;scrollbar-width:none}.wx .hr::-webkit-scrollbar{display:none}
+.wx .hc{flex:0 0 46px;text-align:center;padding:6px 0;border-radius:12px;background:rgba(0,0,0,.16);font-size:12px}
+.wx .hc .tt{opacity:.8;font-size:11px}.wx .hc .tv{font-weight:650;margin-top:2px}.wx .hc .pp2{font-size:10px;color:#9fd3ff;min-height:12px}
+.wx .hc.now{background:rgba(255,255,255,.22)}
+.wx .ch{position:relative;display:flex;flex-wrap:wrap;gap:6px;padding:2px 10px 12px}
+.wx .cp{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:5px 9px;border-radius:20px;background:rgba(0,0,0,.18)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drift{from{transform:translateX(-60px)}to{transform:translateX(460px)}}
+@keyframes fall{from{transform:translateY(-20px)}to{transform:translateY(160px)}}
+@keyframes tw{0%,100%{opacity:.2}50%{opacity:1}}
+@keyframes flash{0%,92%,100%{opacity:0}94%,96%{opacity:.7}}
+@keyframes fogm{0%,100%{transform:translateX(-20px)}50%{transform:translateX(20px)}}
+@keyframes glow{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes dash{to{stroke-dashoffset:-24}}
+@keyframes dashr{to{stroke-dashoffset:24}}
 .dr{display:flex;align-items:center;gap:10px}.dr .row{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
 .dr .lk{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
 .dr .st{font-size:15px;font-weight:700;line-height:1.2}.dr .sub{font-size:12px;color:var(--p-fg2);margin-top:2px}
 .dr .bt{display:flex;gap:6px;flex:none}.dr .btn{padding:10px 14px}
 .btn{flex:1;border:none;border-radius:12px;padding:9px 6px;font:inherit;font-size:13px;font-weight:650;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.08);color:var(--p-fg)}
 .btn.pri{background:#2f6fd0;color:#fff}.btn.sm{flex:0 0 auto;padding:9px 10px}
-.en{padding:10px 8px 6px;background:radial-gradient(120% 90% at 50% 0%,#232a3b 0%,#151922 70%)}
-.en .hd{display:flex;justify-content:space-between;align-items:center;padding:0 4px}
-.en .hd .h{margin:0}.en .day{font-size:12px;color:var(--p-fg2)}.en .day b{color:#ffc23d;font-weight:650}
+.en{padding:0;border:none}
 .en svg{width:100%;height:auto;display:block}
-.en text{fill:#f2f4f8;font-size:15px;font-weight:650}.en text.lb{fill:#9aa3b2;font-size:11.5px;font-weight:500}
-.en .nd{cursor:pointer}
+.en .eh{position:absolute;top:10px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:650;letter-spacing:.02em;text-transform:uppercase;color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(0,0,0,.4);pointer-events:none}
+.en .eh span{display:flex;align-items:center;gap:5px}
+.en text{font-weight:700;font-size:13px;fill:#fff}.en text.lb{font-weight:500;font-size:10px;fill:rgba(255,255,255,.8)}
+.en .lbl{cursor:pointer}
+.en .st3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 10px 10px;background:#151922}
+.en .sb{border-radius:12px;padding:7px 8px;background:rgba(255,255,255,.05);min-width:0}
+.en .sb .k{font-size:11px;color:var(--p-fg2);display:flex;align-items:center;gap:4px;white-space:nowrap}.en .sb .v{font-size:15px;font-weight:700;margin-top:2px;white-space:nowrap}
+.en .ring{width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.08);margin-top:5px;overflow:hidden}.en .ring i{display:block;height:100%;border-radius:2px}
 .ws{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding-top:6px}
 .wi{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:8px 2px 8px;border-radius:14px;background:rgba(255,255,255,.04);min-width:0;cursor:pointer;position:relative}
 .wi svg{width:46px;height:58px;display:block;margin-bottom:4px}
@@ -63,6 +86,7 @@ class HandyCard extends HTMLElement {
   setConfig(c) { this.c = { persons: [], waste: [], waste_days: 1, ...c }; this._k = null; if (this.root) this.build(); }
   set hass(h) {
     this._hass = h; if (!this.root) { this.root = this.attachShadow({ mode: 'open' }); this.build(); }
+    if (this.c.weather && !this._unsub) this.subFc();
     const k = this.keys(); if (k === this._k) return; this._k = k; this.render();
   }
   getCardSize() { return 8; }
@@ -70,7 +94,7 @@ class HandyCard extends HTMLElement {
   n(e) { const s = this.s(e); const v = s ? parseFloat(s.state) : NaN; return isNaN(v) ? null : v; }
   keys() {
     const c = this.c, W = c.weather || {}, D = c.door || {}, E = c.energy || {};
-    const ents = [W.entity, W.temperature, W.max, W.min, W.wind, W.rain_day, W.humidity, D.lock, D.battery, D.contact, ...Object.values(E), ...c.persons.map(p => p.entity), ...c.waste.map(w => w.entity)];
+    const ents = [W.entity, W.temperature, W.max, W.min, W.wind, W.rain_day, W.humidity, W.warning, W.prewarning, W.sun || 'sun.sun', D.lock, D.battery, D.contact, ...Object.values(E), ...c.persons.map(p => p.entity), ...c.waste.map(w => w.entity)];
     return ents.map(e => { const s = this.s(e); return s ? s.state + (s.attributes.entity_picture || '') : '-'; }).join('|') + new Date().toDateString();
   }
   build() {
@@ -94,7 +118,14 @@ class HandyCard extends HTMLElement {
     if (c.energy) out.push(this.energy());
     if (c.door) out.push(this.door());
     if (c.waste.length) out.push(this.waste());
-    this.root.getElementById('w').innerHTML = out.join('');
+    // Nur geänderte Bereiche ersetzen, damit laufende Animationen nicht neu starten
+    const w = this.root.getElementById('w');
+    while (w.children.length > out.length) w.lastChild.remove();
+    out.forEach((html, i) => {
+      let el = w.children[i];
+      if (!el) { el = document.createElement('div'); el.style.display = 'contents'; w.appendChild(el); }
+      if (el._h !== html) { el._h = html; el.innerHTML = html; }
+    });
   }
   hello() {
     const h = new Date().getHours(), g = h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : h < 22 ? 'Guten Abend' : 'Gute Nacht';
@@ -110,14 +141,63 @@ class HandyCard extends HTMLElement {
       return `<div class="pp ${home ? 'home' : ''}" data-act="more" data-e="${p.entity}"><div class="av">${u ? `<img src="${P_esc(u)}" alt="">` : P_esc(name[0] || '?')}<i>${P_icon(home ? 'mdi:home' : 'mdi:walk', 12)}</i></div><div style="min-width:0;max-width:100%"><div class="n">${P_esc(name)}</div><div class="s">${P_esc(where)}</div></div></div>`;
     }).join('')}</div></div>`;
   }
+  // Vorhersage (z. B. DWD) stündlich abonnieren
+  connectedCallback() { if (this._hass && this.c && this.c.weather) this.subFc(); }
+  disconnectedCallback() { if (this._unsub) { this._unsub.then(u => u && u()).catch(() => {}); this._unsub = null; } }
+  subFc() {
+    const W = this.c.weather || {}, e = W.forecast || W.entity; if (this._unsub || !e || !this._hass || !this._hass.connection) return;
+    this._unsub = this._hass.connection.subscribeMessage((m) => { this._fc = (m && m.forecast) || []; this._k = null; this.render(); }, { type: 'weather/subscribe_forecast', forecast_type: 'hourly', entity_id: e }).catch(() => null);
+  }
+  scene(key, day) {
+    // Animierte Wetter-Szene hinter dem Wetter-Bereich
+    const cloud = (x, y, k, o, d, dl) => `<g style="animation:drift ${d}s linear ${dl}s infinite" opacity="${o}"><g transform="translate(${x} ${y}) scale(${k})"><ellipse cx="0" cy="10" rx="34" ry="14" fill="#fff"/><ellipse cx="-14" cy="2" rx="18" ry="15" fill="#fff"/><ellipse cx="10" cy="-4" rx="22" ry="20" fill="#fff"/></g></g>`;
+    const sun = (x, y) => `<g transform="translate(${x} ${y})"><circle r="44" fill="#ffd65a" opacity=".18" style="animation:glow 4s ease-in-out infinite"/><g style="animation:spin 30s linear infinite">${[...Array(12)].map((_, i) => `<rect x="-2" y="-40" width="4" height="12" rx="2" fill="#ffe28a" opacity=".85" transform="rotate(${i * 30})"/>`).join('')}</g><circle r="22" fill="#ffd34d"/></g>`;
+    const moon = (x, y) => `<g transform="translate(${x} ${y})"><circle r="30" fill="#fff" opacity=".08"/><path d="M8,-18 A20,20 0 1 0 8,18 A15,15 0 1 1 8,-18Z" fill="#f2ecd2"/></g>`;
+    const stars = [...Array(18)].map((_, i) => `<circle cx="${(i * 73) % 400}" cy="${(i * 37) % 110 + 6}" r="${i % 3 ? 1 : 1.6}" fill="#fff" style="animation:tw ${2 + i % 4}s ease-in-out ${i * .3}s infinite"/>`).join('');
+    const drops = (n, snow) => [...Array(n)].map((_, i) => { const x = (i * 47) % 400, d = snow ? 5 + i % 4 : .7 + (i % 5) * .12, dl = -(i * .37) % d; return snow ? `<circle cx="${x}" cy="0" r="${1.5 + i % 2}" fill="#fff" opacity=".85" style="animation:fall ${d}s linear ${dl}s infinite"/>` : `<line x1="${x}" y1="0" x2="${x - 3}" y2="10" stroke="#bfe3ff" stroke-width="1.5" stroke-linecap="round" opacity=".8" style="animation:fall ${d}s linear ${dl}s infinite"/>`; }).join('');
+    const clouds = (n, o) => [[30, 30, 1, 46], [220, 18, .8, 60], [120, 60, 1.2, 52], [330, 50, .9, 70]].slice(0, n).map(([x, y, k, d], i) => cloud(x, y, k, o, d, -i * 13)).join('');
+    let g = '';
+    if (key === 'sunny') g = sun(340, 42);
+    else if (key === 'clear-night') g = stars + moon(340, 40);
+    else if (key === 'partlycloudy') g = (day ? sun(330, 44) : stars + moon(330, 40)) + clouds(2, .85);
+    else if (key === 'cloudy') g = clouds(4, .35);
+    else if (key === 'fog') g = [20, 50, 80, 110].map((y, i) => `<rect x="-40" y="${y}" width="480" height="14" rx="7" fill="#fff" opacity=".14" style="animation:fogm ${8 + i * 2}s ease-in-out infinite"/>`).join('');
+    else if (['rainy', 'pouring', 'lightning-rainy'].includes(key)) g = clouds(3, .45) + drops(key === 'pouring' ? 40 : 24) + (key === 'lightning-rainy' ? '<rect width="400" height="150" fill="#fff" style="animation:flash 6s linear infinite"/>' : '');
+    else if (['snowy', 'snowy-rainy', 'hail'].includes(key)) g = clouds(3, .5) + drops(26, true);
+    else if (key === 'lightning') g = clouds(3, .4) + '<rect width="400" height="150" fill="#fff" style="animation:flash 5s linear infinite"/>';
+    else if (key.startsWith('windy')) g = clouds(4, .4);
+    return `<svg class="sc" viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice">${g}</svg>`;
+  }
   weather() {
-    const W = this.c.weather, w = this.s(W.entity), cond = w ? w.state : 'cloudy', h = new Date().getHours();
-    const key = cond === 'sunny' && (h < 7 || h > 18) ? 'clear-night' : cond, [txt, ic, bg] = P_WX[key] || [cond, 'mdi:weather-cloudy', ['#3d4a5e', '#66758c']];
-    const t = this.n(W.temperature) ?? (w && w.attributes.temperature), mx = this.n(W.max), mn = this.n(W.min), wi = this.n(W.wind) ?? (w && w.attributes.wind_speed), rn = this.n(W.rain_day), hu = this.n(W.humidity) ?? (w && w.attributes.humidity);
-    return `<div class="t full wx ${W.path ? 'lnk' : ''}" style="background:linear-gradient(135deg,${bg[0]},${bg[1]})" ${W.path ? `data-act="nav" data-p="${P_esc(W.path)}"` : ''}>
-      <div class="ic">${P_icon(ic, 30)}</div>
-      <div><div class="tp">${P_fmt(t)}<small>°C</small></div><div class="cd">${P_esc(txt)}</div></div>
-      <div class="mm"><span>${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}° ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</span><br><span>${P_icon('mdi:weather-windy', 13)}${P_fmt(wi, 0)} km/h</span><br><span>${P_icon('mdi:water', 13)}${P_fmt(rn)} mm · ${P_fmt(hu, 0)} %</span></div></div>`;
+    const W = this.c.weather, w = this.s(W.entity), A = w ? w.attributes : {}, sun = this.s(W.sun || 'sun.sun'), day = sun ? sun.state === 'above_horizon' : (new Date().getHours() > 7 && new Date().getHours() < 17);
+    let key = w ? w.state : 'cloudy'; if (key === 'sunny' && !day) key = 'clear-night';
+    const [txt, , bg0] = P_WX[key] || ['–', '', ['#3d4a5e', '#66758c']], bg = day ? bg0 : ['#0f1630', '#26305a'];
+    const t = this.n(W.temperature) ?? A.temperature, mx = this.n(W.max), mn = this.n(W.min), wi = this.n(W.wind) ?? A.wind_speed, rn = this.n(W.rain_day), hu = this.n(W.humidity) ?? A.humidity;
+    const dirs = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'], dir = A.wind_bearing != null ? dirs[Math.round(A.wind_bearing / 45) % 8] : '';
+    const tm = (iso) => iso ? new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
+    // DWD-Warnung
+    const ws = this.s(W.warning), wa = ws ? ws.attributes : {}, wc = +(wa.warning_count || 0), pre = this.s(W.prewarning), pc = pre ? +(pre.attributes.warning_count || 0) : 0;
+    let warn = '';
+    if (wc || pc) {
+      const src = wc ? wa : pre.attributes, n = wc || pc, col = src.warning_1_color || '#ffeb3b', when = `${tm(src.warning_1_start)}–${tm(src.warning_1_end)}`;
+      warn = `<div class="warn" style="background:${col}" data-act="more" data-e="${wc ? W.warning : W.prewarning}">${P_icon('mdi:alert', 18)}<div><b>${P_esc(src.warning_1_headline || 'Wetterwarnung')}${n > 1 ? ` (+${n - 1})` : ''}</b>${wc ? '' : 'Vorabinformation · '}${when} · ${P_esc(src.warning_1_description || '')}</div></div>`;
+    }
+    // Stündliche Vorhersage
+    const fc = (this._fc || []).filter(f => new Date(f.datetime) > Date.now() - 36e5).slice(0, 12);
+    const hrs = fc.length ? `<div class="hr">${fc.map((f, i) => { const h = new Date(f.datetime).getHours(), dn = h >= 7 && h < 17, k = f.condition === 'sunny' && !dn ? 'clear-night' : f.condition, ic = (P_WX[k] || [, 'mdi:weather-cloudy'])[1];
+      return `<div class="hc ${i === 0 ? 'now' : ''}"><div class="tt">${i === 0 ? 'Jetzt' : h + ' Uhr'}</div>${P_icon(ic, 20)}<div class="tv">${P_fmt(f.temperature, 0)}°</div><div class="pp2">${f.precipitation_probability ? f.precipitation_probability + ' %' : f.precipitation ? P_fmt(f.precipitation) + ' mm' : ''}</div></div>`; }).join('')}</div>` : '';
+    const chips = [
+      wi != null ? `${P_icon('mdi:weather-windy', 14)}${P_fmt(wi, 0)} km/h ${dir}${A.wind_gust_speed ? ` · Böen ${P_fmt(A.wind_gust_speed, 0)}` : ''}` : '',
+      A.pressure ? `${P_icon('mdi:gauge', 14)}${P_fmt(A.pressure, 0)} hPa` : '',
+      hu != null ? `${P_icon('mdi:water-percent', 14)}${P_fmt(hu, 0)} %` : '',
+      rn != null ? `${P_icon('mdi:weather-rainy', 14)}${P_fmt(rn)} mm heute` : '',
+      sun ? `${P_icon('mdi:weather-sunset-up', 14)}${tm(sun.attributes.next_rising)} ${P_icon('mdi:weather-sunset-down', 14)}${tm(sun.attributes.next_setting)}` : '',
+    ].filter(Boolean).map(x => `<span class="cp">${x}</span>`).join('');
+    return `<div class="t full wx" style="background:linear-gradient(160deg,${bg[0]},${bg[1]})">${this.scene(key, day)}
+      <div class="top ${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-p="${P_esc(W.path)}"` : ''}>
+        <div><div class="lc">${P_icon('mdi:map-marker', 13)}${P_esc(W.name || 'Zuhause')}</div><div class="tp2">${P_fmt(t)}<small>°C</small></div><div class="cd2">${P_esc(txt)}</div></div>
+        <div class="rt"><span>${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}°  ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</span>${A.cloud_coverage != null ? `<br><span>${P_icon('mdi:cloud-outline', 13)}${P_fmt(A.cloud_coverage, 0)} %</span>` : ''}${A.visibility != null ? `<br><span>${P_icon('mdi:eye-outline', 13)}${P_fmt(A.visibility, 0)} km</span>` : ''}</div></div>
+      ${warn}${hrs}<div class="ch">${chips}</div></div>`;
   }
   door() {
     const D = this.c.door, l = this.s(D.lock), st = l ? l.state : 'unavailable', b = this.n(D.battery), ct = this.s(D.contact), open = ct && ct.state === 'on';
@@ -129,38 +209,44 @@ class HandyCard extends HTMLElement {
       <div class="bt">${st === 'locked' ? `<button class="btn" data-act="lock" data-sv="unlock" data-e="${D.lock}">${P_icon('mdi:lock-open-variant', 15)}Aufschließen</button>` : `<button class="btn pri" data-act="lock" data-sv="lock" data-e="${D.lock}">${P_icon('mdi:lock', 15)}Abschließen</button>`}${canOpen ? `<button class="btn sm" data-act="lock" data-sv="open" data-e="${D.lock}" aria-label="Öffnen">${P_icon('mdi:door-open', 16)}</button>` : ''}</div></div>`;
   }
   energy() {
-    // Energiefluss im Hochformat: Solar oben, Netz links, Haus rechts, Akku unten; Punkte laufen je nach Leistung schneller
+    // Energie als lebendige Szene: Sonne/Mond, Haus mit Solardach, Hausakku und Strommast; Ströme laufen sichtbar
     const E = this.c.energy, pv = Math.max(0, this.n(E.pv) || 0), home = Math.max(0, this.n(E.home) || 0), imp = Math.max(0, this.n(E.grid_import) || 0), exp = Math.max(0, this.n(E.grid_export) || 0);
     const soc = this.n(E.battery_soc), bp = this.n(E.battery_power) || 0, chg = Math.max(0, -bp), dis = Math.max(0, bp), day = this.n(E.pv_today);
-    const pvBat = Math.min(chg, pv), pvGrid = Math.min(exp, Math.max(0, pv - pvBat)), pvHome = Math.max(0, pv - pvBat - pvGrid);
-    const kw = (w) => w >= 1000 ? `${P_fmt(w / 1000, 1)} kW` : `${P_fmt(w, 0)} W`;
+    const sun = this.s(E.sun || 'sun.sun'), isDay = sun ? sun.state === 'above_horizon' : pv > 15;
+    const kw = (w) => w >= 1000 ? `${P_fmt(w / 1000, 1)} kW` : `${P_fmt(w, 0)} W`, sp = (w) => Math.max(.5, Math.min(3, 3 - Math.log10(Math.max(w, 1)) * .8)).toFixed(2);
     const self = home > 0 ? Math.min(100, Math.round(Math.max(0, home - imp) / home * 100)) : 0;
-    const C = { pv: '#ffc23d', grid: '#a9b4c6', bat: '#3ddc97', home: '#5aa9ff' };
-    const L = [['M162,62 Q170,128 280,128', pvHome, C.pv], ['M138,62 Q130,128 40,128', pvGrid, C.pv], ['M150,70 L150,184', pvBat, C.pv], ['M40,128 L280,128', imp, C.grid], ['M162,194 Q170,128 280,128', dis, C.bat]];
-    const flows = L.filter(l => l[1] > 15).map(([d, w, col], i) => {
-      const dur = Math.max(.8, Math.min(4, 4 - Math.log10(w) * 1.05)).toFixed(2), sw = Math.min(5, 1.5 + w / 1500);
-      return `<path d="${d}" fill="none" stroke="${col}" stroke-width="${sw + 7}" stroke-linecap="round" opacity=".14"/><path d="${d}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" opacity=".75"/>`
-        + [0, 1, 2].map(k => `<circle r="4" fill="#fff"><animateMotion dur="${dur}s" begin="-${(k * dur / 3).toFixed(2)}s" repeatCount="indefinite" path="${d}"/></circle>`).join('');
-    }).join('');
-    const idle = L.map(([d]) => `<path d="${d}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="2" stroke-dasharray="3 5"/>`).join('');
-    const node = (x, y, col, icon, val, lb, ent, act, pos) => {
-      const tx = pos === 'r' ? [x + 34, 'start'] : pos === 'l' ? [x - 34, 'end'] : [x, 'middle'], ty = pos === 'b' ? y + 44 : pos === 't' ? y - 32 : y - 2;
-      return `<g class="nd" data-act="more" data-e="${ent}">${act ? `<circle cx="${x}" cy="${y}" r="30" fill="${col}" opacity=".18"><animate attributeName="r" values="26;32;26" dur="2.6s" repeatCount="indefinite"/></circle>` : ''}
-        <circle cx="${x}" cy="${y}" r="24" fill="${act ? col + '30' : 'rgba(255,255,255,.05)'}" stroke="${act ? col : 'rgba(255,255,255,.2)'}" stroke-width="1.5"/>
-        <path transform="translate(${x - 12} ${y - 12})" d="${P_FI[icon]}" fill="${act ? col : 'rgba(255,255,255,.5)'}"/>
-        <text x="${tx[0]}" y="${ty}" text-anchor="${tx[1]}">${val}</text><text class="lb" x="${tx[0]}" y="${ty + 15}" text-anchor="${tx[1]}">${lb}</text></g>`;
-    };
-    const R = 15, cf = 2 * Math.PI * R;
-    const ring = `<g transform="translate(270 34)"><circle r="${R}" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/><circle r="${R}" fill="none" stroke="#3ddc97" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(cf * self / 100).toFixed(1)} ${cf.toFixed(1)}" transform="rotate(-90)"/><text y="4" text-anchor="middle" style="font-size:10px">${self}%</text><text class="lb" y="31" text-anchor="middle" style="font-size:10px">autark</text></g>`;
-    const gridTxt = exp > imp ? kw(exp) : kw(imp), gridLb = exp > imp ? 'Einspeisung' : imp > 15 ? 'Netzbezug' : 'Netz';
-    const batLb = `Akku ${soc != null ? P_fmt(soc, 0) + ' %' : ''}${chg > 15 ? ' · lädt' : dis > 15 ? ' · entlädt' : ''}`;
-    return `<div class="t full en"><div class="hd"><div class="h">${P_icon('mdi:lightning-bolt', 14)}Energie</div>${day != null ? `<div class="day">Solar heute <b>${P_fmt(day, 1)} kWh</b></div>` : ''}</div>
-      <svg viewBox="0 0 320 236">${idle}${flows}${ring}
-        ${node(150, 40, C.pv, 'solar-power-variant', kw(pv), 'Solar', E.pv, pv > 15, 'r')}
-        ${node(40, 128, C.grid, 'transmission-tower', gridTxt, gridLb, exp > imp ? E.grid_export : E.grid_import, imp > 15 || exp > 15, 'b')}
-        ${node(280, 128, C.home, 'home', kw(home), 'Haus', E.home, home > 15, 'b')}
-        ${node(150, 206, C.bat, 'home-battery', chg > 15 ? kw(chg) : dis > 15 ? kw(dis) : '0 W', batLb, E.battery_soc, chg > 15 || dis > 15, 'r')}
-      </svg></div>`;
+    const pr = this.n(E.price), lvl = (this.s(E.price_level) || {}).state, prc = { very_cheap: '#1baf7a', cheap: '#5cc98f', normal: '#e2b400', expensive: '#ef8a3c', very_expensive: '#e34948' }[lvl] || '#e2b400';
+    const sky = isDay ? ['#3a74c4', '#8ec0ee'] : ['#0b1230', '#23305e'], grass = isDay ? '#3f7d45' : '#1c3324';
+    const pvOn = pv > 15, flowW = (w) => Math.min(5, 1.6 + w / 1200);
+    const lbl = (x, y, v, l, col, ent, anc = 'middle') => { const wd = Math.max(v.length, l.length) * 6.6 + 14, x0 = anc === 'start' ? x : anc === 'end' ? x - wd : x - wd / 2;
+      return `<g class="lbl" data-act="more" data-e="${ent}"><rect x="${x0}" y="${y - 13}" width="${wd}" height="30" rx="9" fill="rgba(10,14,24,.55)" stroke="${col}" stroke-opacity=".7"/><text x="${x0 + wd / 2}" y="${y + 1}" text-anchor="middle">${v}</text><text class="lb" x="${x0 + wd / 2}" y="${y + 12}" text-anchor="middle">${l}</text></g>`; };
+    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="164" y1="60" x2="${230 + k * 22}" y2="${84 - k * 9}" stroke="#ffd65a" stroke-width="${flowW(pv)}" stroke-dasharray="6 6" stroke-linecap="round" opacity=".8" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
+    const sunG = isDay ? `<g transform="translate(150 50)"><circle r="${30 + Math.min(14, pv / 300)}" fill="#ffd65a" opacity="${pvOn ? .25 : .1}" style="animation:glow 3s ease-in-out infinite"/><g style="animation:spin ${pvOn ? Math.max(6, 40 - pv / 150) : 80}s linear infinite">${[...Array(10)].map((_, i) => `<rect x="-2" y="-${28 + Math.min(8, pv / 500)}" width="4" height="9" rx="2" fill="#ffe28a" transform="rotate(${i * 36})"/>`).join('')}</g><circle r="17" fill="${pvOn ? '#ffd34d' : '#e8d9a0'}"/></g>`
+      : `<g transform="translate(150 46)"><path d="M6,-15 A16,16 0 1 0 6,15 A12,12 0 1 1 6,-15Z" fill="#f2ecd2"/></g>${[...Array(10)].map((_, i) => `<circle cx="${(i * 61) % 360}" cy="${(i * 23) % 70 + 8}" r="1.2" fill="#fff" style="animation:tw ${2 + i % 3}s ease-in-out ${i * .4}s infinite"/>`).join('')}`;
+    const wire = 'M40,74 Q120,112 196,118';
+    const gridFlow = imp > 15 || exp > 15 ? `<path d="${wire}" fill="none" stroke="${exp > imp ? '#3ddc97' : '#ff7a6b'}" stroke-width="${flowW(Math.max(imp, exp))}" stroke-dasharray="5 7" stroke-linecap="round" style="animation:${exp > imp ? 'dashr' : 'dash'} ${sp(Math.max(imp, exp))}s linear infinite"/>` : '';
+    const panels = [0, 1, 2, 3].map(c => [0, 1].map(r => { const x = 252 + c * 15 - r * 9, y = 70 + r * 11 + c * 3.6; return `<path d="M${x},${y} l13,3.6 l-8,10 l-13,-3.6Z" fill="${pvOn ? '#3b6fd6' : '#1d2a48'}" stroke="#9cb8ef" stroke-width=".6" ${pvOn ? `style="animation:glow ${2 + (c + r) * .3}s ease-in-out infinite"` : ''}/>`; }).join('')).join('');
+    const lit = home > 150 ? '#ffd88a' : '#4a5263', soc0 = Math.max(0, Math.min(100, soc || 0)), bh = 34 * soc0 / 100;
+    const batCol = soc0 < 15 ? '#e34948' : soc0 < 40 ? '#e2b400' : '#3ddc97';
+    const scene = `<svg viewBox="0 0 360 196"><defs><linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
+      <rect width="360" height="196" fill="url(#esk)"/>${sunG}
+      <path d="M0,170 Q90,158 180,166 T360,162 L360,196 L0,196Z" fill="${grass}"/>
+      <g stroke="#3a3530" stroke-width="3" stroke-linecap="round"><line x1="34" y1="70" x2="34" y2="168"/><line x1="22" y1="78" x2="46" y2="78"/><line x1="24" y1="90" x2="44" y2="90"/></g>
+      <path d="${wire}" fill="none" stroke="#2a2622" stroke-width="1.5"/>${gridFlow}
+      <path d="M190,110 L250,58 L318,96 L318,166 L190,166Z" fill="${isDay ? '#ece4d8' : '#3a3f4a'}"/><path d="M182,114 L250,52 L326,100" fill="none" stroke="#6b3d2e" stroke-width="7" stroke-linejoin="round"/>
+      ${panels}${rays}
+      <rect x="204" y="124" width="22" height="20" rx="2" fill="${lit}"/><rect x="236" y="124" width="22" height="20" rx="2" fill="${lit}"/><rect x="268" y="128" width="18" height="38" rx="2" fill="#6b3d2e"/>
+      <g transform="translate(296 128)"><rect x="0" y="0" width="16" height="36" rx="3" fill="#1d2230" stroke="${batCol}" stroke-width="1.5"/><rect x="5" y="-3" width="6" height="3" rx="1" fill="${batCol}"/>
+        <rect x="2" y="${2 + 32 - 32 * soc0 / 100}" width="12" height="${32 * soc0 / 100}" rx="1.5" fill="${batCol}" ${chg > 15 || dis > 15 ? 'style="animation:glow 1.6s ease-in-out infinite"' : ''}/></g>
+      ${lbl(70, 54, kw(pv), 'Solar', '#ffd65a', E.pv)}
+      ${lbl(254, 30, kw(home), 'Haus', '#5aa9ff', E.home)}
+      ${lbl(46, 136, exp > imp ? kw(exp) : kw(imp), exp > imp ? 'Einspeisung' : 'Netzbezug', exp > imp ? '#3ddc97' : '#ff7a6b', exp > imp ? E.grid_export : E.grid_import, 'start')}
+      ${lbl(352, 176, soc != null ? P_fmt(soc, 0) + ' %' : '–', chg > 15 ? 'lädt ' + kw(chg) : dis > 15 ? 'liefert ' + kw(dis) : 'Akku', batCol, E.battery_soc, 'end')}
+    </svg>`;
+    return `<div class="t full en"><div style="position:relative">${scene}<div class="eh"><span>${P_icon('mdi:lightning-bolt', 14)}Energie</span></div></div>
+      <div class="st3"><div class="sb"><div class="k">${P_icon('mdi:leaf', 13)}Autark</div><div class="v">${self} %</div><div class="ring"><i style="width:${self}%;background:#3ddc97"></i></div></div>
+        <div class="sb"><div class="k">${P_icon('mdi:solar-power-variant', 13)}Heute</div><div class="v">${day != null ? P_fmt(day, 1) + ' kWh' : '–'}</div><div class="ring"><i style="width:${Math.min(100, (day || 0) / (E.pv_day_max || 30) * 100)}%;background:#ffc23d"></i></div></div>
+        <div class="sb" ${E.price ? `data-act="more" data-e="${E.price}"` : ''}><div class="k">${P_icon('mdi:currency-eur', 13)}Strompreis</div><div class="v" style="color:${prc}">${pr != null ? P_fmt(pr, 1) + ' ct' : '–'}</div><div class="ring"><i style="width:${pr != null ? Math.min(100, pr / 70 * 100) : 0}%;background:${prc}"></i></div></div></div></div>`;
   }
   // Mülltonne als Bild: Korpus und Deckel in der Tonnenfarbe
   bin(col, lid) {

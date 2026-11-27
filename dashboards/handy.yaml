@@ -1,0 +1,61 @@
+# iPhone-Dashboard „Zuhause (iPhone)“ (/dashboard-handy) – Startseite mit custom:handy-card (www/handy-card.js)
+views:
+- title: Start
+  path: start
+  icon: mdi:home
+  type: panel
+  cards:
+  - type: custom:handy-card
+    base_path: /dashboard-handy
+    weather:
+      entity: weather.lebus_3
+      name: Lebus
+      temperature: sensor.garden_wetterstation_temperatur
+      max: sensor.garten_wetterstation_temperatur_max_24h
+      min: sensor.garten_wetterstation_temperatur_min_24h
+      wind: sensor.garden_wetterstation_geschwindigkeit
+      rain_day: sensor.garten_wetterstation_niederschlag_heute
+      humidity: sensor.garden_wetterstation_luftfeuchtigkeit
+      warning: sensor.kreis_markisch_oderland_aktuelle_warnstufe
+      prewarning: sensor.kreis_markisch_oderland_vorwarnstufe
+      path: /dashboard-haus/wetter
+    persons:
+    - entity: person.smattex
+      name: Dennis
+    - entity: person.ricarda
+      name: Ricarda
+    - entity: person.carlo
+      name: Carlo
+    energy:
+      pv: sensor.pv_produktion_aktuell
+      home: sensor.hausverbrauch_aktuell
+      grid_import: sensor.netzbezug_aktuell
+      grid_export: sensor.netzeinspeisung_aktuell
+      battery_soc: sensor.mb_varta_soc
+      battery_power: sensor.varta_battery_power_signed
+      pv_today: sensor.pv_energie_tag
+      price: sensor.stadtvilla_aktueller_strompreis
+      price_level: sensor.stadtvilla_aktuelles_preisniveau
+    door:
+      name: Haustür
+      lock: lock.eingang_aqara_smart_lock_u200
+      battery: sensor.eingang_aqara_smart_lock_u200_batterie
+      contact: binary_sensor.multi_state_sensor_p100_tur
+    waste_days: 1
+    waste:
+    - entity: sensor.hausmull_datum_2
+      name: Hausmüll
+      icon: mdi:trash-can
+      image: /local/muell/schwarz.png
+    - entity: sensor.gelbe_tonne_datum_2
+      name: Gelbe Tonne
+      icon: mdi:recycle
+      image: /local/muell/schwarz-gelb.png
+    - entity: sensor.biotonne_auf_abruf_datum_2
+      name: Biotonne
+      icon: mdi:leaf
+      image: /local/muell/gruen.png
+    - entity: sensor.pappe_papier_datum
+      name: Papier
+      icon: mdi:package-variant
+      image: /local/muell/blau.png
