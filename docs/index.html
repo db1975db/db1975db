@@ -63,6 +63,15 @@ textarea{min-height:84px;resize:vertical}
 .measure .unit{position:absolute;right:12px;bottom:13px;color:var(--muted);font-size:16px}
 .measure input.hot{border-color:var(--red);box-shadow:0 0 0 4px var(--red-soft)}
 .measure input.flash{animation:flash .9s}
+.measure input.target{border-color:var(--red);box-shadow:0 0 0 4px var(--red-soft)}
+.measure input.target+.unit::after{content:" ◀ DISTO";color:var(--red);font-weight:700;font-size:12px}
+/* DISTO-Statusleiste */
+#disto{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:21;display:flex;gap:6px;align-items:center}
+#disto button{border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:650;padding:12px 16px;
+  background:var(--card);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.18);border:1.5px solid var(--line)}
+#disto .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#aaa;margin-right:6px;vertical-align:1px}
+#disto.on .dot{background:var(--green)}
+#disto.busy .dot{background:var(--yellow)}
 @keyframes flash{0%{background:var(--green-soft);border-color:var(--green)}100%{}}
 .hint{font-size:14px;color:var(--muted);background:var(--red-soft);border-radius:10px;padding:10px 12px;margin-bottom:12px}
 /* Ergebnis */
@@ -125,6 +134,7 @@ textarea{min-height:84px;resize:vertical}
 </header>
 <main id="app"></main>
 <div class="toast" id="toast"></div>
+<div id="disto" hidden><button id="distoBtn"><span class="dot"></span><span id="distoTxt">DISTO verbinden</span></button></div>
 
 <script>
 'use strict';
@@ -220,6 +230,95 @@ function calc(r){
 }
 
 /* =========================================================
+   Leica DISTO direkt per Bluetooth (Web Bluetooth, z. B. Browser „Bluefy“)
+   Leica-Dienst 3ab10100-…, Distanz = 3ab10101-… (Float32, Meter)
+   ========================================================= */
+const Disto = {
+  SVC:  '3ab10100-f831-4395-b29d-570977d5bf94',
+  DIST: '3ab10101-f831-4395-b29d-570977d5bf94',
+  supported: !!(navigator.bluetooth && navigator.bluetooth.requestDevice),
+  device: null, connected: false, target: null, onRaw: null,
+
+  ui(state, text){
+    const box = $('#disto'); box.className = state || '';
+    $('#distoTxt').textContent = text;
+  },
+  show(on){ $('#disto').hidden = !on || !this.supported; },
+
+  async connect(){
+    try{
+      if (!this.device){
+        this.device = await navigator.bluetooth.requestDevice({
+          filters: [{namePrefix:'DISTO'}, {services:[this.SVC]}],
+          optionalServices: [this.SVC]
+        });
+        this.device.addEventListener('gattserverdisconnected', ()=>this.lost());
+      }
+      this.ui('busy','Verbinde …');
+      const server = await this.device.gatt.connect();
+      const svc = await server.getPrimaryService(this.SVC);
+      const chars = await svc.getCharacteristics();
+      for (const c of chars){
+        if (!(c.properties.notify || c.properties.indicate)) continue;
+        c.addEventListener('characteristicvaluechanged', e=>this.data(c.uuid, e.target.value));
+        await c.startNotifications();
+        await new Promise(r=>setTimeout(r,150)); // DISTO braucht etwas Zeit zwischen den Anmeldungen
+      }
+      this.connected = true;
+      this.ui('on', this.device.name || 'DISTO');
+      toast('DISTO verbunden – jetzt messen');
+      updateMeasureInputs();
+    }catch(e){
+      console.error(e);
+      this.connected = false;
+      this.ui('', 'DISTO verbinden');
+      if (e.name !== 'NotFoundError') alert('Verbindung fehlgeschlagen: '+e.message+'\n\nTipp: DISTO Plan schließen, am DISTO Bluetooth aus- und wieder einschalten.');
+    }
+  },
+  lost(){
+    this.connected = false; this.ui('', 'DISTO getrennt – neu verbinden');
+    updateMeasureInputs();
+  },
+  data(uuid, dv){
+    const hex = [...new Uint8Array(dv.buffer)].map(b=>b.toString(16).padStart(2,'0')).join(' ');
+    let meters = null;
+    if (uuid.toLowerCase() === this.DIST && dv.byteLength >= 4) meters = dv.getFloat32(0, true);
+    if (this.onRaw) this.onRaw(uuid, hex, meters);
+    if (meters == null || !isFinite(meters)) return;
+    if (navigator.vibrate) navigator.vibrate(40);
+    const el = this.target && document.body.contains(this.target) ? this.target : null;
+    if (!el){ toast(`Gemessen: ${fmtM(meters)} m – erst ein Feld antippen`); return; }
+    el.value = fmtM(meters);
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    const fields = $$('[data-measure]'), next = fields[fields.indexOf(el)+1];
+    this.setTarget(next || null);
+  },
+  setTarget(el){
+    $$('.measure input.target').forEach(x=>x.classList.remove('target'));
+    this.target = el;
+    if (el){ el.classList.add('target'); el.scrollIntoView({block:'center', behavior:'smooth'}); }
+  }
+};
+// Wenn der DISTO verbunden ist, keine Bildschirmtastatur bei Maß-Feldern (antippen = Ziel wählen)
+function updateMeasureInputs(){
+  $$('[data-measure]').forEach(el=>{
+    if (Disto.connected){ el.setAttribute('inputmode','none'); }
+    else { el.setAttribute('inputmode','decimal'); el.classList.remove('target'); }
+  });
+  if (Disto.connected && !(Disto.target && document.body.contains(Disto.target))){
+    const fields = $$('[data-measure]');
+    const first = fields.find(f=>!f.value) || fields[0];
+    if (first) Disto.setTarget(first);
+  }
+}
+$('#distoBtn').onclick = ()=>{
+  if (Disto.connected){
+    if (confirm('DISTO trennen?')){ Disto.device.gatt.disconnect(); }
+  } else Disto.connect();
+};
+
+/* =========================================================
    Router
    ========================================================= */
 window.addEventListener('hashchange', route);
@@ -237,6 +336,8 @@ function fab(label, fn){ clearFab(); const b=document.createElement('button'); b
 
 async function route(){
   clearFab(); window.scrollTo(0,0);
+  Disto.target = null; Disto.onRaw = null;
+  Disto.show(/^#\/(r|hilfe)/.test(location.hash));
   const h = location.hash.replace(/^#\/?/, '').split('/');
   try{
     if (h[0]==='p' && h[1]) return await viewProject(h[1]);
@@ -376,7 +477,9 @@ async function viewRoom(id){
 
       <div class="card">
         <h2>Maße</h2>
-        <div class="hint">📏 Feld antippen → am DISTO messen → Wert erscheint im Feld und es geht automatisch zum nächsten Feld.</div>
+        <div class="hint">📏 ${Disto.supported
+          ? 'Unten links „DISTO verbinden“ → Feld antippen → am DISTO messen. Der Wert landet im Feld, danach ist automatisch das nächste Feld dran.'
+          : 'Zahl vom DISTO eintippen. <b>Direkte Übertragung:</b> diese Seite im Browser „Bluefy“ öffnen (siehe Hilfe).'}</div>
         <div class="seg">
           <button data-form="rect" class="${r.form==='rect'?'on':''}">Rechteckig</button>
           <button data-form="walls" class="${r.form==='walls'?'on':''}">Wände einzeln</button>
@@ -481,7 +584,10 @@ async function viewRoom(id){
 
     const fields = $$('[data-measure]');
     fields.forEach((el, idx)=>{
-      el.addEventListener('focus', ()=>{ el.classList.add('hot'); el.select(); });
+      el.addEventListener('focus', ()=>{
+        if (Disto.connected){ Disto.setTarget(el); el.blur(); return; }
+        el.classList.add('hot'); el.select(); Disto.target = el;
+      });
       el.addEventListener('blur', ()=>{
         el.classList.remove('hot');
         const n = num(el.value);
@@ -498,6 +604,8 @@ async function viewRoom(id){
         }
       });
     });
+
+    updateMeasureInputs();
 
     $$('[data-form]').forEach(b=>b.onclick=()=>{
       r.form=b.dataset.form;
@@ -724,38 +832,58 @@ async function importAll(file){
    ========================================================= */
 function viewHelp(){
   setHeader('Leica DISTO verbinden', {back:true});
+  const url = location.href.split('#')[0];
   app.innerHTML = `
-    <div class="card">
-      <h2>1 · Einmalig koppeln</h2>
+    ${Disto.supported ? `
+    <div class="card" style="border-color:var(--green)">
+      <h2>✅ Dieser Browser kann Bluetooth</h2>
       <ol style="padding-left:20px;margin:0">
-        <li>Am DISTO Bluetooth einschalten (Bluetooth-Symbol oben im Display muss zu sehen sein).</li>
-        <li>Am iPhone: <b>Einstellungen → Bluetooth</b> → unter „Andere Geräte“ den <b>DISTO</b> antippen.</li>
-        <li>Wenn er dort nicht auftaucht: am DISTO im Menü (FUNC bzw. Einstellungen) nach „Bluetooth“ / „Tastatur-Modus“ (Keyboard / HID) suchen und einschalten.</li>
+        <li><b>DISTO Plan schließen</b> (der DISTO kann nur mit einer App gleichzeitig verbunden sein).</li>
+        <li>DISTO einschalten, Bluetooth-Zeichen muss im Display zu sehen sein.</li>
+        <li>Unten links auf <b>„DISTO verbinden“</b> tippen und den DISTO in der Liste auswählen.</li>
+        <li>Im Testfeld unten messen.</li>
       </ol>
-    </div>
+    </div>` : `
     <div class="card">
-      <h2>2 · Messen</h2>
+      <h2>Direkte Übertragung vom DISTO D510</h2>
+      <p style="margin-top:0">Safari kann leider nicht direkt mit dem DISTO sprechen. Dafür gibt es den kostenlosen Browser <b>„Bluefy – Web BLE Browser“</b>:</p>
       <ol style="padding-left:20px;margin:0">
-        <li>In der App ein Maß-Feld antippen (es wird rot umrandet).</li>
-        <li>Am DISTO messen (DIST-Taste). Der Wert wird ins Feld geschrieben.</li>
-        <li>Die App springt automatisch ins nächste Feld: Länge → Breite → Höhe → Abzüge …</li>
+        <li><b>App Store</b> öffnen, nach <b>„Bluefy“</b> suchen und laden.</li>
+        <li>Bluefy öffnen und diese Adresse eingeben:<br><b style="word-break:break-all">${esc(url)}</b>
+          <button class="btn sec small" id="copyUrl" style="margin-top:6px">Adresse kopieren</button></li>
+        <li>Bluetooth-Zugriff erlauben.</li>
+        <li>Wichtig: <b>DISTO Plan schließen</b> und den DISTO <b>nicht</b> in den iPhone-Einstellungen koppeln.</li>
+        <li>In Bluefy: Hilfe-Seite → „DISTO verbinden“.</li>
       </ol>
-      <p class="muted" style="font-size:14px">Ist der DISTO als Tastatur verbunden, blendet das iPhone die Bildschirm-Tastatur aus. Zum Tippen von Namen/Notizen kurz die Tastatur-Taste unten rechts antippen oder Bluetooth am DISTO kurz ausschalten.</p>
+      <p class="muted" style="font-size:14px;margin-bottom:0">Die Daten liegen pro Browser getrennt. Nimm am besten für die Arbeit immer Bluefy.</p>
+    </div>`}
+    <div class="card">
+      <h2>So wird gemessen</h2>
+      <ol style="padding-left:20px;margin:0">
+        <li>Maß-Feld antippen → es wird rot markiert („◀ DISTO“).</li>
+        <li>Am DISTO die DIST-Taste drücken.</li>
+        <li>Der Wert landet im Feld, die Markierung springt zum nächsten Feld: Länge → Breite → Höhe → Abzüge …</li>
+      </ol>
     </div>
     <div class="card">
       <h2>Testfeld</h2>
-      <label class="f measure"><span>Hier antippen und am DISTO messen</span>
-        <input id="test" inputmode="decimal" autocomplete="off" placeholder="0,000"><span class="unit">m</span></label>
-      <div id="testlog" class="muted" style="font-size:14px"></div>
+      <label class="f measure"><span>Antippen und am DISTO messen</span>
+        <input id="test" data-measure data-key="test" inputmode="decimal" autocomplete="off" placeholder="0,000"><span class="unit">m</span></label>
+      <div id="testlog" class="muted" style="font-size:13px;font-family:ui-monospace,monospace;white-space:pre-wrap"></div>
     </div>
     <div class="card">
-      <h2>Klappt die Übertragung nicht?</h2>
-      <p style="margin:0">Dann einfach die Zahl vom DISTO-Display ins Feld tippen. Das Komma ist egal (3,25 oder 3.25). Die App rechnet trotzdem alles aus und alles ist sauber lesbar.</p>
+      <h2>Klappt es nicht?</h2>
+      <p style="margin:0">Einfach die Zahl vom Display ins Feld tippen. Komma oder Punkt ist egal. Die App rechnet trotzdem alles aus.</p>
     </div>`;
-  const t=$('#test'), log=$('#testlog');
-  t.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key==='Tab'){ e.preventDefault();
-    const n=num(t.value); log.innerHTML = n!=null ? `✅ Empfangen: <b>${fmtM(n)} m</b> (Rohwert „${esc(t.value)}“)` : `Rohwert: „${esc(t.value)}“`;
-    t.value=''; } });
+  const t=$('#test'), log=$('#testlog'); const lines=[];
+  const addLog = s => { lines.unshift(s); log.textContent = lines.slice(0,8).join('\n'); };
+  t.addEventListener('focus', ()=>{ if (Disto.connected){ Disto.setTarget(t); t.blur(); } });
+  t.addEventListener('input', ()=>{ const n=num(t.value); if(n!=null) addLog(`✅ Wert: ${fmtM(n)} m`); });
+  t.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); t.blur(); } });
+  Disto.onRaw = (uuid, hex, m) => { addLog(`${uuid.slice(0,8)}: ${hex}${m!=null?`  → ${fmtM(m)} m`:''}`); if (m!=null) setTimeout(()=>Disto.setTarget(t),50); };
+  updateMeasureInputs();
+  if (Disto.connected) Disto.setTarget(t);
+  const cu=$('#copyUrl'); if (cu) cu.onclick=async()=>{ try{ await navigator.clipboard.writeText(url); toast('Adresse kopiert'); }catch{ prompt('Adresse:', url); } };
 }
 
 /* =========================================================
