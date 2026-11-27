@@ -543,7 +543,11 @@ async function viewHome(){
   setHeader('Aufmaß', {action:{label:'⚙︎', fn:()=>location.hash='#/daten'}});
   const projects = (await all('projects')).sort((a,b)=>(b.updated||0)-(a.updated||0));
   const rooms = await all('rooms');
+  const offen = await ungesichert(), zuletzt = letzteSicherung();
+  const zeigen = offen && !erinnerungPausiert() &&
+    (zuletzt ? Date.now()-zuletzt > 7*TAG : (Date.now()-offen.aeltestes > TAG || offen.fertig));
   app.innerHTML = `
+    ${zeigen ? sicherungsHinweis(zuletzt ? `Letzte Sicherung ${vorTagen(zuletzt)}` : 'Noch keine Sicherung gemacht') : ''}
     ${projects.length ? '' : `<div class="empty"><div style="font-size:48px">📐</div>
       <p><b>Noch keine Baustelle.</b><br>Tippe unten auf „+ Neue Baustelle“.</p>
       <p><a href="#/hilfe">So verbindest du den Leica DISTO</a></p></div>`}
@@ -556,6 +560,7 @@ async function viewHome(){
     }).join('')}
     ${projects.length ? `<p style="text-align:center"><a href="#/hilfe" class="muted">Hilfe: Leica DISTO verbinden</a></p>`:''}
   `;
+  bindHinweis();
   fab('+ Neue Baustelle', async ()=>{
     const p = {id:uid(), kunde:'', adresse:'', telefon:'', datum:new Date().toISOString().slice(0,10), notiz:'', created:Date.now(), updated:Date.now()};
     await put('projects', p);
@@ -1128,6 +1133,7 @@ async function viewRoom(id){
         await put('photos', {id:uid(), roomId:r.id, projectId:r.projectId, blob, caption:'', created:Date.now()});
       }catch(e){ console.error(e); toast('Foto konnte nicht gespeichert werden'); }
     }
+    const pp = await get('projects', r.projectId); if (pp){ pp.updated = Date.now(); await put('projects', pp); }
     toast(files.length>1 ? `${files.length} Fotos gespeichert` : 'Foto gespeichert');
     renderPhotos();
   }
@@ -1228,7 +1234,8 @@ async function viewReport(id){
   };
 
   const kachel = (k, v) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div></div>`;
-  app.innerHTML = `<div class="card report">
+  const offen = p.fertig && !erinnerungPausiert() ? await ungesichert() : null;
+  app.innerHTML = `${offen ? sicherungsHinweis('Aufmaß fertig – jetzt sichern?') : ''}<div class="card report">
     <div class="rtop">
       <div><h1>${esc(p.kunde)||'Aufmaß'}</h1>
         <div class="small">${esc(p.adresse)}${p.telefon?' · '+esc(p.telefon):''}</div></div>
@@ -1270,6 +1277,7 @@ async function viewReport(id){
     <p class="muted" style="font-size:13px">Im PDF erscheinen Details &amp; Fotos nur, wenn sie aufgeklappt sind.</p>
   </div>`;
   const det = $('.rdet'); det.addEventListener('toggle', ()=>{ try{ localStorage.setItem('sec:details', det.open?'1':'0'); }catch{} });
+  bindHinweis();
   $('#rpdf').onclick = ()=>window.print();
   $('#roffer').onclick = ()=>{ location.hash='#/angebot/'+id; };
   $('#rshare').onclick = async ()=>shareText(await projectText(id));
@@ -1665,12 +1673,40 @@ function viewData(){
     </div>
     <div class="card"><h2>Hilfe</h2><a href="#/hilfe">Leica DISTO verbinden & benutzen</a></div>`;
   if (navigator.storage?.estimate) navigator.storage.estimate().then(e=>{
-    $('#usage').textContent=`Belegter Speicher: ${(e.usage/1048576).toFixed(1)} MB`;
+    $('#usage').textContent=`Belegter Speicher: ${(e.usage/1048576).toFixed(1)} MB · Letzte Sicherung: ${letzteSicherung() ? new Date(letzteSicherung()).toLocaleDateString('de-DE')+' ('+vorTagen(letzteSicherung())+')' : 'noch keine'}`;
   });
   $('#exp').onclick = exportAll;
   $('#imp').onchange = e => importAll(e.target.files[0]);
 }
 const blobToB64 = b => new Promise(r=>{ const f=new FileReader(); f.onload=()=>r(f.result); f.readAsDataURL(b); });
+/* Erinnerung an die Sicherung */
+const TAG = 86400000;
+const ls = { get(k){ try{ return localStorage.getItem(k); }catch{ return null; } },
+             set(k,v){ try{ localStorage.setItem(k, v); }catch{} } };
+const letzteSicherung = () => +ls.get('sicherung:zuletzt') || 0;
+const erinnerungPausiert = () => (+ls.get('sicherung:spaeter') || 0) > Date.now();
+function vorTagen(t){ const d = Math.floor((Date.now()-t)/TAG); return d<=0 ? 'heute' : d===1 ? 'gestern' : `vor ${d} Tagen`; }
+// Gibt es Änderungen, die noch nicht gesichert sind?
+async function ungesichert(){
+  const projects = await all('projects');
+  if (!projects.length) return null;
+  const geaendert = Math.max(...projects.map(p=>p.updated||p.created||0));
+  const aeltestes = Math.min(...projects.map(p=>p.created||Date.now()));
+  return geaendert > letzteSicherung() ? {geaendert, aeltestes, fertig: projects.some(p=>p.fertig)} : null;
+}
+function sicherungsHinweis(titel){
+  return `<div class="card backup noprint" style="border:2px solid var(--yellow)">
+    <div style="display:flex;gap:12px;align-items:flex-start"><div style="font-size:30px;line-height:1">💾</div>
+      <div style="flex:1"><b>${titel}</b>
+        <div class="muted" style="font-size:14px;margin-top:2px">Deine Aufmaße liegen nur auf diesem iPhone. Sichern → „In Dateien sichern“ → iCloud Drive.</div></div></div>
+    <div class="row" style="margin-top:10px"><button class="btn" data-sichern>Jetzt sichern</button>
+      <button class="btn sec" data-spaeter style="flex:none">Später</button></div></div>`;
+}
+function bindHinweis(){
+  $$('[data-sichern]').forEach(b=>b.onclick=async()=>{ if (await exportAll()) $$('.backup').forEach(x=>x.remove()); });
+  $$('[data-spaeter]').forEach(b=>b.onclick=()=>{ ls.set('sicherung:spaeter', Date.now()+TAG); $$('.backup').forEach(x=>x.remove()); toast('Erinnerung morgen wieder'); });
+}
+
 async function exportAll(){
   toast('Sicherung wird erstellt …');
   const photos = await Promise.all((await all('photos')).map(async p=>({...p, blob: await blobToB64(p.blob), annot: p.annot ? await blobToB64(p.annot) : undefined})));
@@ -1678,10 +1714,12 @@ async function exportAll(){
     projects: await all('projects'), rooms: await all('rooms'), photos};
   const file = new File([JSON.stringify(data)], `Aufmass-Sicherung-${new Date().toISOString().slice(0,10)}.json`, {type:'application/json'});
   if (navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({files:[file], title:'Aufmaß-Sicherung'}); return; }catch(e){ if(e.name==='AbortError') return; }
+    try{ await navigator.share({files:[file], title:'Aufmaß-Sicherung'}); return gesichert(); }catch(e){ if(e.name==='AbortError') return false; }
   }
   const a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=file.name; a.click();
+  return gesichert();
 }
+function gesichert(){ ls.set('sicherung:zuletzt', Date.now()); ls.set('sicherung:spaeter', 0); toast('Sicherung erstellt ✓'); return true; }
 async function importAll(file){
   if(!file) return;
   try{
