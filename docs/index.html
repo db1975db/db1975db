@@ -27,7 +27,24 @@ html,body{margin:0;background:var(--bg);color:var(--ink);
   font:17px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
 body{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
 header{position:sticky;top:0;z-index:10;background:var(--red);color:#fff;
-  padding:calc(env(safe-area-inset-top) + 10px) 16px 12px;display:flex;align-items:center;gap:10px}
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#livebar{flex-basis:100%;display:flex;gap:8px;overflow-x:auto;margin:2px 0 -2px;font-variant-numeric:tabular-nums}
+#livebar span{background:rgba(255,255,255,.18);border-radius:999px;padding:4px 10px;font-size:14px;white-space:nowrap}
+#livebar b{font-weight:750}
+/* Einklappbare Bereiche */
+details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;margin:-14px;padding:14px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary h2{margin:0;flex:none}
+details.sec>summary .sum{flex:1;min-width:0;text-align:right;color:var(--ink);font-size:14px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+details.sec>summary::after{content:"›";color:var(--muted);font-size:22px;line-height:1;transition:transform .15s}
+details.sec[open]>summary::after{transform:rotate(90deg)}
+details.sec[open]>summary{margin-bottom:0;padding-bottom:12px}
+details.vor>summary{list-style:none;cursor:pointer;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 6px}
+details.vor>summary::-webkit-details-marker{display:none}
+details.vor>summary::before{content:"▸ ";}
+details.vor[open]>summary::before{content:"▾ ";}
+.fab.cam{left:auto;right:16px;width:62px;height:62px;padding:0;font-size:28px;border-radius:50%}
 header h1{font-size:20px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:10px;
   font-size:16px;padding:8px 12px;font-weight:600}
@@ -148,6 +165,7 @@ a{color:var(--red)}
   <button id="back" hidden>‹ Zurück</button>
   <h1 id="title">Aufmaß</h1>
   <button id="hdrAction" hidden></button>
+  <div id="livebar" hidden></div>
 </header>
 <main id="app"></main>
 <div class="toast" id="toast"></div>
@@ -434,7 +452,8 @@ const Disto = {
   setTarget(el){
     $$('.measure input.target').forEach(x=>x.classList.remove('target'));
     this.target = el;
-    if (el){ el.classList.add('target'); el.scrollIntoView({block:'center', behavior:'smooth'}); }
+    if (el){ const d=el.closest('details'); if (d && !d.open) d.open = true;
+      el.classList.add('target'); el.scrollIntoView({block:'center', behavior:'smooth'}); }
   }
 };
 // Wenn der DISTO verbunden ist, keine Bildschirmtastatur bei Maß-Feldern (antippen = Ziel wählen)
@@ -463,6 +482,7 @@ $('#back').onclick = () => history.length > 1 ? history.back() : (location.hash 
 
 function setHeader(title, {back=false, action=null}={}){
   $('#title').textContent = title;
+  $('#livebar').hidden = true;
   $('#back').hidden = !back;
   const b = $('#hdrAction');
   if (action){ b.hidden=false; b.textContent=action.label; b.onclick=action.fn; } else b.hidden=true;
@@ -530,6 +550,16 @@ function neueFassade(projectId, extra={}){
   return {id:uid(), projectId, typ:'fassade', name:'', b:'', h:'', gh:'', gb:'', sockelH:'',
     abzuege:[], pos:[], arbeiten:[], fotoFlaechen:[], flaechen:{fassade:{...neueFlaeche(), anstrich:STANDARD_FASSADE}, sockel:neueFlaeche()},
     notiz:'', order:Date.now(), ...extra};
+}
+
+// Einklappbarer Bereich; offen/zu wird pro Bereich gemerkt
+function secOpen(key, def=true){ try{ const v = localStorage.getItem('sec:'+key); return v===null ? def : v==='1'; }catch{ return def; } }
+function sec(key, title, summary, body, def=true){
+  return `<details class="card sec" data-sec="${key}" ${secOpen(key, def)?'open':''}>
+    <summary><h2>${title}</h2><span class="sum" id="sum-${key}">${summary}</span></summary>${body}</details>`;
+}
+function bindSecs(){
+  $$('details.sec').forEach(d=>d.addEventListener('toggle', ()=>{ try{ localStorage.setItem('sec:'+d.dataset.sec, d.open?'1':'0'); }catch{} }));
 }
 
 async function viewProject(id){
@@ -695,8 +725,8 @@ async function viewRoom(id){
     return `<div class="sub fl">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
         <b style="font-size:18px">${titel}</b><span class="muted" id="fm-${key}">${fmt(menge)} m²</span></div>
-      <div class="lbl">Vorarbeiten</div>
-      <div class="chips">${vorList.map(v=>`<button class="chip ${f.vor.includes(v)?'on':''}" data-vor="${key}|${esc(v)}">${esc(v)}</button>`).join('')}</div>
+      <details class="vor" ${f.vor.length?'open':''}><summary>Vorarbeiten${f.vor.length?` (${f.vor.length})`:''}</summary>
+      <div class="chips">${vorList.map(v=>`<button class="chip ${f.vor.includes(v)?'on':''}" data-vor="${key}|${esc(v)}">${esc(v)}</button>`).join('')}</div></details>
       ${F ? '' : `<div class="lbl">Tapezieren</div>
       <div class="chips">${['', ...BELAEGE].map(b=>`<button class="chip ${f.belag===b?'on':''}" data-belag="${key}|${esc(b)}">${b?esc(b):'Keine Tapete'}</button>`).join('')}</div>`}
       <div class="lbl">Anstrich (Brillux)</div>
@@ -706,6 +736,27 @@ async function viewRoom(id){
         <select data-anz="${key}" style="flex:1">${[1,2,3].map(n=>`<option value="${n}" ${(+f.anzahl||2)===n?'selected':''}>${n}×</option>`).join('')}</select>
       </div>
     </div>`;
+  }
+
+  // Kurzfassungen für zugeklappte Bereiche
+  const kurz = {
+    masse: () => F ? (r.b||r.h ? `${r.b||'?'} × ${r.h||'?'} m${r.gh?' + Giebel':''}` : 'noch leer')
+      : r.form==='walls' ? `${r.walls.filter(w=>w.len).length} Wände · H ${r.h||'?'}`
+      : (r.l||r.b||r.h ? `${r.l||'?'} × ${r.b||'?'} × ${r.h||'?'} m` : 'noch leer'),
+    abz: () => { const c=calc(r), n=r.abzuege.reduce((s,a)=>s+(num(a.n)??1),0);
+      return n ? `${n} Öffnung${n>1?'en':''}${c.abzug?` · −${fmt(c.abzug)} m²`:''}${c.leibung?` · +${fmt(c.leibung)} Leibung`:''}` : 'keine'; },
+    arb: () => { const t = flaechenVon(r).map(([k,tt])=>{ const f=r.flaechen[k]; if (!f) return '';
+        const x=[f.belag, f.anstrich?f.anstrich.replace('Brillux ',''):''].filter(Boolean).join(' + '); return x?`${tt}: ${x}`:''; })
+        .filter(Boolean); if (r.arbeiten.length) t.push(`+${r.arbeiten.length}`); return t.join(' · ') || 'noch nichts gewählt'; },
+    pos: () => r.pos.length ? r.pos.map(x=>`${x.label||'Pos.'} ${fmtMenge(x)} ${POS_UNITS[x.art]}`).join(' · ') : 'keine',
+  };
+  const refreshSums = () => { for (const k in kurz){ const el=$('#sum-'+k); if (el) el.textContent = kurz[k](); } liveBar(); };
+  function liveBar(){
+    const c = calc(r), lb = $('#livebar');
+    lb.innerHTML = F
+      ? `<span>Fassade <b>${fmt(c.fassade)} m²</b></span><span>Sockel <b>${fmt(c.sockel)} m²</b></span>`
+      : `<span>Wand <b>${fmt(c.wand)} m²</b></span><span>Decke <b>${fmt(c.decke)} m²</b></span><span>Umfang <b>${fmt(c.umfang)} m</b></span>`;
+    lb.hidden = false;
   }
 
   function render(){
@@ -719,18 +770,15 @@ async function viewRoom(id){
         <datalist id="namen">${NAMEN.map(n=>`<option value="${n}">`).join('')}</datalist>
       </div>
 
-      <div class="card">
-        <h2>Maße${F?' Fassade':''}</h2>
+      ${sec('masse', 'Maße'+(F?' Fassade':''), kurz.masse(), `
         <div class="hint">📏 ${Disto.supported
-          ? 'Unten links „DISTO verbinden“ → Feld antippen → am DISTO messen. Der Wert landet im Feld, danach ist automatisch das nächste Feld dran.'
-          : 'Zahl vom DISTO eintippen. <b>Direkte Übertragung:</b> diese Seite im Browser „Bluefy“ öffnen (siehe Hilfe).'}
-          ${F?'<br>📷 Nicht erreichbare Maße (Giebel, Höhe): Foto von vorne machen → Foto antippen → <b>„Ausmessen“</b>.':''}</div>
+          ? 'Feld antippen → am DISTO messen. Danach ist automatisch das nächste Feld dran.'
+          : 'Zahl vom DISTO eintippen. <b>Direkte Übertragung:</b> Seite im Browser „Bluefy“ öffnen (siehe Hilfe).'}
+          ${F?'<br>📷 Nicht erreichbare Maße: Foto von vorne → antippen → <b>„Ausmessen“</b>.':''}</div>
         ${masseHtml()}
-        ${fotoFlaechenHtml()}
-      </div>
+        ${fotoFlaechenHtml()}`)}
 
-      <div class="card">
-        <h2>Abzüge (${F?'Fenster, Türen, Tore':'Fenster, Türen'} …)</h2>
+      ${sec('abz', 'Abzüge', kurz.abz(), `
         ${r.abzuege.map((a,i)=>`<div class="sub">
           <div class="head">
             <select data-abz-art="${i}">${ABZ_ARTEN.concat(ABZ_ARTEN.includes(a.art)?[]:[a.art]).map(o=>`<option ${a.art===o?'selected':''}>${esc(o)}</option>`).join('')}</select>
@@ -748,17 +796,12 @@ async function viewRoom(id){
               <option value="4" ${a.seiten==4?'selected':''}>4 Seiten</option></select></label>
           </div>
           <div class="muted" style="font-size:14px" id="abzinfo-${i}">${oeffnungInfo(a)}</div></div>`).join('')}
-        <p class="muted" style="font-size:13px;margin:0 0 10px">Nach VOB: bis 2,5 m² übermessen, darüber abziehen + Leibung.</p>
-        <button class="btn sec small" id="addAbz">+ Abzug</button>
-      </div>
+        <div class="chips" style="margin:0 0 4px">
+          ${(F?['Fenster','Haustür','Garagentor','Balkontür']:['Fenster','Tür','Balkontür','Durchgang']).map(a=>`<button class="chip" data-addabz="${a}">+ ${a}</button>`).join('')}
+        </div>
+        <p class="muted" style="font-size:13px;margin:4px 0 0">VOB: bis 2,5 m² übermessen, darüber abziehen + Leibung.</p>`)}
 
-      <div class="card">
-        <h2>Ergebnis</h2>
-        <div class="results" id="results">${resultsHtml(c)}</div>
-      </div>
-
-      <div class="card">
-        <h2>Was soll gemacht werden?</h2>
+      ${sec('arb', 'Arbeiten', kurz.arb(), `
         ${flaechenVon(r).map(([k,t])=>flaecheHtml(k, t, c.fl[k])).join('')}
         <div class="lbl" style="margin-top:6px">Sonstiges</div>
         <div class="chips">
@@ -769,27 +812,24 @@ async function viewRoom(id){
           <button class="btn small" id="addChip" style="flex:none">+</button>
         </div>
         <label class="f" style="margin:0"><span>Notiz</span>
-          <textarea id="rnotiz" placeholder="${F?'z. B. Farbton, Gerüst nötig, Putzschäden an der Ecke …':'z. B. Farbton Weiß matt, Decke hat Wasserfleck, Kunde wünscht …'}">${esc(r.notiz)}</textarea></label>
-      </div>
+          <textarea id="rnotiz" placeholder="${F?'z. B. Farbton, Gerüst nötig, Putzschäden an der Ecke …':'z. B. Farbton, Wasserfleck an der Decke, Kunde wünscht …'}">${esc(r.notiz)}</textarea></label>`)}
 
-      <div class="card">
-        <h2>Positionen (lfm · Stück · m²)</h2>
+      ${sec('pos', 'Positionen', kurz.pos(), `
         ${r.pos.map((x,i)=>posHtml(x,i)).join('')}
         <div class="chips" style="margin:4px 0 0">
           ${(F?POS_VORLAGEN_FASSADE:POS_VORLAGEN).map(([l,a])=>`<button class="chip" data-addpos="${esc(l)}|${a}">+ ${esc(l)} <span class="muted">${POS_UNITS[a]}</span></button>`).join('')}
           <button class="chip" data-addpos="|lfm">+ Eigene …</button>
-        </div>
-      </div>
+        </div>`, false)}
 
-      <div class="card">
-        <h2>Fotos</h2>
+      ${sec('fotos', 'Fotos', '', `
         <div class="photos" id="photos"></div>
         <div class="row">
           <label class="btn"><input type="file" accept="image/*" capture="environment" id="cam" hidden>📷 Foto aufnehmen</label>
           <label class="btn sec"><input type="file" accept="image/*" multiple id="gal" hidden>Aus Galerie</label>
         </div>
-        <p class="muted" style="font-size:13px;margin:8px 0 0">Foto antippen → „📐 Ausmessen“: Strecken und Flächen im Foto über ein Referenzmaß bestimmen.</p>
-      </div>
+        <p class="muted" style="font-size:13px;margin:8px 0 0">Foto antippen → „📐 Ausmessen“: Strecken und Flächen über ein Referenzmaß bestimmen.</p>`)}
+
+      ${sec('rechenweg', 'Rechenweg', 'Brutto, Abzüge, Leibungen', `<div class="results" id="results">${resultsHtml(c)}</div>`, false)}
 
       <button class="btn block" id="nextRoom" style="margin-bottom:10px">${F?'Nächste Fassadenseite →':'Nächster Raum →'}</button>
       <button class="btn block" id="fertig" style="margin-bottom:10px;background:var(--green)">✓ Fertig – kein weiterer ${F?'Teil':'Raum'}</button>
@@ -798,6 +838,8 @@ async function viewRoom(id){
       </div>
     `;
     bind();
+    bindSecs();
+    refreshSums();
     renderPhotos();
   }
 
@@ -846,6 +888,7 @@ async function viewRoom(id){
     const el=$('#results'); if (el) el.innerHTML = resultsHtml(c); refreshPos();
     r.abzuege.forEach((a,i)=>{ const x=$('#abzinfo-'+i); if (x) x.innerHTML = oeffnungInfo(a); });
     for (const [k] of flaechenVon(r)){ const x=$('#fm-'+k); if (x) x.textContent = fmt(c.fl[k])+' m²'; }
+    refreshSums();
   };
 
   function setVal(key, v){
@@ -897,7 +940,8 @@ async function viewRoom(id){
     $$('[data-delwall]').forEach(b=>b.onclick=()=>{ r.walls.splice(+b.dataset.delwall,1); persist(); render(); });
     $$('[data-delfoto]').forEach(b=>b.onclick=()=>{ r.fotoFlaechen.splice(+b.dataset.delfoto,1); persist(); render(); });
 
-    $('#addAbz').onclick=()=>{ r.abzuege.push({art:'Fenster', b:'', h:'', n:1}); persist(); render(); focusKey('abz:'+(r.abzuege.length-1)+':b'); };
+    $$('[data-addabz]').forEach(b=>b.onclick=()=>{
+      r.abzuege.push({art:b.dataset.addabz, b:'', h:'', n:1}); persist(); render(); focusKey('abz:'+(r.abzuege.length-1)+':b'); });
     $$('[data-delabz]').forEach(b=>b.onclick=()=>{ r.abzuege.splice(+b.dataset.delabz,1); persist(); render(); });
     $$('[data-abz-art]').forEach(s=>s.onchange=()=>{ r.abzuege[+s.dataset.abzArt].art=s.value; persist(); });
     $$('[data-abz-n]').forEach(s=>s.oninput=()=>{ r.abzuege[+s.dataset.abzN].n=s.value; persist(); refreshResults(); });
@@ -908,7 +952,8 @@ async function viewRoom(id){
     $$('[data-vor]').forEach(b=>b.onclick=()=>{
       const [k,v]=b.dataset.vor.split('|'), f=fl(k), i=f.vor.indexOf(v);
       if (i>=0) f.vor.splice(i,1); else f.vor.push(v);
-      b.classList.toggle('on'); persist();
+      b.classList.toggle('on'); persist(); refreshSums();
+      const sm = b.closest('details.vor')?.querySelector('summary'); if (sm) sm.textContent = 'Vorarbeiten' + (f.vor.length?` (${f.vor.length})`:'');
     });
     $$('[data-belag]').forEach(b=>b.onclick=()=>{
       const [k,v]=b.dataset.belag.split('|'), f=fl(k);
@@ -923,7 +968,7 @@ async function viewRoom(id){
       f.anstrich = v; f.manuell = true; persist(); render();
     });
     $$('[data-anfrei]').forEach(s=>s.oninput=()=>{
-      const f=fl(s.dataset.anfrei); f.anstrich = s.value.trim(); f.manuell = true; persist();
+      const f=fl(s.dataset.anfrei); f.anstrich = s.value.trim(); f.manuell = true; persist(); refreshSums();
       $$(`[data-an^="${s.dataset.anfrei}|"]`).forEach(c=>c.classList.toggle('on', !f.anstrich && c.dataset.an.endsWith('|')));
     });
     $$('[data-anz]').forEach(s=>s.onchange=()=>{ fl(s.dataset.anz).anzahl = +s.value; persist(); });
@@ -933,6 +978,7 @@ async function viewRoom(id){
     $$('[data-addpos]').forEach(b=>b.onclick=()=>{
       const [label, art] = b.dataset.addpos.split('|');
       r.pos.push({id:uid(), label, art, werte:[''], n:1, b:'', h:''});
+      try{ localStorage.setItem('sec:pos','1'); }catch{}
       persist(); render();
       const i=lastPos();
       if (!label) $(`[data-pos-label="${i}"]`).focus();
@@ -956,7 +1002,7 @@ async function viewRoom(id){
     $$('[data-umfang]').forEach(b=>b.onclick=()=>{
       const i=+b.dataset.umfang, c=calc(r);
       if (c.umfang==null){ toast('Erst Länge und Breite messen'); return; }
-      const tueren = r.abzuege.filter(a=>/Tür|Durchgang/.test(a.art))
+      const tueren = r.abzuege.filter(a=>/tür|durchgang/i.test(a.art))
         .reduce((s,a)=>s + (num(a.b)||0)*(num(a.n)??1), 0);
       const w = r.pos[i].werte, v = fmtM(Math.max(0, c.umfang - tueren));
       if (w.length===1 && !w[0]) w[0]=v; else w.push(v);
@@ -985,7 +1031,7 @@ async function viewRoom(id){
     $$('[data-chip]').forEach(b=>b.onclick=()=>{
       const a=b.dataset.chip, i=r.arbeiten.indexOf(a);
       if (i>=0) r.arbeiten.splice(i,1); else r.arbeiten.push(a);
-      b.classList.toggle('on'); persist();
+      b.classList.toggle('on'); persist(); refreshSums();
     });
     const addChip=()=>{ const v=$('#newChip').value.trim(); if(!v) return; if(!r.arbeiten.includes(v)) r.arbeiten.push(v); persist(); render(); };
     $('#addChip').onclick=addChip;
@@ -1038,6 +1084,7 @@ async function viewRoom(id){
   async function renderPhotos(){
     const el=$('#photos'); if(!el) return;
     const list=(await byIdx('photos','roomId',r.id)).sort((a,b)=>a.created-b.created);
+    const sm=$('#sum-fotos'); if (sm) sm.textContent = list.length ? `${list.length} Foto${list.length>1?'s':''}` : 'keine';
     el.innerHTML='';
     list.forEach(p=>{
       const img=document.createElement('img'); img.src=URL.createObjectURL(p.annot || p.blob); img.alt=p.caption||'Foto';
@@ -1047,6 +1094,8 @@ async function viewRoom(id){
   }
 
   render();
+  // Kamera immer griffbereit
+  fab('📷', ()=>$('#cam').click()); $('.fab').classList.add('cam'); $('.fab').setAttribute('aria-label','Foto aufnehmen');
   if (!r.name) $('#name').focus();
 }
 
@@ -1205,7 +1254,7 @@ function mengeFuer(arbeit, r){
   const treffer = re => migrateRoom(r).pos.filter(x=>re.test(x.label||''));
   const pos = (re, art) => { const t = treffer(re).filter(x=>!art || x.art===art);
     return t.length ? [t.reduce((s,x)=>s+posMenge(x),0), POS_UNITS[t[0].art]] : null; };
-  const tueren = (r.abzuege||[]).filter(a=>/Tür/.test(a.art)).reduce((s,a)=>s+(num(a.n)??1),0);
+  const tueren = (r.abzuege||[]).filter(a=>/tür/i.test(a.art)).reduce((s,a)=>s+(num(a.n)??1),0);
   const fenster = (r.abzuege||[]).filter(a=>/Fenster/.test(a.art)).reduce((s,a)=>s+(num(a.n)??1),0);
   const c = calc(r);
   switch (arbeit){
