@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.4)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.5)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -220,28 +220,41 @@ class HandyCard extends HTMLElement {
     const pvOn = pv > 15, flowW = (w) => Math.min(5, 1.6 + w / 1200);
     const lbl = (x, y, v, l, col, ent, anc = 'middle') => { const wd = Math.max(v.length, l.length) * 6.6 + 14, x0 = anc === 'start' ? x : anc === 'end' ? x - wd : x - wd / 2;
       return `<g class="lbl" data-act="more" data-e="${ent}"><rect x="${x0}" y="${y - 13}" width="${wd}" height="30" rx="9" fill="rgba(10,14,24,.55)" stroke="${col}" stroke-opacity=".7"/><text x="${x0 + wd / 2}" y="${y + 1}" text-anchor="middle">${v}</text><text class="lb" x="${x0 + wd / 2}" y="${y + 12}" text-anchor="middle">${l}</text></g>`; };
-    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="164" y1="60" x2="${230 + k * 22}" y2="${84 - k * 9}" stroke="#ffd65a" stroke-width="${flowW(pv)}" stroke-dasharray="6 6" stroke-linecap="round" opacity=".8" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
-    const sunG = isDay ? `<g transform="translate(150 50)"><circle r="${30 + Math.min(14, pv / 300)}" fill="#ffd65a" opacity="${pvOn ? .25 : .1}" style="animation:glow 3s ease-in-out infinite"/><g style="animation:spin ${pvOn ? Math.max(6, 40 - pv / 150) : 80}s linear infinite">${[...Array(10)].map((_, i) => `<rect x="-2" y="-${28 + Math.min(8, pv / 500)}" width="4" height="9" rx="2" fill="#ffe28a" transform="rotate(${i * 36})"/>`).join('')}</g><circle r="17" fill="${pvOn ? '#ffd34d' : '#e8d9a0'}"/></g>`
-      : `<g transform="translate(150 46)"><path d="M6,-15 A16,16 0 1 0 6,15 A12,12 0 1 1 6,-15Z" fill="#f2ecd2"/></g>${[...Array(10)].map((_, i) => `<circle cx="${(i * 61) % 360}" cy="${(i * 23) % 70 + 8}" r="1.2" fill="#fff" style="animation:tw ${2 + i % 3}s ease-in-out ${i * .4}s infinite"/>`).join('')}`;
-    const wire = 'M40,74 Q120,112 196,118';
+    // Stadtvilla (wie das eigene Haus): Walmdach, Seitenwand rot mit grauem Band, Eingangsseite grau/rot, Solarmodule auf dem Dach
+    const wire = 'M30,112 Q60,124 92,130';
     const gridFlow = imp > 15 || exp > 15 ? `<path d="${wire}" fill="none" stroke="${exp > imp ? '#3ddc97' : '#ff7a6b'}" stroke-width="${flowW(Math.max(imp, exp))}" stroke-dasharray="5 7" stroke-linecap="round" style="animation:${exp > imp ? 'dashr' : 'dash'} ${sp(Math.max(imp, exp))}s linear infinite"/>` : '';
-    const panels = [0, 1, 2, 3].map(c => [0, 1].map(r => { const x = 252 + c * 15 - r * 9, y = 70 + r * 11 + c * 3.6; return `<path d="M${x},${y} l13,3.6 l-8,10 l-13,-3.6Z" fill="${pvOn ? '#3b6fd6' : '#1d2a48'}" stroke="#9cb8ef" stroke-width=".6" ${pvOn ? `style="animation:glow ${2 + (c + r) * .3}s ease-in-out infinite"` : ''}/>`; }).join('')).join('');
-    const lit = home > 150 ? '#ffd88a' : '#4a5263', soc0 = Math.max(0, Math.min(100, soc || 0)), bh = 34 * soc0 / 100;
-    const batCol = soc0 < 15 ? '#e34948' : soc0 < 40 ? '#e2b400' : '#3ddc97';
-    const scene = `<svg viewBox="0 0 360 196"><defs><linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
-      <rect width="360" height="196" fill="url(#esk)"/>${sunG}
-      <path d="M0,170 Q90,158 180,166 T360,162 L360,196 L0,196Z" fill="${grass}"/>
-      <g stroke="#3a3530" stroke-width="3" stroke-linecap="round"><line x1="34" y1="70" x2="34" y2="168"/><line x1="22" y1="78" x2="46" y2="78"/><line x1="24" y1="90" x2="44" y2="90"/></g>
+    const red = isDay ? '#d4655c' : '#7a3c39', redD = isDay ? '#b9524b' : '#5e2e2c', grey = isDay ? '#c9ccd8' : '#5a5d6b', greyD = isDay ? '#aeb2c0' : '#474a57', roof = isDay ? '#4b4e57' : '#2a2c33';
+    const lit = home > 150 ? '#ffd88a' : (isDay ? '#7f93ad' : '#2c3240');
+    const win = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${greyD}"/><rect x="${x + 2}" y="${y + 2}" width="${w - 4}" height="${h - 4}" fill="${lit}"/><line x1="${x + w / 2}" y1="${y + 2}" x2="${x + w / 2}" y2="${y + h - 2}" stroke="${greyD}" stroke-width="1"/>`;
+    // Seitenwand (perspektivisch, nach links fluchtend): Fenster verzerrt
+    const swin = (x, y, w, h) => `<path d="M${x},${y} l${w},-2 l0,${h} l${-w},${h * .04}Z" fill="${greyD}"/><path d="M${x + 1.5},${y + 1.5} l${w - 3},-2 l0,${h - 3} l${-(w - 3)},${h * .04}Z" fill="${lit}"/>`;
+    const panels = [0, 1, 2, 3, 4].map(c => [0, 1].map(r => { const x = 214 + c * 18 - r * 6, y = 74 + r * 9 + c * 1.2; return `<path d="M${x},${y} l16,1.2 l-4,8 l-16,-1.2Z" fill="${pvOn ? '#3b6fd6' : '#1d2a48'}" stroke="#9cb8ef" stroke-width=".5" ${pvOn ? `style="animation:glow ${2 + (c + r) * .3}s ease-in-out infinite"` : ''}/>`; }).join('')).join('');
+    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="68" y1="66" x2="${222 + k * 26}" y2="${80 + k}" stroke="#ffd65a" stroke-width="${flowW(pv)}" stroke-dasharray="6 6" stroke-linecap="round" opacity=".75" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
+    const soc0 = Math.max(0, Math.min(100, soc || 0)), batCol = soc0 < 15 ? '#e34948' : soc0 < 40 ? '#e2b400' : '#3ddc97';
+    const lamp = (x) => `<rect x="${x}" y="139" width="4" height="7" rx="1" fill="${home > 0 && !isDay ? '#ffe7a8' : '#e9edf3'}"/>${!isDay ? `<ellipse cx="${x + 2}" cy="142" rx="9" ry="12" fill="#ffd88a" opacity=".25"/>` : ''}`;
+    const sunG = isDay ? `<g transform="translate(54 66)"><circle r="${24 + Math.min(12, pv / 300)}" fill="#ffd65a" opacity="${pvOn ? .25 : .1}" style="animation:glow 3s ease-in-out infinite"/><g style="animation:spin ${pvOn ? Math.max(6, 40 - pv / 150) : 80}s linear infinite">${[...Array(10)].map((_, i) => `<rect x="-2" y="-${23 + Math.min(6, pv / 500)}" width="4" height="8" rx="2" fill="#ffe28a" transform="rotate(${i * 36})"/>`).join('')}</g><circle r="14" fill="${pvOn ? '#ffd34d' : '#e8d9a0'}"/></g>`
+      : `<g transform="translate(54 62)"><path d="M5,-13 A14,14 0 1 0 5,13 A10,10 0 1 1 5,-13Z" fill="#f2ecd2"/></g>${[...Array(12)].map((_, i) => `<circle cx="${(i * 61) % 360}" cy="${(i * 23) % 60 + 6}" r="1.2" fill="#fff" style="animation:tw ${2 + i % 3}s ease-in-out ${i * .4}s infinite"/>`).join('')}`;
+    const scene = `<svg viewBox="0 0 360 210"><defs><linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
+      <rect width="360" height="210" fill="url(#esk)"/>${sunG}
+      <path d="M0,176 Q120,168 200,174 T360,170 L360,210 L0,210Z" fill="${grass}"/>
+      <g stroke="#3a3530" stroke-width="3" stroke-linecap="round"><line x1="26" y1="108" x2="26" y2="182"/><line x1="15" y1="116" x2="37" y2="116"/><line x1="17" y1="126" x2="35" y2="126"/></g>
       <path d="${wire}" fill="none" stroke="#2a2622" stroke-width="1.5"/>${gridFlow}
-      <path d="M190,110 L250,58 L318,96 L318,166 L190,166Z" fill="${isDay ? '#ece4d8' : '#3a3f4a'}"/><path d="M182,114 L250,52 L326,100" fill="none" stroke="#6b3d2e" stroke-width="7" stroke-linejoin="round"/>
+      <path d="M92,104 L176,96 L176,182 L92,176Z" fill="${red}"/><path d="M116,102 L128,101 L128,178 L116,177Z" fill="${grey}"/>
+      ${swin(98, 112, 12, 18)}${swin(136, 110, 13, 18)}${swin(156, 108, 12, 18)}${swin(98, 146, 12, 18)}${swin(136, 146, 13, 18)}
+      <path d="M176,96 L262,100 L262,186 L176,182Z" fill="${grey}"/><path d="M262,100 L320,103 L320,184 L262,186Z" fill="${red}"/><path d="M252,99.5 L262,100 L262,186 L252,185.5Z" fill="${redD}"/>
+      ${win(188, 112, 13, 18)}${win(209, 112, 16, 18)}${win(233, 113, 13, 18)}${win(274, 114, 14, 18)}${win(296, 115, 13, 18)}
+      ${win(186, 146, 13, 18)}${win(238, 147, 13, 18)}${win(296, 148, 13, 18)}
+      <rect x="208" y="144" width="18" height="38" fill="#e9edf3"/><rect x="211" y="148" width="12" height="32" fill="${isDay ? '#d6dbe3' : '#4a4f5c'}"/>${[0, 1, 2, 3].map(k => `<rect x="215" y="${151 + k * 7}" width="4" height="4" fill="${home > 150 ? '#ffd88a' : '#9aa3b2'}"/>`).join('')}
+      ${lamp(201)}${lamp(229)}
+      <path d="M84,105 L152,70 L250,66 L330,104 L262,99 L176,94Z" fill="${roof}"/><path d="M176,94 L250,66 L330,104 L262,99Z" fill="${isDay ? '#5a5e68' : '#33363e'}"/>
+      <path d="M84,105 L176,94 L262,99 L330,104" fill="none" stroke="${isDay ? '#2e3036' : '#1b1c21'}" stroke-width="3" stroke-linejoin="round"/>
       ${panels}${rays}
-      <rect x="204" y="124" width="22" height="20" rx="2" fill="${lit}"/><rect x="236" y="124" width="22" height="20" rx="2" fill="${lit}"/><rect x="268" y="128" width="18" height="38" rx="2" fill="#6b3d2e"/>
-      <g transform="translate(296 128)"><rect x="0" y="0" width="16" height="36" rx="3" fill="#1d2230" stroke="${batCol}" stroke-width="1.5"/><rect x="5" y="-3" width="6" height="3" rx="1" fill="${batCol}"/>
-        <rect x="2" y="${2 + 32 - 32 * soc0 / 100}" width="12" height="${32 * soc0 / 100}" rx="1.5" fill="${batCol}" ${chg > 15 || dis > 15 ? 'style="animation:glow 1.6s ease-in-out infinite"' : ''}/></g>
-      ${lbl(70, 54, kw(pv), 'Solar', '#ffd65a', E.pv)}
-      ${lbl(254, 30, kw(home), 'Haus', '#5aa9ff', E.home)}
-      ${lbl(46, 136, exp > imp ? kw(exp) : kw(imp), exp > imp ? 'Einspeisung' : 'Netzbezug', exp > imp ? '#3ddc97' : '#ff7a6b', exp > imp ? E.grid_export : E.grid_import, 'start')}
-      ${lbl(352, 176, soc != null ? P_fmt(soc, 0) + ' %' : '–', chg > 15 ? 'lädt ' + kw(chg) : dis > 15 ? 'liefert ' + kw(dis) : 'Akku', batCol, E.battery_soc, 'end')}
+      <g transform="translate(334 150)"><rect x="0" y="0" width="16" height="32" rx="3" fill="#1d2230" stroke="${batCol}" stroke-width="1.5"/><rect x="5" y="-3" width="6" height="3" rx="1" fill="${batCol}"/>
+        <rect x="2" y="${2 + 28 - 28 * soc0 / 100}" width="12" height="${28 * soc0 / 100}" rx="1.5" fill="${batCol}" ${chg > 15 || dis > 15 ? 'style="animation:glow 1.6s ease-in-out infinite"' : ''}/></g>
+      ${lbl(122, 40, kw(pv), 'Solar', '#ffd65a', E.pv)}
+      ${lbl(350, 30, kw(home), 'Haus', '#5aa9ff', E.home, 'end')}
+      ${lbl(8, 160, exp > imp ? kw(exp) : kw(imp), exp > imp ? 'Einspeisung' : 'Netzbezug', exp > imp ? '#3ddc97' : '#ff7a6b', exp > imp ? E.grid_export : E.grid_import, 'start')}
+      ${lbl(354, 194, soc != null ? P_fmt(soc, 0) + ' %' : '–', chg > 15 ? 'lädt ' + kw(chg) : dis > 15 ? 'liefert ' + kw(dis) : 'Akku', batCol, E.battery_soc, 'end')}
     </svg>`;
     return `<div class="t full en"><div style="position:relative">${scene}<div class="eh"><span>${P_icon('mdi:lightning-bolt', 14)}Energie</span></div></div>
       <div class="st3"><div class="sb"><div class="k">${P_icon('mdi:leaf', 13)}Autark</div><div class="v">${self} %</div><div class="ring"><i style="width:${self}%;background:#3ddc97"></i></div></div>
