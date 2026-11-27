@@ -268,7 +268,7 @@ const ANSTRICHE_FASSADE = ['Brillux Silicon-Fassadenfarbe','Brillux Fassadenfarb
 const STANDARD_FASSADE = 'Brillux Silicon-Fassadenfarbe';
 // Raufaser → Intromatt, glatte Flächen (Lightvlies 130, ohne Tapete) → Superlux
 const standardAnstrich = belag => belag==='Raufaser' ? 'Brillux Intromatt' : 'Brillux Superlux';
-const neueFlaeche = () => ({vor:[], belag:'', anstrich:'', anzahl:2, manuell:false});
+const neueFlaeche = () => ({vor:[], belag:'', anstrich:'', anzahl:2, farbton:'', manuell:false});
 const RAUM_FLAECHEN    = [['decke','Decke'], ['wand','Wände']];
 const FASSADE_FLAECHEN = [['fassade','Fassade'], ['sockel','Sockel']];
 const flaechenVon = r => r.typ==='fassade' ? FASSADE_FLAECHEN : RAUM_FLAECHEN;
@@ -276,7 +276,7 @@ const flaechenVon = r => r.typ==='fassade' ? FASSADE_FLAECHEN : RAUM_FLAECHEN;
 // Kurzbeschreibung einer Fläche, z. B. "Spachteln Q2 · Raufaser · 2× Brillux Intromatt"
 function flaecheText(f){
   if (!f) return '';
-  return [...(f.vor||[]), f.belag ? f.belag+' tapezieren' : '', f.anstrich ? `${f.anzahl||2}× ${f.anstrich}` : '']
+  return [...(f.vor||[]), f.belag ? f.belag+' tapezieren' : '', f.anstrich ? `${f.anzahl||2}× ${f.anstrich}${f.farbton?`, Farbton ${f.farbton}`:''}` : '']
     .filter(Boolean).join(' · ');
 }
 
@@ -687,6 +687,12 @@ async function viewRoom(id){
   r.walls ||= []; r.form ||= 'rect';
   const F = r.typ==='fassade';
   const neuName = F ? 'Neue Fassadenseite' : 'Neuer Raum';
+  const farbVorschlaege = async () => {
+    const set = new Set(['Weiß']);
+    for (const x of await byIdx('rooms','projectId',r.projectId))
+      for (const f of Object.values(migrateRoom(x).flaechen||{})) if (f && f.farbton) set.add(f.farbton.trim());
+    return [...set];
+  };
   setHeader(r.name || neuName, {back:true});
 
   const persist = debounce(async ()=>{
@@ -752,6 +758,8 @@ async function viewRoom(id){
         <input data-anfrei="${key}" value="${esc(frei)}" placeholder="Anderes Brillux-Produkt …" style="flex:3">
         <select data-anz="${key}" style="flex:1">${[1,2,3].map(n=>`<option value="${n}" ${(+f.anzahl||2)===n?'selected':''}>${n}×</option>`).join('')}</select>
       </div>
+      ${f.anstrich ? `<label class="f" style="margin:8px 0 0"><span>🎨 Farbton</span>
+        <input data-farbe="${key}" value="${esc(f.farbton||'')}" list="farbtoene" autocomplete="off" placeholder="z. B. Weiß oder Brillux-Farbtonnummer"></label>` : ''}
     </div>`;
   }
 
@@ -763,7 +771,7 @@ async function viewRoom(id){
     abz: () => { const c=calc(r), n=r.abzuege.reduce((s,a)=>s+(num(a.n)??1),0);
       return n ? `${n} Öffnung${n>1?'en':''}${c.abzug?` · −${fmt(c.abzug)} m²`:''}${c.leibung?` · +${fmt(c.leibung)} Leibung`:''}` : 'keine'; },
     arb: () => { const t = flaechenVon(r).map(([k,tt])=>{ const f=r.flaechen[k]; if (!f) return '';
-        const x=[f.belag, f.anstrich?f.anstrich.replace('Brillux ',''):''].filter(Boolean).join(' + '); return x?`${tt}: ${x}`:''; })
+        const x=[f.belag, f.anstrich?f.anstrich.replace('Brillux ','')+(f.farbton?` (${f.farbton})`:''):''].filter(Boolean).join(' + '); return x?`${tt}: ${x}`:''; })
         .filter(Boolean); if (r.arbeiten.length) t.push(`+${r.arbeiten.length}`); return t.join(' · ') || 'noch nichts gewählt'; },
     pos: () => r.pos.length ? r.pos.map(x=>`${x.label||'Pos.'} ${fmtMenge(x)} ${POS_UNITS[x.art]}`).join(' · ') : 'keine',
   };
@@ -785,6 +793,7 @@ async function viewRoom(id){
         <label class="f" style="margin:0"><span>${F?'Fassadenseite':'Raumbezeichnung'}</span>
           <input id="name" value="${esc(r.name)}" placeholder="${F?'z. B. Straßenseite':'z. B. Wohnzimmer EG'}" list="namen" autocomplete="off"></label>
         <datalist id="namen">${NAMEN.map(n=>`<option value="${n}">`).join('')}</datalist>
+        <datalist id="farbtoene"></datalist>
       </div>
 
       ${sec('masse', 'Maße'+(F?' Fassade':''), kurz.masse(), `
@@ -829,7 +838,7 @@ async function viewRoom(id){
           <button class="btn small" id="addChip" style="flex:none">+</button>
         </div>
         <label class="f" style="margin:0"><span>Notiz</span>
-          <textarea id="rnotiz" placeholder="${F?'z. B. Farbton, Gerüst nötig, Putzschäden an der Ecke …':'z. B. Farbton, Wasserfleck an der Decke, Kunde wünscht …'}">${esc(r.notiz)}</textarea></label>`)}
+          <textarea id="rnotiz" placeholder="${F?'z. B. Gerüst nötig, Putzschäden an der Ecke …':'z. B. Wasserfleck an der Decke, Möbel bleiben stehen …'}">${esc(r.notiz)}</textarea></label>`)}
 
       ${sec('pos', 'Positionen', kurz.pos(), `
         ${r.pos.map((x,i)=>posHtml(x,i)).join('')}
@@ -858,6 +867,7 @@ async function viewRoom(id){
     bindSecs();
     refreshSums();
     renderPhotos();
+    farbVorschlaege().then(l=>{ const d=$('#farbtoene'); if (d) d.innerHTML = l.map(x=>`<option value="${esc(x)}">`).join(''); });
   }
 
   function posHtml(x,i){
@@ -989,6 +999,7 @@ async function viewRoom(id){
       $$(`[data-an^="${s.dataset.anfrei}|"]`).forEach(c=>c.classList.toggle('on', !f.anstrich && c.dataset.an.endsWith('|')));
     });
     $$('[data-anz]').forEach(s=>s.onchange=()=>{ fl(s.dataset.anz).anzahl = +s.value; persist(); });
+    $$('[data-farbe]').forEach(s=>s.oninput=()=>{ fl(s.dataset.farbe).farbton = s.value; persist(); refreshSums(); });
 
     // Positionen
     const lastPos = () => r.pos.length-1;
@@ -1251,7 +1262,8 @@ function flaechenLeistungen(titel, f, menge){
   const out = [];
   for (const v of f.vor||[]) out.push([`${titel}: ${v}`, menge, 'm²', titel, v, 0]);
   if (f.belag) out.push([`${titel} tapezieren: ${f.belag}`, menge, 'm²', titel, `Tapezieren: ${f.belag}`, 1]);
-  if (f.anstrich) out.push([`${titel} streichen ${f.anzahl||2}×: ${f.anstrich}`, menge, 'm²', titel, `Streichen ${f.anzahl||2}× ${f.anstrich.replace('Brillux ','')}`, 2]);
+  if (f.anstrich) out.push([`${titel} streichen ${f.anzahl||2}×: ${f.anstrich}${f.farbton?`, Farbton ${f.farbton}`:''}`, menge, 'm²', titel,
+    `Streichen ${f.anzahl||2}× ${f.anstrich.replace('Brillux ','')}${f.farbton?` · ${f.farbton}`:''}`, 2]);
   return out;
 }
 // Mengen für sonstige Arbeiten
