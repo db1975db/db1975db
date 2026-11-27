@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.9)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.10)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -31,18 +31,17 @@ const P_CSS = `
 .pp.home .av i{background:var(--p-ok)}
 .pp .n{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp .s{font-size:11.5px;color:var(--p-fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wx{color:#fff;border:none;padding:0}
-.wx .sc{position:absolute;inset:0;width:100%;height:150px;pointer-events:none}
-.wx .top{position:relative;display:grid;grid-template-columns:1fr auto;gap:8px;padding:14px 14px 8px;min-height:120px}
+.wx .sc{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.wx .top{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px 8px}
 .wx .lc{font-size:12px;opacity:.85;display:flex;align-items:center;gap:4px}
-.wx .tp2{font-size:52px;font-weight:200;line-height:1;margin-top:4px;letter-spacing:-1px}.wx .tp2 small{font-size:20px;font-weight:300;vertical-align:top;margin-left:2px}
-.wx .cd2{font-size:14px;font-weight:650;margin-top:2px}
+.wx .tp2{font-size:42px;font-weight:200;line-height:1;letter-spacing:-1px}.wx .tp2 small{font-size:17px;font-weight:300;vertical-align:top;margin-left:2px}
+.wx .cd2{font-size:14px;font-weight:650}.wx .mm2{font-size:12.5px;opacity:.85;display:flex;align-items:center;gap:2px;margin-top:2px}
 .wx .rt{text-align:right;font-size:12.5px;line-height:1.7;align-self:end;text-shadow:0 1px 4px rgba(0,0,0,.35)}
 .wx .rt span{display:inline-flex;align-items:center;gap:3px}
-.wx .warn{position:relative;margin:0 10px 8px;border-radius:12px;padding:8px 10px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.35;color:#1d1a10;cursor:pointer}
-.wx .warn b{display:block;font-size:13px}
-.wx .hr{position:relative;display:flex;gap:4px;overflow-x:auto;padding:4px 10px 8px;scrollbar-width:none}.wx .hr::-webkit-scrollbar{display:none}
-.wx .hc{flex:0 0 46px;text-align:center;padding:6px 0;border-radius:12px;background:rgba(0,0,0,.16);font-size:12px}
-.wx .hc .tt{opacity:.8;font-size:11px}.wx .hc .tv{font-weight:650;margin-top:2px}.wx .hc .pp2{font-size:10px;color:#9fd3ff;min-height:12px}
+.wx .warn{position:relative;margin:0 10px 6px;border-radius:20px;padding:4px 10px;display:flex;width:fit-content;max-width:calc(100% - 20px);gap:6px;align-items:center;font-size:12px;font-weight:650;color:#1d1a10;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wx .hr{position:relative;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:2px 10px 10px}
+.wx .hc{text-align:center;padding:4px 0;border-radius:10px;background:rgba(0,0,0,.14);font-size:12px}
+.wx .hc .tt{opacity:.8;font-size:10.5px}.wx .hc .tv{font-weight:650;font-size:12.5px}
 .wx .hc.now{background:rgba(255,255,255,.22)}
 .wx .ch{position:relative;display:flex;flex-wrap:wrap;gap:6px;padding:2px 10px 12px}
 .wx .cp{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:5px 9px;border-radius:20px;background:rgba(0,0,0,.18)}
@@ -181,24 +180,18 @@ class HandyCard extends HTMLElement {
     let warn = '';
     if (wc || pc) {
       const src = wc ? wa : pre.attributes, n = wc || pc, col = src.warning_1_color || '#ffeb3b', when = `${tm(src.warning_1_start)}–${tm(src.warning_1_end)}`;
-      warn = `<div class="warn" style="background:${col}" data-act="more" data-e="${wc ? W.warning : W.prewarning}">${P_icon('mdi:alert', 18)}<div><b>${P_esc(src.warning_1_headline || 'Wetterwarnung')}${n > 1 ? ` (+${n - 1})` : ''}</b>${wc ? '' : 'Vorabinformation · '}${when} · ${P_esc(src.warning_1_description || '')}</div></div>`;
+      const ev = String(src.warning_1_name || (src.warning_1_headline || '').replace(/^.*vor\s+/i, '') || 'Wetterwarnung'), evt = ev.charAt(0) + ev.slice(1).toLowerCase();
+      warn = `<div class="warn" style="background:${col}" data-act="more" data-e="${wc ? W.warning : W.prewarning}">${P_icon('mdi:alert', 15)}${wc ? '' : 'Vorwarnung: '}${P_esc(evt)} bis ${tm(src.warning_1_end)}${n > 1 ? ` (+${n - 1})` : ''}</div>`;
     }
     // Stündliche Vorhersage
-    const fc = (this._fc || []).filter(f => new Date(f.datetime) > Date.now() - 36e5).slice(0, 12);
+    const fc = (this._fc || []).filter(f => new Date(f.datetime) > Date.now() - 36e5).slice(0, 6);
     const hrs = fc.length ? `<div class="hr">${fc.map((f, i) => { const h = new Date(f.datetime).getHours(), dn = h >= 7 && h < 17, k = f.condition === 'sunny' && !dn ? 'clear-night' : f.condition, ic = (P_WX[k] || [, 'mdi:weather-cloudy'])[1];
-      return `<div class="hc ${i === 0 ? 'now' : ''}"><div class="tt">${i === 0 ? 'Jetzt' : h + ' Uhr'}</div>${P_icon(ic, 20)}<div class="tv">${P_fmt(f.temperature, 0)}°</div><div class="pp2">${f.precipitation_probability ? f.precipitation_probability + ' %' : f.precipitation ? P_fmt(f.precipitation) + ' mm' : ''}</div></div>`; }).join('')}</div>` : '';
-    const chips = [
-      wi != null ? `${P_icon('mdi:weather-windy', 14)}${P_fmt(wi, 0)} km/h ${dir}${A.wind_gust_speed ? ` · Böen ${P_fmt(A.wind_gust_speed, 0)}` : ''}` : '',
-      A.pressure ? `${P_icon('mdi:gauge', 14)}${P_fmt(A.pressure, 0)} hPa` : '',
-      hu != null ? `${P_icon('mdi:water-percent', 14)}${P_fmt(hu, 0)} %` : '',
-      rn != null ? `${P_icon('mdi:weather-rainy', 14)}${P_fmt(rn)} mm heute` : '',
-      sun ? `${P_icon('mdi:weather-sunset-up', 14)}${tm(sun.attributes.next_rising)} ${P_icon('mdi:weather-sunset-down', 14)}${tm(sun.attributes.next_setting)}` : '',
-    ].filter(Boolean).map(x => `<span class="cp">${x}</span>`).join('');
+      return `<div class="hc ${i === 0 ? 'now' : ''}"><div class="tt">${i === 0 ? 'Jetzt' : h + ' Uhr'}</div>${P_icon(ic, 18)}<div class="tv">${P_fmt(f.temperature, 0)}°</div></div>`; }).join('')}</div>` : '';
     return `<div class="t full wx" style="background:linear-gradient(160deg,${bg[0]},${bg[1]})">${this.scene(key, day)}
       <div class="top ${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-p="${P_esc(W.path)}"` : ''}>
-        <div><div class="lc">${P_icon('mdi:map-marker', 13)}${P_esc(W.name || 'Zuhause')}</div><div class="tp2">${P_fmt(t)}<small>°C</small></div><div class="cd2">${P_esc(txt)}</div></div>
-        <div class="rt"><span>${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}°  ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</span>${A.cloud_coverage != null ? `<br><span>${P_icon('mdi:cloud-outline', 13)}${P_fmt(A.cloud_coverage, 0)} %</span>` : ''}${A.visibility != null ? `<br><span>${P_icon('mdi:eye-outline', 13)}${P_fmt(A.visibility, 0)} km</span>` : ''}</div></div>
-      ${warn}${hrs}<div class="ch">${chips}</div></div>`;
+        <div class="tp2">${P_fmt(t)}<small>°C</small></div>
+        <div><div class="cd2">${P_esc(txt)}</div><div class="mm2">${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}° ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</div></div></div>
+      ${warn}${hrs}</div>`;
   }
   door() {
     const D = this.c.door, l = this.s(D.lock), st = l ? l.state : 'unavailable', b = this.n(D.battery), ct = this.s(D.contact), open = ct && ct.state === 'on';
