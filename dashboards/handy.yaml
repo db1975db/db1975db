@@ -14,6 +14,9 @@ views:
       max: sensor.garten_wetterstation_temperatur_max_24h
       min: sensor.garten_wetterstation_temperatur_min_24h
       wind: sensor.garden_wetterstation_geschwindigkeit
+      wind_gust: sensor.garden_wetterstation_geschwindigkeit_2
+      wind_bearing: sensor.garden_wetterstation_richtung
+      rain_rate: sensor.garden_wetterstation_niederschlag_pro_stunde
       rain_day: sensor.garten_wetterstation_niederschlag_heute
       humidity: sensor.garden_wetterstation_luftfeuchtigkeit
       warning: sensor.kreis_markisch_oderland_aktuelle_warnstufe
