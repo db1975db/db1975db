@@ -49,6 +49,9 @@ views:
       lock: lock.eingang_aqara_smart_lock_u200
       battery: sensor.eingang_aqara_smart_lock_u200_batterie
       contact: binary_sensor.multi_state_sensor_p100_tur
+    alarm:
+      entity: alarm_control_panel.alarmo
+      name: Alarmanlage
     waste_days: 1
     waste:
     - entity: sensor.hausmull_datum_2

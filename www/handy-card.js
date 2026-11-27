@@ -1,5 +1,5 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.14.2)
-// Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.15)
+// Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -66,6 +66,18 @@ const P_CSS = `
 .dr .lk{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
 .dr .st{font-size:15px;font-weight:700;line-height:1.2}.dr .sub{font-size:12px;color:var(--p-fg2);margin-top:2px}
 .dr .bt{display:flex;gap:6px;flex:none}.dr .btn{padding:10px 14px}
+.al{--ac:#8a94a3;transition:background .4s}.al .row{display:flex;align-items:center;gap:10px;cursor:pointer}
+.al .sh{position:relative;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;background:color-mix(in srgb,var(--ac) 18%,transparent);color:var(--ac)}
+.al.armed .sh:after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--ac);opacity:.5;animation:alr 2.4s ease-out infinite}
+@keyframes alr{0%{transform:scale(.85);opacity:.6}100%{transform:scale(1.25);opacity:0}}
+.al .st{font-size:15px;font-weight:700;line-height:1.2;color:var(--ac)}.al .sub{font-size:12px;color:var(--p-fg2);margin-top:2px}.al .tl{font-size:12px;color:var(--p-fg2)}
+.al .seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:10px}
+.al .seg .btn{flex-direction:column;gap:2px;padding:7px 2px;font-size:11.5px}.al .seg .btn.on{background:var(--ac);color:#fff}
+.al .prg{height:4px;border-radius:2px;background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden}.al .prg i{display:block;height:100%;background:var(--ac);animation:alp linear forwards}
+@keyframes alp{from{width:0}to{width:100%}}
+.al.trig{background:linear-gradient(150deg,#7a1d22,#c3333a);border-color:transparent;animation:alt 1.2s ease-in-out infinite}.al.trig .st,.al.trig .sh{color:#fff}.al.trig .sub,.al.trig .tl{color:rgba(255,255,255,.85)}
+@keyframes alt{50%{filter:brightness(1.25)}}
+.al .stop{margin-top:10px;width:100%;background:#fff;color:#a3202a;padding:12px;font-size:15px}
 .btn{flex:1;border:none;border-radius:12px;padding:9px 6px;font:inherit;font-size:13px;font-weight:650;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.08);color:var(--p-fg)}
 .btn.pri{background:#2f6fd0;color:#fff}.btn.sm{flex:0 0 auto;padding:9px 10px}
 .en{padding:0;border:none}
@@ -128,8 +140,9 @@ class HandyCard extends HTMLElement {
   n(e) { const s = this.s(e); const v = s ? parseFloat(s.state) : NaN; return isNaN(v) ? null : v; }
   keys() {
     const c = this.c, W = c.weather || {}, D = c.door || {}, E = c.energy || {};
-    const ents = [W.entity, W.temperature, W.max, W.min, W.wind, W.wind_gust, W.wind_bearing, W.rain_rate, W.rain_day, W.humidity, W.warning, W.prewarning, W.sun || 'sun.sun', D.lock, D.battery, D.contact, ...Object.values(E), ...c.persons.map(p => p.entity), ...c.waste.map(w => w.entity)];
-    return ents.map(e => { const s = this.s(e); return s ? s.state + (s.attributes.entity_picture || '') : '-'; }).join('|') + new Date().toDateString();
+    const ents = [W.entity, W.temperature, W.max, W.min, W.wind, W.wind_gust, W.wind_bearing, W.rain_rate, W.rain_day, W.humidity, W.warning, W.prewarning, W.sun || 'sun.sun', D.lock, D.battery, D.contact, W.pressure, W.pressure_trend, W.dew_point, W.uv, ...Object.values(E), ...c.persons.map(p => p.entity), ...c.waste.map(w => w.entity)];
+    const al = this.s((c.alarm || {}).entity), ak = al ? al.state + JSON.stringify([al.attributes.open_sensors, al.attributes.delay, al.attributes.changed_by, al.last_changed]) : '-';
+    return ents.map(e => { const s = this.s(e); return s ? s.state + (s.attributes.entity_picture || '') : '-'; }).join('|') + ak + new Date().toDateString();
   }
   build() {
     this.root.innerHTML = `<style>${P_CSS}</style><div class="wrap" id="w"></div>`;
@@ -144,6 +157,13 @@ class HandyCard extends HTMLElement {
     if (a === 'nav') this.nav(t.dataset.p, t.dataset.f);
     else if (a === 'menu') this.dispatchEvent(new Event('hass-toggle-menu', { bubbles: true, composed: true }));
     else if (a === 'lock') { const sv = t.dataset.sv; if (sv !== 'lock' && !window.confirm(sv === 'open' ? 'Haustür wirklich öffnen?' : 'Haustür wirklich aufschließen?')) return; this.call('lock', sv, { entity_id: e }); }
+    else if (a === 'alarm') {
+      const sv = t.dataset.sv, al = this.s(e), A = al ? al.attributes : {};
+      if (sv === 'alarm_disarm' && !window.confirm(al && al.state === 'triggered' ? 'Alarm stoppen und Anlage ausschalten?' : 'Alarmanlage wirklich ausschalten?')) return;
+      const data = { entity_id: e };
+      if (A.code_format && (sv === 'alarm_disarm' || A.code_arm_required)) { const code = window.prompt('Code eingeben'); if (!code) return; data.code = code; }
+      this.call('alarm_control_panel', sv, data);
+    }
     else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: e } }));
   }
   render() {
@@ -153,6 +173,7 @@ class HandyCard extends HTMLElement {
     if (c.weather) out.push(this.weather());
     if (c.energy) out.push(this.energy());
     if (c.door) out.push(this.door());
+    if (c.alarm) out.push(this.alarm());
     if (c.waste.length) out.push(this.waste());
     if (c.nav) out.push(P_nav(c.nav, c.base_path));
     // Nur geänderte Bereiche ersetzen, damit laufende Animationen nicht neu starten
@@ -278,6 +299,25 @@ class HandyCard extends HTMLElement {
     return `<div class="t full dr">
       <div class="row" data-act="more" data-e="${D.lock}"><div class="lk" style="background:${col}26;color:${col}">${P_icon(ic, 24)}</div><div style="min-width:0"><div class="sub" style="margin:0 0 1px">${P_esc(D.name || 'Haustür')}</div><div class="st" style="color:${col}">${txt}</div><div class="sub">${P_esc(sub)}</div></div></div>
       <div class="bt">${st === 'locked' ? `<button class="btn" data-act="lock" data-sv="unlock" data-e="${D.lock}">${P_icon('mdi:lock-open-variant', 15)}Aufschließen</button>` : `<button class="btn pri" data-act="lock" data-sv="lock" data-e="${D.lock}">${P_icon('mdi:lock', 15)}Abschließen</button>`}${canOpen ? `<button class="btn sm" data-act="lock" data-sv="open" data-e="${D.lock}" aria-label="Öffnen">${P_icon('mdi:door-open', 16)}</button>` : ''}</div></div>`;
+  }
+  // Alarmanlage (z. B. Alarmo): Status, Modus wählen, Verzögerung als Balken, bei Alarm rote Kachel mit Stopp-Knopf
+  alarm() {
+    const L = this.c.alarm, al = this.s(L.entity), st = al ? al.state : 'unavailable', A = al ? al.attributes : {}, f = A.supported_features || 0;
+    const M = { disarmed: ['Aus', 'mdi:shield-off-outline', '#8a94a3'], armed_home: ['Scharf · zu Hause', 'mdi:shield-home', '#3987e5'], armed_away: ['Scharf · abwesend', 'mdi:shield-lock', '#1baf7a'], armed_night: ['Scharf · Nacht', 'mdi:shield-moon', '#8a7cf0'], armed_vacation: ['Scharf · Urlaub', 'mdi:shield-airplane', '#1baf7a'], armed_custom_bypass: ['Scharf · eigene', 'mdi:shield-star', '#1baf7a'], arming: ['Wird scharf geschaltet …', 'mdi:shield-sync', '#ef8a3c'], pending: ['Eingangsverzögerung!', 'mdi:shield-alert', '#ef8a3c'], disarming: ['Wird ausgeschaltet …', 'mdi:shield-sync', '#8a94a3'], triggered: ['ALARM!', 'mdi:alarm-light', '#ffffff'] };
+    const [txt, ic, col] = M[st] || ['nicht erreichbar', 'mdi:shield-off', '#8a94a3'];
+    const tm = al ? new Date(al.last_changed).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
+    const nm = (e) => { const s = this.s(e); return P_esc(s ? s.attributes.friendly_name || e : e); };
+    const open = A.open_sensors ? Object.keys(A.open_sensors) : [];
+    const sub = st === 'triggered' ? (open.length ? `Ausgelöst: ${open.map(nm).join(', ')}` : 'Alarm wurde ausgelöst') : open.length ? `Offen: ${open.map(nm).join(', ')}` : st === 'pending' ? 'Jetzt ausschalten, sonst gibt es Alarm' : tm ? `seit ${tm} Uhr${A.changed_by ? ` · ${P_esc(A.changed_by)}` : ''}` : '';
+    // Verzögerung (scharf schalten / Eingang) als ablaufender Balken
+    let prg = '';
+    if ((st === 'arming' || st === 'pending') && A.delay) { const gone = Math.max(0, (Date.now() - new Date(al.last_changed)) / 1000); prg = `<div class="prg"><i style="animation-duration:${A.delay}s;animation-delay:-${Math.min(gone, A.delay).toFixed(1)}s"></i></div>`; }
+    const modes = [['alarm_disarm', 'disarmed', 'Aus', 'mdi:shield-off-outline', true], ['alarm_arm_home', 'armed_home', 'Zuhause', 'mdi:shield-home', f & 1], ['alarm_arm_away', 'armed_away', 'Abwesend', 'mdi:shield-lock', f & 2], ['alarm_arm_night', 'armed_night', 'Nacht', 'mdi:shield-moon', f & 4]].filter(m => m[4]);
+    const cur = st === 'arming' || st === 'pending' ? A.arm_mode || A.next_state : st;
+    const seg = st === 'triggered' || st === 'pending' ? `<button class="btn stop" data-act="alarm" data-sv="alarm_disarm" data-e="${L.entity}">${P_icon('mdi:alarm-light-off', 18)}Alarm aus</button>`
+      : `<div class="seg" style="grid-template-columns:repeat(${modes.length},minmax(0,1fr))">${modes.map(([sv, s2, l, i]) => `<button class="btn ${cur === s2 ? 'on' : ''}" data-act="alarm" data-sv="${sv}" data-e="${L.entity}">${P_icon(i, 18)}${l}</button>`).join('')}</div>`;
+    return `<div class="t full al ${st.startsWith('armed') ? 'armed' : ''} ${st === 'triggered' ? 'trig' : ''}" style="--ac:${col}">
+      <div class="row" data-act="more" data-e="${L.entity}"><div class="sh">${P_icon(ic, 24)}</div><div style="min-width:0"><div class="tl">${P_esc(L.name || 'Alarmanlage')}</div><div class="st">${txt}</div><div class="sub">${sub}</div></div></div>${prg}${seg}</div>`;
   }
   energy() {
     // Energie als lebendige Szene: Sonne/Mond, Haus mit Solardach, Hausakku und Strommast; Ströme laufen sichtbar
