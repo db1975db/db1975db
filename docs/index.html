@@ -256,13 +256,35 @@ function calc(r){
     if (L!=null && B!=null){ umfang = 2*(L+B); decke = L*B; }
   }
   const brutto = (umfang!=null && H!=null) ? umfang*H : null;
-  let abzug = 0;
+  let abzug = 0, leibung = 0, uebermessen = 0;
   for (const a of r.abzuege||[]){
-    const ab = num(a.b), ah = num(a.h), n = num(a.n) ?? 1;
-    if (ab!=null && ah!=null) abzug += ab*ah*n;
+    const o = oeffnung(a); if (!o) continue;
+    if (o.abziehen){ abzug += o.gesamt; leibung += o.leibung; } else uebermessen += o.gesamt;
   }
-  const wand = brutto!=null ? Math.max(0, brutto - abzug) : null;
-  return {umfang, decke, boden: decke, brutto, abzug, wand};
+  const wand = brutto!=null ? Math.max(0, brutto - abzug + leibung) : null;
+  return {umfang, decke, boden: decke, brutto, abzug, leibung, uebermessen, wand};
+}
+
+/* Öffnungen nach VOB/C DIN 18363:
+   bis 2,5 m² Einzelgröße übermessen (nicht abziehen, Leibung nicht extra),
+   über 2,5 m² abziehen und Leibung dazurechnen. */
+const UEBERMESS_GRENZE = 2.5;
+function oeffnung(a){
+  const b = num(a.b), h = num(a.h), n = num(a.n) ?? 1, t = num(a.t);
+  if (b==null || h==null) return null;
+  const einzel = b*h, gesamt = einzel*n;
+  const abziehen = einzel > UEBERMESS_GRENZE + 1e-9;
+  const seiten = a.seiten==4 ? 4 : 3;
+  const leibLaenge = seiten===4 ? 2*h + 2*b : 2*h + b;
+  const leibung = (abziehen && t) ? leibLaenge*t*n : 0;
+  return {einzel, n, gesamt, abziehen, leibung, seiten, t};
+}
+function oeffnungInfo(a){
+  const o = oeffnung(a);
+  if (!o) return '';
+  if (!o.abziehen) return `${fmt(o.einzel)} m² ≤ 2,5 m² → <b>übermessen</b> (nicht abgezogen)`;
+  return `${fmt(o.einzel)} m² > 2,5 m² → <b>abgezogen</b> −${fmt(o.gesamt)} m²`
+    + (o.t ? ` · Leibung <b>+${fmt(o.leibung)} m²</b>` : ` · <span style="color:var(--red)">Leibungstiefe fehlt</span>`);
 }
 
 /* =========================================================
@@ -547,7 +569,15 @@ async function viewRoom(id){
             ${mField('abz:'+i+':b','Breite',a.b)}
             ${mField('abz:'+i+':h','Höhe',a.h)}
             <label class="f" style="max-width:80px"><span>Anzahl</span><input data-abz-n="${i}" inputmode="numeric" value="${esc(a.n ?? 1)}"></label>
-          </div></div>`).join('')}
+          </div>
+          <div class="row" style="align-items:flex-end">
+            ${mField('abz:'+i+':t','Leibungstiefe',a.t)}
+            <label class="f"><span>Leibung (unten ohne/mit)</span><select data-abz-s="${i}">
+              <option value="3" ${a.seiten==4?'':'selected'}>3 Seiten</option>
+              <option value="4" ${a.seiten==4?'selected':''}>4 Seiten</option></select></label>
+          </div>
+          <div class="muted" style="font-size:14px" id="abzinfo-${i}">${oeffnungInfo(a)}</div></div>`).join('')}
+        <p class="muted" style="font-size:13px;margin:0 0 10px">Nach VOB: bis 2,5 m² übermessen, darüber abziehen + Leibung.</p>
         <button class="btn sec small" id="addAbz">+ Abzug</button>
       </div>
 
@@ -626,14 +656,19 @@ async function viewRoom(id){
 
   function resultsHtml(c){
     return `
-      <div class="res main"><div class="k">Wandfläche (netto)</div><div class="v">${fmt(c.wand)} m²</div></div>
+      <div class="res main"><div class="k">Wandfläche (VOB)</div><div class="v">${fmt(c.wand)} m²</div></div>
       <div class="res main"><div class="k">Deckenfläche</div><div class="v">${fmt(c.decke)} m²</div></div>
       <div class="res"><div class="k">Bodenfläche</div><div class="v">${fmt(c.boden)} m²</div></div>
       <div class="res"><div class="k">Umfang</div><div class="v">${fmt(c.umfang)} m</div></div>
       <div class="res"><div class="k">Wand brutto</div><div class="v">${fmt(c.brutto)} m²</div></div>
-      <div class="res"><div class="k">Abzüge</div><div class="v">${fmt(c.abzug)} m²</div></div>`;
+      <div class="res"><div class="k">Abzüge (&gt; 2,5 m²)</div><div class="v">−${fmt(c.abzug)} m²</div></div>
+      <div class="res"><div class="k">Leibungen</div><div class="v">+${fmt(c.leibung)} m²</div></div>
+      <div class="res"><div class="k">Übermessen (≤ 2,5 m²)</div><div class="v">${fmt(c.uebermessen)} m²</div></div>`;
   }
-  const refreshResults = () => { const el=$('#results'); if (el) el.innerHTML = resultsHtml(calc(r)); refreshPos(); };
+  const refreshResults = () => {
+    const el=$('#results'); if (el) el.innerHTML = resultsHtml(calc(r)); refreshPos();
+    r.abzuege.forEach((a,i)=>{ const x=$('#abzinfo-'+i); if (x) x.innerHTML = oeffnungInfo(a); });
+  };
 
   function setVal(key, v){
     const parts = key.split(':');
@@ -686,6 +721,7 @@ async function viewRoom(id){
     $$('[data-delabz]').forEach(b=>b.onclick=()=>{ r.abzuege.splice(+b.dataset.delabz,1); persist(); render(); });
     $$('[data-abz-art]').forEach(s=>s.onchange=()=>{ r.abzuege[+s.dataset.abzArt].art=s.value; persist(); });
     $$('[data-abz-n]').forEach(s=>s.oninput=()=>{ r.abzuege[+s.dataset.abzN].n=s.value; persist(); refreshResults(); });
+    $$('[data-abz-s]').forEach(s=>s.onchange=()=>{ r.abzuege[+s.dataset.abzS].seiten=+s.value; persist(); refreshResults(); });
 
     // Positionen
     const lastPos = () => r.pos.length-1;
@@ -724,6 +760,15 @@ async function viewRoom(id){
     });
     // DISTO: nach letztem Teilstück automatisch ein neues anlegen
     Disto.onFilled = el => {
+      const k = /^abz:(\d+):h$/.exec(el.dataset.key||'');
+      if (k){
+        const o = oeffnung(r.abzuege[+k[1]]);
+        if (o && !o.abziehen){
+          const fields=$$('[data-measure]'), t=$(`[data-key="abz:${k[1]}:t"]`);
+          return fields[fields.indexOf(t)+1] || null;
+        }
+        return undefined;
+      }
       const m = /^pos:(\d+):w:(\d+)$/.exec(el.dataset.key||'');
       if (!m) return undefined;
       const i=+m[1], j=+m[2];
@@ -833,7 +878,8 @@ async function viewReport(id){
     return `<div class="room">
       <h3 style="margin:0 0 4px">${esc(r.name||'Raum')}</h3>
       <table><tbody>${maße}<tr><td>Höhe</td><td class="n">${esc(r.h)} m</td></tr>
-        ${(r.abzuege||[]).map(a=>`<tr><td>Abzug ${esc(a.art)} ${esc(a.n||1)}×</td><td class="n">${esc(a.b)} × ${esc(a.h)} m</td></tr>`).join('')}
+        ${(r.abzuege||[]).map(a=>{ const o=oeffnung(a); return `<tr><td>${esc(a.art)} ${esc(a.n||1)}× ${esc(a.b)} × ${esc(a.h)} m</td><td class="n">${
+          !o ? '' : !o.abziehen ? 'übermessen' : `−${fmt(o.gesamt)} m²${o.leibung?` · Leibung +${fmt(o.leibung)} m²`:''}`}</td></tr>`; }).join('')}
       </tbody></table>
       ${migrateRoom(r).pos.length?`<table><thead><tr><th>Position</th><th>Maße</th><th class="n">Menge</th></tr></thead><tbody>
         ${r.pos.map(x=>`<tr><td>${esc(x.label||'Position')}</td><td>${
@@ -843,7 +889,10 @@ async function viewReport(id){
       </tbody></table>`:''}
       <table><tbody>
         <tr><td>Umfang</td><td class="n">${fmt(c.umfang)} m</td></tr>
-        <tr><td><b>Wandfläche netto</b></td><td class="n"><b>${fmt(c.wand)} m²</b></td></tr>
+        <tr><td>Wand brutto</td><td class="n">${fmt(c.brutto)} m²</td></tr>
+        ${c.abzug?`<tr><td>Abzüge (&gt; 2,5 m²)</td><td class="n">−${fmt(c.abzug)} m²</td></tr>`:''}
+        ${c.leibung?`<tr><td>Leibungen</td><td class="n">+${fmt(c.leibung)} m²</td></tr>`:''}
+        <tr><td><b>Wandfläche (VOB)</b></td><td class="n"><b>${fmt(c.wand)} m²</b></td></tr>
         <tr><td><b>Deckenfläche</b></td><td class="n"><b>${fmt(c.decke)} m²</b></td></tr>
         <tr><td>Bodenfläche</td><td class="n">${fmt(c.boden)} m²</td></tr>
       </tbody></table>
@@ -879,9 +928,10 @@ async function projectText(id){
     t+=`— ${r.name||'Raum'} —\n`;
     if (r.form==='walls') t+=`Wände: ${(r.walls||[]).map(w=>w.len).join(' + ')} m, Höhe ${r.h} m\n`;
     else t+=`L ${r.l} × B ${r.b} m, Höhe ${r.h} m\n`;
-    for (const a of r.abzuege||[]) t+=`Abzug ${a.art} ${a.n||1}× ${a.b} × ${a.h} m\n`;
+    for (const a of r.abzuege||[]){ const o=oeffnung(a);
+      t+=`${a.art} ${a.n||1}× ${a.b} × ${a.h} m: ${!o?'':!o.abziehen?'übermessen':`abgezogen −${fmt(o.gesamt)} m²${o.leibung?`, Leibung +${fmt(o.leibung)} m² (Tiefe ${a.t} m, ${o.seiten} Seiten)`:''}`}\n`; }
     for (const x of migrateRoom(r).pos) t+=`${x.label||'Position'}: ${fmtMenge(x)} ${POS_UNITS[x.art]}${x.art==='lfm'&&(x.werte||[]).filter(Boolean).length>1?` (${x.werte.filter(Boolean).join(' + ')})`:''}\n`;
-    t+=`Wandfläche netto: ${fmt(c.wand)} m² | Decke: ${fmt(c.decke)} m² | Umfang: ${fmt(c.umfang)} m\n`;
+    t+=`Wandfläche (VOB): ${fmt(c.wand)} m² | Decke: ${fmt(c.decke)} m² | Umfang: ${fmt(c.umfang)} m\n`;
     if ((r.arbeiten||[]).length) t+=`Arbeiten: ${r.arbeiten.join(', ')}\n`;
     if (r.notiz) t+=`Notiz: ${r.notiz}\n`;
     t+='\n';
