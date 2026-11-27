@@ -44,6 +44,7 @@ details.vor>summary{list-style:none;cursor:pointer;font-size:13px;color:var(--mu
 details.vor>summary::-webkit-details-marker{display:none}
 details.vor>summary::before{content:"▸ ";}
 details.vor[open]>summary::before{content:"▾ ";}
+.seg.wrap{flex-wrap:wrap}.seg.wrap button{flex:1 1 45%;font-size:14px}
 .fabbar{position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:20;display:flex;gap:10px;max-width:728px;margin:0 auto}
 .fabbar .btn{flex:1;padding:16px 10px;font-size:18px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
 .wahl{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -300,6 +301,10 @@ const POS_VORLAGEN = [
   ['Fensterbank','lfm'], ['Acrylfuge','lfm'], ['Treppengeländer','lfm'], ['Rohrleitung','lfm'],
   ['Kantenschutz','lfm'], ['Steckdose/Schalter abkleben','stk'], ['Heizkörper (Fläche)','m2']
 ];
+const POS_VORLAGEN_TREPPE = [
+  ['Treppenlauf-Untersicht','m2'], ['Podest-Untersicht','m2'], ['Geländer','lfm'], ['Handlauf','lfm'], ['Treppenwange','lfm']
+];
+const SONSTIGES_TREPPE = ['Untersichten streichen','Geländer lackieren','Handlauf lackieren','Wangen streichen'];
 const POS_VORLAGEN_FASSADE = [
   ['Fensterbank','lfm'], ['Dachuntersicht','m2'], ['Ortgang/Dachkasten','lfm'], ['Fallrohr','lfm'],
   ['Fensterläden','stk'], ['Gesims','lfm'], ['Gerüst','m2']
@@ -378,24 +383,56 @@ function fassadenSkizze(r, aktiv){
   </svg>`;
 }
 
+function dachSkizze(r, aktiv){
+  const n = +r.dn === 1 ? 1 : 2;
+  const wert = k => { const v = num(r[k]); return v!=null ? fmt(v)+' m' : ''; };
+  const farbe = k => aktiv===k ? '#c41e3a' : '#8a837b';
+  const dick  = k => aktiv===k ? 3.5 : 1.6;
+  const txt = (x, y, k, name, anchor='middle') => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${aktiv===k?15:13}"
+      font-weight="${aktiv===k?800:600}" fill="${farbe(k)}">${name}${wert(k)?' = '+wert(k):''}</text>`;
+  const marker = k => `<marker id="pd-${k}" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${farbe(k)}"/></marker>`;
+  const pfeil = (x1,y1,x2,y2,k) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${farbe(k)}" stroke-width="${dick(k)}" marker-start="url(#pd-${k})" marker-end="url(#pd-${k})"/>`;
+  // Querschnitt: Boden U, Kniestock K, flache Decke T
+  const L0 = 100, R0 = 320, U = 200, T = 50, KY = 140, PX = 75;
+  const links  = `${L0},${U} ${L0},${KY} ${L0+PX},${T}`;
+  const rechts = n===2 ? `${R0-PX},${T} ${R0},${KY} ${R0},${U}` : `${R0},${T} ${R0},${U}`;
+  const fuell = aktiv==='sl' ? 'rgba(196,30,58,.10)' : 'var(--card)';
+  const schrLinie = (x1,y1,x2,y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${aktiv==='sl'?'#c41e3a':'var(--ink)'}" stroke-width="${aktiv==='sl'?4:2}"/>`;
+  return `<svg viewBox="0 0 350 250" width="100%" style="max-width:400px;display:block;margin:0 auto 10px" role="img" aria-label="Skizze Dachschräge">
+    <defs>${['b','h','kn','sl','l'].map(marker).join('')}</defs>
+    <polygon points="${links} ${rechts}" fill="${fuell}" stroke="var(--ink)" stroke-width="2"/>
+    ${schrLinie(L0, KY, L0+PX, T)}${n===2 ? schrLinie(R0-PX, T, R0, KY) : ''}
+    <!-- B -->${pfeil(L0, U+18, R0, U+18, 'b')}${txt((L0+R0)/2, U+38, 'b', 'B Breite')}
+    <!-- H -->${pfeil((L0+R0)/2, U, (L0+R0)/2, T, 'h')}${txt((L0+R0)/2+8, (U+T)/2+20, 'h', 'H', 'start')}
+    <!-- K -->${pfeil(L0-14, U, L0-14, KY, 'kn')}${txt(L0-20, (U+KY)/2+5, 'kn', 'K', 'end')}
+    <!-- S -->${txt(L0+PX/2-6, (KY+T)/2-6, 'sl', 'S', 'end')}
+    <text x="${(L0+R0)/2}" y="${T-10}" text-anchor="middle" font-size="11" fill="#8a837b">flache Decke</text>
+    ${txt(10, 22, 'l', 'L Länge (in die Tiefe)', 'start')}
+  </svg>`;
+}
+
 /* =========================================================
    Berechnung: Raum (innen) und Fassadenseite
    ========================================================= */
 function oeffnungenSumme(r){
-  let abzug = 0, leibung = 0, uebermessen = 0;
+  let abzug = 0, leibung = 0, uebermessen = 0, dfAbzug = 0, dfLeibung = 0;
   for (const a of r.abzuege||[]){
     const o = oeffnung(a); if (!o) continue;
-    if (o.abziehen){ abzug += o.gesamt; leibung += o.leibung; } else uebermessen += o.gesamt;
+    const dach = a.art==='Dachfenster' && r.form==='dach';
+    if (!o.abziehen) uebermessen += o.gesamt;
+    else if (dach){ dfAbzug += o.gesamt; dfLeibung += o.leibung; }
+    else { abzug += o.gesamt; leibung += o.leibung; }
   }
   let fotoPlus = 0, fotoMinus = 0;
   for (const f of r.fotoFlaechen||[]){ const m = num(f.m2)||0; if (f.typ==='minus') fotoMinus += m; else fotoPlus += m; }
-  return {abzug, leibung, uebermessen, fotoPlus, fotoMinus};
+  return {abzug, leibung, uebermessen, fotoPlus, fotoMinus, dfAbzug, dfLeibung};
 }
 function calc(r){
   migrateRoom(r);
   return r.typ==='fassade' ? calcFassade(r) : calcRaum(r);
 }
 function calcRaum(r){
+  if (r.form === 'dach') return calcDach(r);
   const L = num(r.l), B = num(r.b), H = num(r.h);
   let umfang = null, decke = null;
   if (r.form === 'walls'){
@@ -408,7 +445,42 @@ function calcRaum(r){
   const brutto = (umfang!=null && H!=null) ? umfang*H : null;
   const o = oeffnungenSumme(r);
   const wand = brutto!=null ? Math.max(0, brutto - o.abzug + o.leibung + o.fotoPlus - o.fotoMinus) : null;
-  return {typ:'raum', umfang, decke, boden: decke, brutto, ...o, wand, fl:{decke, wand}};
+  return {typ:'raum', umfang, decke, boden: r.form==='treppe' ? null : decke, brutto, ...o, wand, fl:{decke, wand}};
+}
+/* Dachschräge (Querschnitt quer zum First):
+   L = Länge entlang der Schräge, B = Raumbreite, H = Raumhöhe bis flache Decke,
+   K = Kniestock, S = Länge der Schräge (gemessen), n = 1 oder 2 Schrägen.
+   Waagerechter Anteil der Schräge p = √(S² − (H−K)²). */
+function calcDach(r){
+  const L = num(r.l), B = num(r.b), H = num(r.h), K = num(r.kn), S = num(r.sl);
+  const n = +r.dn === 1 ? 1 : 2;
+  const o = oeffnungenSumme(r);
+  const umfang = (L!=null && B!=null) ? 2*(L+B) : null;
+  const boden  = (L!=null && B!=null) ? L*B : null;
+  let p = null, fehler = '';
+  if (H!=null && K!=null && S!=null){
+    const dh = H - K;
+    if (dh <= 0) fehler = 'Kniestock muss niedriger als die Raumhöhe sein.';
+    else if (S <= dh) fehler = 'Schräge ist kürzer als (Raumhöhe − Kniestock) – bitte prüfen.';
+    else p = Math.sqrt(S*S - dh*dh);
+    if (p!=null && B!=null && n*p > B + 1e-9){ fehler = 'Schrägen sind breiter als der Raum – bitte Maße prüfen.'; p = null; }
+  }
+  let kniestock=null, giebelwaende=null, schraege=null, deckeFlach=null, brutto=null;
+  if (p!=null && L!=null && B!=null){
+    const dh = H - K;
+    kniestock    = n*L*K + (2-n)*L*H;            // Längswände
+    giebelwaende = 2*(B*H - n*p*dh/2);          // Stirnwände ohne Dreiecke
+    schraege     = n*L*S;
+    deckeFlach   = Math.max(0, B - n*p) * L;
+    brutto       = kniestock + giebelwaende;
+  }
+  const schrZuWand = r.schrZu === 'wand';
+  const schrNetto = schraege!=null ? Math.max(0, schraege - o.dfAbzug + o.dfLeibung) : null;
+  const wandOhne = brutto!=null ? Math.max(0, brutto - o.abzug + o.leibung + o.fotoPlus - o.fotoMinus) : null;
+  const wand  = wandOhne!=null ? wandOhne + (schrZuWand ? schrNetto : 0) : null;
+  const decke = deckeFlach!=null ? deckeFlach + (schrZuWand ? 0 : schrNetto) : null;
+  return {typ:'raum', dach:true, umfang, boden, brutto, ...o, wand, decke, kniestock, giebelwaende,
+    schraege: schrNetto, deckeFlach, p, n, fehler, fl:{decke, wand}};
 }
 function calcFassade(r){
   const B = num(r.b), H = num(r.h), S = num(r.sockelH);
@@ -770,7 +842,11 @@ async function viewRoom(id){
       value="${esc(val)}" placeholder="0,000"><span class="unit">m</span></label>`;
 
   const ABZ_ARTEN = F ? ['Fenster','Haustür','Balkontür','Garagentor','Schaufenster','Sonstiges']
-                      : ['Fenster','Tür','Balkontür','Durchgang','Einbauschrank','Fliesenspiegel','Sonstiges'];
+                      : ['Fenster','Tür','Balkontür','Durchgang','Dachfenster','Wohnungstür','Einbauschrank','Fliesenspiegel','Sonstiges'];
+  const abzSchnell = () => F ? ['Fenster','Haustür','Garagentor','Balkontür']
+    : r.form==='dach' ? ['Fenster','Tür','Dachfenster','Balkontür']
+    : r.form==='treppe' ? ['Wohnungstür','Fenster','Tür','Durchgang'] : ['Fenster','Tür','Balkontür','Durchgang'];
+  const posVorlagen = () => F ? POS_VORLAGEN_FASSADE : r.form==='treppe' ? POS_VORLAGEN_TREPPE.concat(POS_VORLAGEN) : POS_VORLAGEN;
   const NAMEN = F ? ['Straßenseite','Gartenseite','Hofseite','Giebel Nord','Giebel Süd','Giebel Ost','Giebel West','Nordseite','Südseite','Ostseite','Westseite']
                   : ['Wohnzimmer','Schlafzimmer','Kinderzimmer','Küche','Bad','Gäste-WC','Flur','Treppenhaus','Esszimmer','Arbeitszimmer','Abstellraum','Keller','Büro','Diele'];
 
@@ -789,11 +865,30 @@ async function viewRoom(id){
         ${mField('gb','Giebelbreite unten',r.gb)}</details>` : ''}
       ${mField('sockelH','S · Sockelhöhe',r.sockelH)}`;
     }
-    return `
-      <div class="seg">
-        <button data-form="rect" class="${r.form==='rect'?'on':''}">Rechteckig</button>
-        <button data-form="walls" class="${r.form==='walls'?'on':''}">Wände einzeln</button>
-      </div>
+    const formen = [['rect','▭ Rechteckig'],['walls','⌗ Wände einzeln'],['dach','⌂ Dachschräge'],['treppe','▤ Treppenhaus']];
+    const wahl = `<div class="seg wrap">${formen.map(([k,t])=>`<button data-form="${k}" class="${r.form===k?'on':''}">${t}</button>`).join('')}</div>`;
+    if (r.form==='dach'){
+      const c = calc(r);
+      return `${wahl}
+      <div class="seg" style="margin-top:-4px">
+        <button data-dn="2" class="${+r.dn===1?'':'on'}">2 Schrägen</button>
+        <button data-dn="1" class="${+r.dn===1?'on':''}">1 Schräge</button></div>
+      <div id="skizze">${dachSkizze(r, null)}</div>
+      <div class="row">${mField('l','L · Länge',r.l)}${mField('b','B · Breite',r.b)}</div>
+      <div class="row">${mField('h','H · Raumhöhe',r.h)}${mField('kn','K · Kniestock',r.kn)}</div>
+      ${mField('sl','S · Schräge (Kniestock bis Decke)',r.sl)}
+      <div id="dachfehler" class="hint" ${c.fehler?'':'hidden'}>⚠️ ${esc(c.fehler)}</div>
+      <label class="f"><span>Schrägen rechnen zu</span>
+        <div class="seg" style="margin:0"><button data-schr="decke" class="${r.schrZu==='wand'?'':'on'}">Decke</button>
+        <button data-schr="wand" class="${r.schrZu==='wand'?'on':''}">Wände</button></div></label>
+      <p class="muted" style="font-size:13px;margin:-4px 0 0">Dachfenster als Abzug anlegen – sie werden von der Schräge abgezogen.</p>`;
+    }
+    if (r.form==='treppe') return `${wahl}
+      <div class="row">${mField('l','Länge (Grundriss)',r.l)}${mField('b','Breite (Grundriss)',r.b)}</div>
+      ${mField('h','Gesamthöhe (unten bis oberste Decke)',r.h)}
+      <label class="f"><span>Geschosse (zur Info)</span><input id="geschosse" inputmode="numeric" value="${esc(r.geschosse||'')}" placeholder="z. B. 3"></label>
+      <p class="muted" style="font-size:13px;margin:-4px 0 0">Wände = Umfang × Gesamthöhe. Wohnungstüren und Fenster als Abzug. Untersichten, Geländer, Handlauf unten bei „Positionen“.</p>`;
+    return `${wahl}
       ${r.form==='rect' ? `<div class="row">${mField('l','Länge',r.l)}${mField('b','Breite',r.b)}</div>` : `
         ${r.walls.map((w,i)=>`<div class="row" style="align-items:flex-end">
           ${mField('wall:'+i, 'Wand '+(i+1), w.len)}
@@ -840,6 +935,8 @@ async function viewRoom(id){
   const kurz = {
     masse: () => F ? (r.b||r.h ? `${r.b||'?'} × ${r.h||'?'} m${r.gh?' + Giebel':''}` : 'noch leer')
       : r.form==='walls' ? `${r.walls.filter(w=>w.len).length} Wände · H ${r.h||'?'}`
+      : r.form==='dach' ? `Dachschräge · ${r.l||'?'} × ${r.b||'?'} m · K ${r.kn||'?'}`
+      : r.form==='treppe' ? `Treppenhaus · ${r.l||'?'} × ${r.b||'?'} · H ${r.h||'?'} m`
       : (r.l||r.b||r.h ? `${r.l||'?'} × ${r.b||'?'} × ${r.h||'?'} m` : 'noch leer'),
     abz: () => { const c=calc(r), n=r.abzuege.reduce((s,a)=>s+(num(a.n)??1),0);
       return n ? `${n} Öffnung${n>1?'en':''}${c.abzug?` · −${fmt(c.abzug)} m²`:''}${c.leibung?` · +${fmt(c.leibung)} Leibung`:''}` : 'keine'; },
@@ -853,13 +950,13 @@ async function viewRoom(id){
     const c = calc(r), lb = $('#livebar');
     lb.innerHTML = F
       ? `<span>Fassade <b>${fmt(c.fassade)} m²</b></span><span>Sockel <b>${fmt(c.sockel)} m²</b></span>`
-      : `<span>Wand <b>${fmt(c.wand)} m²</b></span><span>Decke <b>${fmt(c.decke)} m²</b></span><span>Umfang <b>${fmt(c.umfang)} m</b></span>`;
+      : `<span>Wand <b>${fmt(c.wand)} m²</b></span><span>Decke <b>${fmt(c.decke)} m²</b></span>${c.dach?`<span>davon Schräge <b>${fmt(c.schraege)} m²</b></span>`:''}<span>Umfang <b>${fmt(c.umfang)} m</b></span>`;
     lb.hidden = false;
   }
 
   function render(){
     const c = calc(r);
-    const sonst = F ? SONSTIGES_FASSADE : SONSTIGES;
+    const sonst = F ? SONSTIGES_FASSADE : r.form==='treppe' ? SONSTIGES_TREPPE.concat(SONSTIGES) : SONSTIGES;
     const customChips = r.arbeiten.filter(a=>!sonst.includes(a));
     app.innerHTML = `
       <div class="card">
@@ -896,7 +993,7 @@ async function viewRoom(id){
           </div>
           <div class="muted" style="font-size:14px" id="abzinfo-${i}">${oeffnungInfo(a)}</div></div>`).join('')}
         <div class="chips" style="margin:0 0 4px">
-          ${(F?['Fenster','Haustür','Garagentor','Balkontür']:['Fenster','Tür','Balkontür','Durchgang']).map(a=>`<button class="chip" data-addabz="${a}">+ ${a}</button>`).join('')}
+          ${abzSchnell().map(a=>`<button class="chip" data-addabz="${a}">+ ${a}</button>`).join('')}
         </div>
         <p class="muted" style="font-size:13px;margin:4px 0 0">VOB: bis 2,5 m² übermessen, darüber abziehen + Leibung.</p>`)}
 
@@ -916,7 +1013,7 @@ async function viewRoom(id){
       ${sec('pos', 'Positionen', kurz.pos(), `
         ${r.pos.map((x,i)=>posHtml(x,i)).join('')}
         <div class="chips" style="margin:4px 0 0">
-          ${(F?POS_VORLAGEN_FASSADE:POS_VORLAGEN).map(([l,a])=>`<button class="chip" data-addpos="${esc(l)}|${a}">+ ${esc(l)} <span class="muted">${POS_UNITS[a]}</span></button>`).join('')}
+          ${posVorlagen().map(([l,a])=>`<button class="chip" data-addpos="${esc(l)}|${a}">+ ${esc(l)} <span class="muted">${POS_UNITS[a]}</span></button>`).join('')}
           <button class="chip" data-addpos="|lfm">+ Eigene …</button>
         </div>`, false)}
 
@@ -963,7 +1060,8 @@ async function viewRoom(id){
           <input data-pos-n="${i}" inputmode="numeric" value="${esc(x.n ?? 0)}" style="text-align:center;font-size:26px;font-weight:700">
           <button class="btn" data-stk="${i}:1" style="flex:none;width:64px;font-size:24px">+</button></div>`;
     } else {
-      body = `<div class="row">${mField(`pos:${i}:b`,'Breite',x.b)}${mField(`pos:${i}:h`,'Höhe',x.h)}
+      const lb = /untersicht|podest|dach/i.test(x.label||'');
+      body = `<div class="row">${mField(`pos:${i}:b`, lb?'Länge':'Breite', x.b)}${mField(`pos:${i}:h`, lb?'Breite':'Höhe', x.h)}
           <label class="f" style="max-width:80px"><span>Anzahl</span><input data-pos-n="${i}" inputmode="numeric" value="${esc(x.n ?? 1)}"></label></div>`;
     }
     return `<div class="sub">${head}${body}
@@ -978,6 +1076,11 @@ async function viewRoom(id){
       + tile('Rechteck B × H', fmt(c.rechteck)+' m²') + tile('Giebel', fmt(c.giebel)+' m²')
       + tile('Abzüge (&gt; 2,5 m²)', `−${fmt(c.abzug)} m²`) + tile('Leibungen', `+${fmt(c.leibung)} m²`)
       + tile('Übermessen (≤ 2,5 m²)', fmt(c.uebermessen)+' m²') + foto;
+    if (c.dach) return tile('Wandfläche (VOB)', fmt(c.wand)+' m²', true) + tile(r.schrZu==='wand'?'Decke':'Decke inkl. Schrägen', fmt(c.decke)+' m²', true)
+      + tile('Kniestockwände', fmt(c.kniestock)+' m²') + tile('Giebelwände', fmt(c.giebelwaende)+' m²')
+      + tile('Schrägen', fmt(c.schraege)+' m²') + tile('Decke flach', fmt(c.deckeFlach)+' m²')
+      + tile('Bodenfläche', fmt(c.boden)+' m²') + tile('Umfang', fmt(c.umfang)+' m')
+      + tile('Abzüge (&gt; 2,5 m²)', `−${fmt(c.abzug+c.dfAbzug)} m²`) + tile('Übermessen (≤ 2,5 m²)', fmt(c.uebermessen)+' m²') + foto;
     return tile('Wandfläche (VOB)', fmt(c.wand)+' m²', true) + tile('Deckenfläche', fmt(c.decke)+' m²', true)
       + tile('Bodenfläche', fmt(c.boden)+' m²') + tile('Umfang', fmt(c.umfang)+' m')
       + tile('Wand brutto', fmt(c.brutto)+' m²') + tile('Abzüge (&gt; 2,5 m²)', `−${fmt(c.abzug)} m²`)
@@ -1009,12 +1112,16 @@ async function viewRoom(id){
     const fields = $$('[data-measure]');
     let skizzeAktiv = null;
     const skizze = k => { if (k!==undefined) skizzeAktiv = k; const s=$('#skizze'); if (s) s.innerHTML = fassadenSkizze(r, skizzeAktiv); };
-    if (F){
-      Disto.onTarget = el => skizze(el ? el.dataset.key : null);
-      $$('[data-fform]').forEach(b=>b.onclick=()=>{ r.fform=b.dataset.fform; persist(); render(); });
-    }
+    const skizzeFn = F ? fassadenSkizze : r.form==='dach' ? dachSkizze : null;
+    const skizze2 = k => { if (k!==undefined) skizzeAktiv = k; const s=$('#skizze'); if (s && skizzeFn) s.innerHTML = skizzeFn(r, skizzeAktiv);
+      if (r.form==='dach'){ const f=$('#dachfehler'), c=calc(r); if (f){ f.hidden=!c.fehler; f.textContent='⚠️ '+c.fehler; } } };
+    if (skizzeFn) Disto.onTarget = el => skizze2(el ? el.dataset.key : null);
+    if (F) $$('[data-fform]').forEach(b=>b.onclick=()=>{ r.fform=b.dataset.fform; persist(); render(); });
+    $$('[data-dn]').forEach(b=>b.onclick=()=>{ r.dn=+b.dataset.dn; persist(); render(); });
+    $$('[data-schr]').forEach(b=>b.onclick=()=>{ r.schrZu=b.dataset.schr; persist(); render(); });
+    const gs=$('#geschosse'); if (gs) gs.oninput=()=>{ r.geschosse=gs.value; persist(); };
     fields.forEach((el, idx)=>{
-      if (F){ el.addEventListener('focus', ()=>skizze(el.dataset.key)); el.addEventListener('input', ()=>skizze()); }
+      if (skizzeFn){ el.addEventListener('focus', ()=>skizze2(el.dataset.key)); el.addEventListener('input', ()=>skizze2()); }
       el.addEventListener('focus', ()=>{
         if (Disto.connected){ Disto.setTarget(el); el.blur(); return; }
         el.classList.add('hot'); el.select(); Disto.target = el;
@@ -1041,6 +1148,8 @@ async function viewRoom(id){
     $$('[data-form]').forEach(b=>b.onclick=()=>{
       r.form=b.dataset.form;
       if (r.form==='walls' && !r.walls.length) r.walls=[{len:''},{len:''},{len:''},{len:''}];
+      if (r.form==='treppe' && !r.name){ r.name='Treppenhaus'; $('#title').textContent=r.name; }
+      if (r.form==='dach' && !r.dn) r.dn = 2;
       persist(); render();
     });
     $('#addWall') && ($('#addWall').onclick=()=>{ r.walls.push({len:''}); persist(); render(); focusKey('wall:'+(r.walls.length-1)); });
@@ -1275,6 +1384,8 @@ async function viewReport(id){
     const masse = r.typ==='fassade'
       ? `${r.fform==='giebel'?'Giebel · ':''}${esc(r.b)} × ${esc(r.h)} m${r.fform==='giebel'&&r.gh?` + G ${esc(r.gh)} m`:''}${r.sockelH?` · Sockel ${esc(r.sockelH)} m`:''}`
       : r.form==='walls' ? `Wände ${(r.walls||[]).map(w=>esc(w.len)).join(' + ')} m · H ${esc(r.h)} m`
+      : r.form==='dach' ? `Dachschräge (${c.n}) · ${esc(r.l)} × ${esc(r.b)} m · H ${esc(r.h)} · K ${esc(r.kn)} · S ${esc(r.sl)} m · Schrägen ${fmt(c.schraege)} m²`
+      : r.form==='treppe' ? `Treppenhaus · ${esc(r.l)} × ${esc(r.b)} m · Gesamthöhe ${esc(r.h)} m${r.geschosse?` · ${esc(r.geschosse)} Geschosse`:''}`
       : `${esc(r.l)} × ${esc(r.b)} m · H ${esc(r.h)} m`;
     const arb = flaechenVon(r).map(([k,t])=>{ const x=flaecheText(r.flaechen[k]); return x?`<b>${t}:</b> ${esc(x.replace(/Brillux /g,''))}`:''; }).filter(Boolean)
       .concat((r.arbeiten||[]).length?[`<b>Sonstiges:</b> ${esc(r.arbeiten.join(', '))}`]:[]).concat(r.pos.map(x=>`${esc(x.label||'Position')} ${fmtMenge(x)} ${POS_UNITS[x.art]}`));
@@ -1371,6 +1482,10 @@ function mengeFuer(arbeit, r){
     case 'Fensterläden lackieren': return pos(/läden|laden/i) || [null,'Stk'];
     case 'Fallrohre lackieren': return pos(/fallrohr|rohr/i) || [null,'lfm'];
     case 'Gerüst': return pos(/gerüst/i) || [null,'m²'];
+    case 'Untersichten streichen': return pos(/untersicht/i) || [null,'m²'];
+    case 'Geländer lackieren': return pos(/geländer/i) || [null,'lfm'];
+    case 'Handlauf lackieren': return pos(/handlauf/i) || [null,'lfm'];
+    case 'Wangen streichen': return pos(/wange/i) || [null,'lfm'];
     default: return [null, 'psch'];
   }
 }
@@ -1462,6 +1577,8 @@ async function projectText(id){
       sW+=c.wand||0; sD+=c.decke||0;
       t+=`— ${r.name||'Raum'} —\n`;
       if (r.form==='walls') t+=`Wände: ${(r.walls||[]).map(w=>w.len).join(' + ')} m, Höhe ${r.h} m\n`;
+      else if (r.form==='dach') t+=`Dachschräge (${c.n} Schräge${c.n>1?'n':''}): L ${r.l} × B ${r.b} m, Raumhöhe ${r.h} m, Kniestock ${r.kn} m, Schräge ${r.sl} m\nKniestockwände ${fmt(c.kniestock)} m², Giebelwände ${fmt(c.giebelwaende)} m², Schrägen ${fmt(c.schraege)} m² (zu ${r.schrZu==='wand'?'Wänden':'Decke'}), Decke flach ${fmt(c.deckeFlach)} m²\n`;
+      else if (r.form==='treppe') t+=`Treppenhaus: ${r.l} × ${r.b} m Grundriss, Gesamthöhe ${r.h} m${r.geschosse?`, ${r.geschosse} Geschosse`:''}\n`;
       else t+=`L ${r.l} × B ${r.b} m, Höhe ${r.h} m\n`;
     }
     for (const a of r.abzuege||[]){ const o=oeffnung(a);
