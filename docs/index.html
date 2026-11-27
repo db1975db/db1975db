@@ -229,7 +229,8 @@ const VORARBEITEN_FASSADE = ['Reinigen (Hochdruck)','Algen-/Pilzbehandlung','Ris
   'Grundierung','Armierung mit Gewebe'];
 const BELAEGE = ['Raufaser','Lightvlies 130','Vlies (andere)'];
 const ANSTRICHE_INNEN = ['Brillux Superlux','Brillux Intromatt','Brillux Raulan'];
-const ANSTRICHE_FASSADE = ['Brillux Fassadenfarbe Acryl','Brillux Fassadenfarbe Silikon','Brillux Fassadenfarbe Silikat'];
+const ANSTRICHE_FASSADE = ['Brillux Silicon-Fassadenfarbe','Brillux Fassadenfarbe Acryl','Brillux Fassadenfarbe Silikat'];
+const STANDARD_FASSADE = 'Brillux Silicon-Fassadenfarbe';
 // Raufaser → Intromatt, glatte Flächen (Lightvlies 130, ohne Tapete) → Superlux
 const standardAnstrich = belag => belag==='Raufaser' ? 'Brillux Intromatt' : 'Brillux Superlux';
 const neueFlaeche = () => ({vor:[], belag:'', anstrich:'', anzahl:2, manuell:false});
@@ -276,6 +277,7 @@ function migrateRoom(r){
     r.arbeiten = alt.filter(a=>!weg.includes(a));
     r.flaechen = r.typ==='fassade' ? {fassade:neueFlaeche(), sockel:neueFlaeche()} : {decke, wand};
   }
+  for (const f of Object.values(r.flaechen)) if (f && f.anstrich==='Brillux Fassadenfarbe Silikon') f.anstrich = STANDARD_FASSADE;
   return r;
 }
 function posMenge(x){
@@ -526,7 +528,7 @@ function neuerRaum(projectId, extra={}){
 }
 function neueFassade(projectId, extra={}){
   return {id:uid(), projectId, typ:'fassade', name:'', b:'', h:'', gh:'', gb:'', sockelH:'',
-    abzuege:[], pos:[], arbeiten:[], fotoFlaechen:[], flaechen:{fassade:neueFlaeche(), sockel:neueFlaeche()},
+    abzuege:[], pos:[], arbeiten:[], fotoFlaechen:[], flaechen:{fassade:{...neueFlaeche(), anstrich:STANDARD_FASSADE}, sockel:neueFlaeche()},
     notiz:'', order:Date.now(), ...extra};
 }
 
@@ -1277,7 +1279,7 @@ async function viewOffer(id){
 function angebotText(p, rooms, liste){
   let t = `Bitte erstelle ein Angebot für meinen Malerbetrieb.\n\n`;
   t += `KUNDE: ${p.kunde||''}\n${p.adresse?`ADRESSE: ${p.adresse}\n`:''}${p.telefon?`TELEFON: ${p.telefon}\n`:''}AUFMASS VOM: ${fmtDate(p.datum)}\n\n`;
-  t += `MATERIAL: ausschließlich Brillux. Raufaser mit Brillux Intromatt oder Raulan, glatte Flächen (Lightvlies 130) mit Brillux Superlux.\n\n`;
+  t += `MATERIAL: ausschließlich Brillux. Raufaser mit Brillux Intromatt oder Raulan, glatte Flächen (Lightvlies 130) mit Brillux Superlux, Fassade mit Brillux Silicon-Fassadenfarbe.\n\n`;
   t += `LEISTUNGEN (Mengen aus dem Aufmaß, Flächen nach VOB):\n`;
   liste.forEach((e,i)=>{
     t += `${i+1}. ${e.arbeit}: ${fmtE(e.menge,e.einheit)}`;
