@@ -55,11 +55,12 @@
 - Später: Einzel-Dashboards (Wohnzimmer, Küche, Wetterstation, Mähroboter, Hunter-Bewässerung) erst löschen, wenn Dennis das will.
 
 ### Dashboard „Zuhause (iPhone)“ (`/dashboard-handy`) – im Aufbau, seit 27.11.2026
-- Eigenes iPhone-Dashboard mit kleineren Kacheln (Dennis' Wunsch). Bisher nur die Startseite: `custom:handy-card` (`www/handy-card.js`, v0.11), Konfiguration `dashboards/handy.yaml`.
-- **Ressource:** inline, Resource-ID `661a62894e9e4e4381ed12b1ca498677` (Hash 175768da… = Repo).
+- Eigenes iPhone-Dashboard mit kleineren Kacheln (Dennis' Wunsch). Bisher nur die Startseite: `custom:handy-card` und `custom:handy-floor` (`www/handy-card.js`, v0.12), Konfiguration `dashboards/handy.yaml`.
+- **Ressource:** inline, Resource-ID `661a62894e9e4e4381ed12b1ca498677` (Hash 45420d33… = Repo).
 - Bereiche: Begrüßung, Personen mit Fotos (entity_picture), Wetter (animiertes Symbol, Windkompass mit Richtung/Geschwindigkeit/Böen der Gartenstation, Regenbeginn aus DWD-Stundenvorhersage `weather.lebus_3` mit 12-Std.-Balken, kurze DWD-Warnzeile), Energie als Szene mit der eigenen Stadtvilla von vorne (symmetrisch, graue Betondachsteine, 9 PV-Module mittig 4+5, Varta Element backup 6,5 kWh hinter dem HWR-Fenster rechts unten), Haustür (Aqara U200), Müll mit den Bildern `/local/muell/*.png`.
 - Das ältere Dashboard `dashboard-iphone` bleibt vorerst unverändert.
-- Nächste Schritte: Leiste unten (Start · EG · OG · Garten), Etagen-Seiten mit kleinen Raumkacheln, kompakte Raumansichten.
+- Ansichten: `start`, `erdgeschoss`, `obergeschoss`, `garten` mit Leiste unten (`nav`). Etagen = `handy-floor` (Kopf mit Lichtern/„Alle aus“/offenen Fenstern/Heizen, kleine Raumkacheln mit Lichtknopf; Garten zusätzlich Mähroboter, Bewässerung, Pool). Raumkacheln öffnen vorerst die Raumansichten in `/dashboard-haus` (`room_base`).
+- Nächster Schritt: kompakte Raumansichten fürs iPhone im eigenen Dashboard.
 
 ## Die Raum-Karte für weitere Räume
 `raum-card` ist allgemein gebaut. Alle Bereiche sind optional:
