@@ -1,4 +1,6 @@
 # iPhone-Dashboard „Zuhause (iPhone)“ (/dashboard-handy) – Startseite mit custom:handy-card (www/handy-card.js)
+kiosk_mode:
+  hide_header: true
 views:
 - title: Start
   path: start

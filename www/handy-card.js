@@ -18,12 +18,12 @@ const P_WX = {
 const P_CSS = `
 :host{display:block;--p-bg:#0e1118;--p-card:#181c26;--p-line:rgba(255,255,255,.08);--p-fg:#f2f4f8;--p-fg2:#9aa3b2;--p-ok:#1baf7a;--p-warn:#ef8a3c;--p-bad:#e34948;color:var(--p-fg);font-family:inherit}
 *{box-sizing:border-box}
-.wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 12px calc(14px + env(safe-area-inset-bottom))}
+.wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:max(12px,env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom))}
 .full{grid-column:1/-1}
 .t{background:var(--p-card);border:1px solid var(--p-line);border-radius:18px;padding:12px;min-width:0;position:relative;overflow:hidden}
 .lnk{cursor:pointer}
 .h{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:650;letter-spacing:.02em;color:var(--p-fg2);text-transform:uppercase;margin-bottom:8px}
-.hello{padding:4px 2px 2px}.hello .g{font-size:22px;font-weight:750;line-height:1.15}.hello .d{font-size:13px;color:var(--p-fg2);margin-top:2px}
+.hello{padding:4px 2px 2px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}.hello .mn{width:38px;height:38px;border-radius:50%;border:1px solid var(--p-line);background:var(--p-card);color:var(--p-fg);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}.hello .g{font-size:22px;font-weight:750;line-height:1.15}.hello .d{font-size:13px;color:var(--p-fg2);margin-top:2px}
 .ppl{display:flex;gap:8px}
 .pp{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:12px 4px 10px;border-radius:14px;background:rgba(255,255,255,.04);cursor:pointer}
 .av{width:58px;height:58px;border-radius:50%;flex:none;background:#2b3242 center/cover;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;position:relative;box-shadow:0 0 0 3px #5b6375,0 0 0 5px var(--p-card)}.pp.home .av{box-shadow:0 0 0 3px var(--p-ok),0 0 0 5px var(--p-card),0 0 16px rgba(27,175,122,.45)}
@@ -142,6 +142,7 @@ class HandyCard extends HTMLElement {
     const t = ev.target.closest('[data-act]'); if (!t) return;
     const a = t.dataset.act, e = t.dataset.e;
     if (a === 'nav') this.nav(t.dataset.p, t.dataset.f);
+    else if (a === 'menu') this.dispatchEvent(new Event('hass-toggle-menu', { bubbles: true, composed: true }));
     else if (a === 'lock') { const sv = t.dataset.sv; if (sv !== 'lock' && !window.confirm(sv === 'open' ? 'Haustür wirklich öffnen?' : 'Haustür wirklich aufschließen?')) return; this.call('lock', sv, { entity_id: e }); }
     else if (a === 'more') this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: e } }));
   }
@@ -167,7 +168,8 @@ class HandyCard extends HTMLElement {
     const h = new Date().getHours(), g = h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : h < 22 ? 'Guten Abend' : 'Gute Nacht';
     const u = this._hass.user && this._hass.user.name ? `, ${this._hass.user.name.split(' ')[0]}` : '';
     const d = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-    return `<div class="full hello"><div class="g">${g}${P_esc(u)}</div><div class="d">${d}</div></div>`;
+    // Menü-Knopf öffnet die HA-Seitenleiste (die obere Kopfleiste ist im iPhone-Dashboard ausgeblendet)
+    return `<div class="full hello"><div><div class="g">${g}${P_esc(u)}</div><div class="d">${d}</div></div><button class="mn" data-act="menu" aria-label="Menü">${P_icon('mdi:menu', 20)}</button></div>`;
   }
   persons() {
     const pic = (s) => { const p = s && s.attributes.entity_picture; return p ? (this._hass.hassUrl ? this._hass.hassUrl(p) : p) : null; };
