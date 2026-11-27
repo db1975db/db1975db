@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.8)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.9)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -236,11 +236,13 @@ class HandyCard extends HTMLElement {
       let j = ''; for (let x = l + (r % 2 ? 3 : 0); x < rr - 2; x += 6) j += `M${x.toFixed(1)},${y - 3.5} L${x.toFixed(1)},${y}`;
       return `<line x1="${l}" y1="${y}" x2="${rr}" y2="${y}" stroke="#000" stroke-opacity=".28" stroke-width=".9"/><line x1="${l}" y1="${y + .8}" x2="${rr}" y2="${y + .8}" stroke="#fff" stroke-opacity=".08" stroke-width=".6"/><path d="${j}" stroke="#000" stroke-opacity=".14" stroke-width=".5"/>`; }).join('');
     // Monokristalline Module: schwarze Zellen im Raster, silberner Alurahmen, Spiegelung; bei Ertrag wandert ein Lichtschimmer darüber
-    const panel = (x, y) => `<rect x="${x}" y="${y}" width="13" height="7.8" rx=".3" fill="#c3c8d0"/><rect x="${x + .5}" y="${y + .5}" width="12" height="6.8" fill="url(#epv)"/><rect x="${x + .5}" y="${y + .5}" width="12" height="6.8" fill="url(#ecell)"/>`;
-    const PX = [[178, 58.5], [191.5, 58.5], [205, 58.5], [218.5, 58.5], [232, 58.5], [245.5, 58.5], [171, 67.6], [184.5, 67.6], [198, 67.6], [211.5, 67.6], [225, 67.6], [238.5, 67.6], [252, 67.6]];
-    const panels = `<g>${PX.map(([x, y]) => panel(x, y)).join('')}</g><g clip-path="url(#epvc)"><rect x="160" y="50" width="110" height="30" fill="url(#eglr)"/>${pvOn ? `<rect x="120" y="50" width="26" height="30" fill="url(#eshn)" style="animation:sheen ${Math.max(2.5, 7 - pv / 800)}s linear infinite"/>` : ''}</g>`;
-    const pvClip = `<clipPath id="epvc">${PX.map(([x, y]) => `<rect x="${x + .5}" y="${y + .5}" width="12" height="6.8"/>`).join('')}</clipPath>`;
-    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="330" y1="30" x2="${204 + k * 24}" y2="${60 + k * 4}" stroke="#ffe48a" stroke-width="${Math.min(3, flowW(pv))}" stroke-dasharray="3 7" stroke-linecap="round" opacity=".45" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
+    const MW = 19.5, MH = 11, panel = (x, y) => `<rect x="${x}" y="${y}" width="${MW}" height="${MH}" rx=".4" fill="#c3c8d0"/><rect x="${x + .6}" y="${y + .6}" width="${MW - 1.2}" height="${MH - 1.2}" fill="url(#epv)"/><rect x="${x + .6}" y="${y + .6}" width="${MW - 1.2}" height="${MH - 1.2}" fill="url(#ecell)"/>`;
+    // 9 Module mittig: oben 4, unten 5
+    const row = (n, y) => [...Array(n)].map((_, i) => [180 - (n * MW + (n - 1) * 1) / 2 + i * (MW + 1), y]);
+    const PX = [...row(4, 54.2), ...row(5, 66.2)];
+    const panels = `<g>${PX.map(([x, y]) => panel(x, y)).join('')}</g><g clip-path="url(#epvc)"><rect x="125" y="50" width="110" height="30" fill="url(#eglr)"/>${pvOn ? `<rect x="95" y="50" width="26" height="30" fill="url(#eshn)" style="animation:sheen ${Math.max(2.5, 7 - pv / 800)}s linear infinite"/>` : ''}</g>`;
+    const pvClip = `<clipPath id="epvc">${PX.map(([x, y]) => `<rect x="${x + .6}" y="${y + .6}" width="${MW - 1.2}" height="${MH - 1.2}"/>`).join('')}</clipPath>`;
+    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="330" y1="30" x2="${172 + k * 22}" y2="${62 + k * 3}" stroke="#ffe48a" stroke-width="${Math.min(3, flowW(pv))}" stroke-dasharray="3 7" stroke-linecap="round" opacity=".45" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
     const lamp = (x) => `${!D ? `<ellipse cx="${x}" cy="166" rx="9" ry="13" fill="#ffd88a" opacity=".3"/>` : ''}<rect x="${x - 1.6}" y="162" width="3.2" height="5.5" rx="1" fill="${!D ? '#fff1c4' : '#eef1f5'}"/><rect x="${x - 1.6}" y="167" width="3.2" height="1" fill="#8b919e"/>`;
     const wire = 'M18,112 Q36,126 50,136';
     const gridFlow = imp > 15 || exp > 15 ? `<path d="${wire}" fill="none" stroke="${exp > imp ? '#3ddc97' : '#ff7a6b'}" stroke-width="${flowW(Math.max(imp, exp))}" stroke-dasharray="5 7" stroke-linecap="round" style="animation:${exp > imp ? 'dashr' : 'dash'} ${sp(Math.max(imp, exp))}s linear infinite"/>` : '';
@@ -262,7 +264,7 @@ class HandyCard extends HTMLElement {
       <linearGradient id="ewing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${D ? '#cfe0f2' : '#26304a'}"/><stop offset="1" stop-color="${D ? '#7f98b8' : '#1a2032'}"/></linearGradient>
       <linearGradient id="ewinl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#f5b45a"/></linearGradient>
       <linearGradient id="epv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${D ? '#1d2636' : '#11161f'}"/><stop offset="1" stop-color="${D ? '#0b0f17' : '#07090d'}"/></linearGradient>
-      <pattern id="ecell" width="2" height="1.7" patternUnits="userSpaceOnUse"><rect width="2" height="1.7" fill="none" stroke="#3a4a66" stroke-width=".22"/></pattern>
+      <pattern id="ecell" width="2.4" height="2.05" patternUnits="userSpaceOnUse"><rect width="2.4" height="2.05" fill="none" stroke="#3a4a66" stroke-width=".22"/></pattern>
       <linearGradient id="eglr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${D ? .22 : .06}"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset=".7" stop-color="#9ec3ff" stop-opacity="${D ? .12 : .03}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
       <linearGradient id="eshn" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>${pvClip}</defs>
       <rect width="360" height="236" fill="url(#esk)"/>${sunG}
