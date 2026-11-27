@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.22)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.22.1)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -256,7 +256,7 @@ class RaumCard extends HTMLElement {
     if (ev.target.closest('input,select')) return;
     const a = t.dataset.act, e = t.dataset.e;
     // Zurück: kam man aus einem anderen Dashboard (?from=…, z. B. iPhone-Dashboard), dorthin zurück
-    if (a === 'back') { const f = new URLSearchParams(location.search).get('from'), p = f && f.startsWith('/') ? f : this.c.back.startsWith('/') ? this.c.back : `${this.c.base_path || ''}/${this.c.back}`; history.pushState(null, '', p); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); return; }
+    if (a === 'back') { let f = new URLSearchParams(location.search).get('from'); if (!f) try { const m = JSON.parse(sessionStorage.getItem('nav-from') || 'null'); if (m && m.to === location.pathname) f = m.from; } catch (e) {} const p = f && f.startsWith('/') ? f : this.c.back.startsWith('/') ? this.c.back : `${this.c.base_path || ''}/${this.c.back}`; history.pushState(null, '', p); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); return; }
     if (this._lp && Date.now() - this._lp < 800) { this._lp = 0; return; }
     const ids = e && e.includes(',') ? e.split(',') : e;
     if (a === 'toggle') this.call(e.split('.')[0], 'toggle', { entity_id: e });

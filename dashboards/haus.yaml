@@ -1,7 +1,7 @@
 # Dashboard "Zuhause (neu)" (url_path dashboard-haus) – komplette Konfiguration, wie sie in Home Assistant liegt.
 # Erzeugt aus haus-start.yaml, wohnzimmer.yaml und kueche.yaml. Ressourcen: www/haus-card.js, www/raum-card.js
 kiosk_mode:
-  hide_header: '{{ "iPad" in user_agent }}'
+  hide_header: '{{ "iPad" in user_agent or "iPhone" in user_agent }}'
 views:
 - title: Start
   path: start

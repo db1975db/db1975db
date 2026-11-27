@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.14.1)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.14.2)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -136,7 +136,7 @@ class HandyCard extends HTMLElement {
     this.root.addEventListener('click', (ev) => this.onClick(ev));
   }
   // Ziele in anderen Dashboards bekommen ?from=<aktuelle Seite>, damit deren Zurück-Knopf hierher zurückführt
-  nav(p, from) { if (!p) return; let path = p.startsWith('/') ? p : `${this.c.base_path || ''}/${p}`; if (from) path += (path.includes('?') ? '&' : '?') + 'from=' + encodeURIComponent(location.pathname); history.pushState(null, '', path); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); }
+  nav(p, from) { if (!p) return; let path = p.startsWith('/') ? p : `${this.c.base_path || ''}/${p}`; if (from) { try { sessionStorage.setItem('nav-from', JSON.stringify({ to: path.split('?')[0], from: location.pathname })); } catch (e) {} path += (path.includes('?') ? '&' : '?') + 'from=' + encodeURIComponent(location.pathname); } history.pushState(null, '', path); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); }
   call(d, s, data) { this._hass.callService(d, s, data); }
   onClick(ev) {
     const t = ev.target.closest('[data-act]'); if (!t) return;

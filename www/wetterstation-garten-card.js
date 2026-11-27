@@ -1,4 +1,4 @@
-// Wetterstation Garten – eigene Lovelace-Karte (v1.3.1)
+// Wetterstation Garten – eigene Lovelace-Karte (v1.3.2)
 const DEF = {
   temp: 'sensor.garden_wetterstation_temperatur',
   tmax24: 'sensor.garten_wetterstation_temperatur_max_24h',
@@ -220,7 +220,7 @@ class WetterstationGartenCard extends HTMLElement {
       const b = ev.target.closest('button[data-h]'); if (!b) return;
       this._roseH = isNaN(+b.dataset.h) ? b.dataset.h : +b.dataset.h; this.$('roseseg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); this.renderRose();
     });
-    this.$('hero').addEventListener('click', (ev) => { if (ev.target.closest('[data-back]')) { const b = this.cfg.back, f = new URLSearchParams(location.search).get('from'), p = f && f.startsWith('/') ? f : b.startsWith('/') ? b : `${this.cfg.base_path || ''}/${b}`; history.pushState(null, '', p); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); return; } this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: this.e.temp } })); });
+    this.$('hero').addEventListener('click', (ev) => { if (ev.target.closest('[data-back]')) { const b = this.cfg.back; let f = new URLSearchParams(location.search).get('from'); if (!f) try { const m = JSON.parse(sessionStorage.getItem('nav-from') || 'null'); if (m && m.to === location.pathname) f = m.from; } catch (e) {} const p = f && f.startsWith('/') ? f : b.startsWith('/') ? b : `${this.cfg.base_path || ''}/${b}`; history.pushState(null, '', p); window.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } })); return; } this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: this.e.temp } })); });
     this.sky.start();
   }
   renderHero() {
