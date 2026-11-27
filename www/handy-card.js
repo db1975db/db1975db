@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.15)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.15.1)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -70,7 +70,7 @@ const P_CSS = `
 .al .sh{position:relative;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;background:color-mix(in srgb,var(--ac) 18%,transparent);color:var(--ac)}
 .al.armed .sh:after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--ac);opacity:.5;animation:alr 2.4s ease-out infinite}
 @keyframes alr{0%{transform:scale(.85);opacity:.6}100%{transform:scale(1.25);opacity:0}}
-.al .st{font-size:15px;font-weight:700;line-height:1.2;color:var(--ac)}.al .sub{font-size:12px;color:var(--p-fg2);margin-top:2px}.al .tl{font-size:12px;color:var(--p-fg2)}
+.al .st{font-size:15px;font-weight:700;line-height:1.2;color:var(--ac)}.al .sub{font-size:12px;color:var(--p-fg2);margin-top:2px;overflow-wrap:anywhere}.al .tl{font-size:12px;color:var(--p-fg2)}
 .al .seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:10px}
 .al .seg .btn{flex-direction:column;gap:2px;padding:7px 2px;font-size:11.5px}.al .seg .btn.on{background:var(--ac);color:#fff}
 .al .prg{height:4px;border-radius:2px;background:rgba(255,255,255,.1);margin-top:8px;overflow:hidden}.al .prg i{display:block;height:100%;background:var(--ac);animation:alp linear forwards}
@@ -306,9 +306,9 @@ class HandyCard extends HTMLElement {
     const M = { disarmed: ['Aus', 'mdi:shield-off-outline', '#8a94a3'], armed_home: ['Scharf · zu Hause', 'mdi:shield-home', '#3987e5'], armed_away: ['Scharf · abwesend', 'mdi:shield-lock', '#1baf7a'], armed_night: ['Scharf · Nacht', 'mdi:shield-moon', '#8a7cf0'], armed_vacation: ['Scharf · Urlaub', 'mdi:shield-airplane', '#1baf7a'], armed_custom_bypass: ['Scharf · eigene', 'mdi:shield-star', '#1baf7a'], arming: ['Wird scharf geschaltet …', 'mdi:shield-sync', '#ef8a3c'], pending: ['Eingangsverzögerung!', 'mdi:shield-alert', '#ef8a3c'], disarming: ['Wird ausgeschaltet …', 'mdi:shield-sync', '#8a94a3'], triggered: ['ALARM!', 'mdi:alarm-light', '#ffffff'] };
     const [txt, ic, col] = M[st] || ['nicht erreichbar', 'mdi:shield-off', '#8a94a3'];
     const tm = al ? new Date(al.last_changed).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
-    const nm = (e) => { const s = this.s(e); return P_esc(s ? s.attributes.friendly_name || e : e); };
+    const nm = (e) => { const s = this.s(e); return s ? P_esc(s.attributes.friendly_name || e) : `Sensor fehlt (${P_esc(e.replace(/^[^.]+\./, ''))})`; };
     const open = A.open_sensors ? Object.keys(A.open_sensors) : [];
-    const sub = st === 'triggered' ? (open.length ? `Ausgelöst: ${open.map(nm).join(', ')}` : 'Alarm wurde ausgelöst') : open.length ? `Offen: ${open.map(nm).join(', ')}` : st === 'pending' ? 'Jetzt ausschalten, sonst gibt es Alarm' : tm ? `seit ${tm} Uhr${A.changed_by ? ` · ${P_esc(A.changed_by)}` : ''}` : '';
+    const sub = st === 'triggered' ? (open.length ? `Ausgelöst: ${open.map(nm).join(', ')}` : 'Alarm wurde ausgelöst') : open.length ? `${st.startsWith('armed') || st === 'disarmed' ? 'Nicht umgeschaltet – offen' : 'Offen'}: ${open.map(nm).join(', ')}` : st === 'pending' ? 'Jetzt ausschalten, sonst gibt es Alarm' : tm ? `seit ${tm} Uhr${A.changed_by ? ` · ${P_esc(A.changed_by)}` : ''}` : '';
     // Verzögerung (scharf schalten / Eingang) als ablaufender Balken
     let prg = '';
     if ((st === 'arming' || st === 'pending') && A.delay) { const gone = Math.max(0, (Date.now() - new Date(al.last_changed)) / 1000); prg = `<div class="prg"><i style="animation-duration:${A.delay}s;animation-delay:-${Math.min(gone, A.delay).toFixed(1)}s"></i></div>`; }
