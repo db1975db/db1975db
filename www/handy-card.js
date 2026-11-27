@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.5)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.6)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -220,41 +220,46 @@ class HandyCard extends HTMLElement {
     const pvOn = pv > 15, flowW = (w) => Math.min(5, 1.6 + w / 1200);
     const lbl = (x, y, v, l, col, ent, anc = 'middle') => { const wd = Math.max(v.length, l.length) * 6.6 + 14, x0 = anc === 'start' ? x : anc === 'end' ? x - wd : x - wd / 2;
       return `<g class="lbl" data-act="more" data-e="${ent}"><rect x="${x0}" y="${y - 13}" width="${wd}" height="30" rx="9" fill="rgba(10,14,24,.55)" stroke="${col}" stroke-opacity=".7"/><text x="${x0 + wd / 2}" y="${y + 1}" text-anchor="middle">${v}</text><text class="lb" x="${x0 + wd / 2}" y="${y + 12}" text-anchor="middle">${l}</text></g>`; };
-    // Stadtvilla (wie das eigene Haus): Walmdach, Seitenwand rot mit grauem Band, Eingangsseite grau/rot, Solarmodule auf dem Dach
-    const wire = 'M30,112 Q60,124 92,130';
+    // Eigene Stadtvilla von vorne (nach Foto): Walmdach mit Schornstein, Fassade grau/rot, Haustür mit 2 Lampen; Varta-Speicher hinter dem HWR-Fenster rechts unten
+    const red = isDay ? '#c8553f' : '#6e3428', grey = isDay ? '#a9afbd' : '#565a68', greyL = isDay ? '#b9bfcc' : '#61667a', frame = isDay ? '#8e95a3' : '#474b57', roofC = isDay ? '#5b5f69' : '#2c2e35';
+    const lit = home > 150 ? '#ffd88a' : (isDay ? '#9fb4cf' : '#2c3240'), soc0 = Math.max(0, Math.min(100, soc || 0)), batCol = soc0 < 15 ? '#e34948' : soc0 < 40 ? '#e2b400' : '#3ddc97', batAct = chg > 15 || dis > 15;
+    const win = (x1, y1, x2, y2, dbl) => `<rect x="${x1}" y="${y1}" width="${x2 - x1}" height="${y2 - y1}" fill="${frame}"/><rect x="${x1 + 1.6}" y="${y1 + 1.6}" width="${x2 - x1 - 3.2}" height="${y2 - y1 - 3.2}" fill="${lit}"/>${dbl ? `<rect x="${(x1 + x2) / 2 - .8}" y="${y1}" width="1.6" height="${y2 - y1}" fill="${frame}"/>` : ''}<rect x="${x1 - 1}" y="${y2}" width="${x2 - x1 + 2}" height="1.8" fill="#d9d6d0"/>`;
+    const panels = [0, 1, 2, 3, 4, 5, 6].map(c => `<path d="M${168 + c * 15},44 l14,0 l1.5,8 l-14,0Z" fill="${pvOn ? '#3b6fd6' : '#1d2a48'}" stroke="#9cb8ef" stroke-width=".5" ${pvOn ? `style="animation:glow ${2 + c * .3}s ease-in-out infinite"` : ''}/>`).join('');
+    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="330" y1="30" x2="${228 + k * 24}" y2="48" stroke="#ffd65a" stroke-width="${flowW(pv)}" stroke-dasharray="6 6" stroke-linecap="round" opacity=".75" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
+    const lamp = (x) => `${!isDay ? `<ellipse cx="${x}" cy="148" rx="8" ry="11" fill="#ffd88a" opacity=".3"/>` : ''}<rect x="${x - 1.5}" y="144.5" width="3" height="5" rx="1" fill="${!isDay ? '#fff1c4' : '#e9edf3'}"/>`;
+    const wire = 'M18,112 Q40,128 61,140';
     const gridFlow = imp > 15 || exp > 15 ? `<path d="${wire}" fill="none" stroke="${exp > imp ? '#3ddc97' : '#ff7a6b'}" stroke-width="${flowW(Math.max(imp, exp))}" stroke-dasharray="5 7" stroke-linecap="round" style="animation:${exp > imp ? 'dashr' : 'dash'} ${sp(Math.max(imp, exp))}s linear infinite"/>` : '';
-    const red = isDay ? '#d4655c' : '#7a3c39', redD = isDay ? '#b9524b' : '#5e2e2c', grey = isDay ? '#c9ccd8' : '#5a5d6b', greyD = isDay ? '#aeb2c0' : '#474a57', roof = isDay ? '#4b4e57' : '#2a2c33';
-    const lit = home > 150 ? '#ffd88a' : (isDay ? '#7f93ad' : '#2c3240');
-    const win = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${greyD}"/><rect x="${x + 2}" y="${y + 2}" width="${w - 4}" height="${h - 4}" fill="${lit}"/><line x1="${x + w / 2}" y1="${y + 2}" x2="${x + w / 2}" y2="${y + h - 2}" stroke="${greyD}" stroke-width="1"/>`;
-    // Seitenwand (perspektivisch, nach links fluchtend): Fenster verzerrt
-    const swin = (x, y, w, h) => `<path d="M${x},${y} l${w},-2 l0,${h} l${-w},${h * .04}Z" fill="${greyD}"/><path d="M${x + 1.5},${y + 1.5} l${w - 3},-2 l0,${h - 3} l${-(w - 3)},${h * .04}Z" fill="${lit}"/>`;
-    const panels = [0, 1, 2, 3, 4].map(c => [0, 1].map(r => { const x = 214 + c * 18 - r * 6, y = 74 + r * 9 + c * 1.2; return `<path d="M${x},${y} l16,1.2 l-4,8 l-16,-1.2Z" fill="${pvOn ? '#3b6fd6' : '#1d2a48'}" stroke="#9cb8ef" stroke-width=".5" ${pvOn ? `style="animation:glow ${2 + (c + r) * .3}s ease-in-out infinite"` : ''}/>`; }).join('')).join('');
-    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="68" y1="66" x2="${222 + k * 26}" y2="${80 + k}" stroke="#ffd65a" stroke-width="${flowW(pv)}" stroke-dasharray="6 6" stroke-linecap="round" opacity=".75" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
-    const soc0 = Math.max(0, Math.min(100, soc || 0)), batCol = soc0 < 15 ? '#e34948' : soc0 < 40 ? '#e2b400' : '#3ddc97';
-    const lamp = (x) => `<rect x="${x}" y="139" width="4" height="7" rx="1" fill="${home > 0 && !isDay ? '#ffe7a8' : '#e9edf3'}"/>${!isDay ? `<ellipse cx="${x + 2}" cy="142" rx="9" ry="12" fill="#ffd88a" opacity=".25"/>` : ''}`;
-    const sunG = isDay ? `<g transform="translate(54 66)"><circle r="${24 + Math.min(12, pv / 300)}" fill="#ffd65a" opacity="${pvOn ? .25 : .1}" style="animation:glow 3s ease-in-out infinite"/><g style="animation:spin ${pvOn ? Math.max(6, 40 - pv / 150) : 80}s linear infinite">${[...Array(10)].map((_, i) => `<rect x="-2" y="-${23 + Math.min(6, pv / 500)}" width="4" height="8" rx="2" fill="#ffe28a" transform="rotate(${i * 36})"/>`).join('')}</g><circle r="14" fill="${pvOn ? '#ffd34d' : '#e8d9a0'}"/></g>`
-      : `<g transform="translate(54 62)"><path d="M5,-13 A14,14 0 1 0 5,13 A10,10 0 1 1 5,-13Z" fill="#f2ecd2"/></g>${[...Array(12)].map((_, i) => `<circle cx="${(i * 61) % 360}" cy="${(i * 23) % 60 + 6}" r="1.2" fill="#fff" style="animation:tw ${2 + i % 3}s ease-in-out ${i * .4}s infinite"/>`).join('')}`;
-    const scene = `<svg viewBox="0 0 360 210"><defs><linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
-      <rect width="360" height="210" fill="url(#esk)"/>${sunG}
-      <path d="M0,176 Q120,168 200,174 T360,170 L360,210 L0,210Z" fill="${grass}"/>
-      <g stroke="#3a3530" stroke-width="3" stroke-linecap="round"><line x1="26" y1="108" x2="26" y2="182"/><line x1="15" y1="116" x2="37" y2="116"/><line x1="17" y1="126" x2="35" y2="126"/></g>
+    const sunG = isDay ? `<g transform="translate(340 24)"><circle r="${18 + Math.min(10, pv / 300)}" fill="#ffd65a" opacity="${pvOn ? .25 : .1}" style="animation:glow 3s ease-in-out infinite"/><g style="animation:spin ${pvOn ? Math.max(6, 40 - pv / 150) : 80}s linear infinite">${[...Array(10)].map((_, i) => `<rect x="-2" y="-${20 + Math.min(5, pv / 600)}" width="4" height="7" rx="2" fill="#ffe28a" transform="rotate(${i * 36})"/>`).join('')}</g><circle r="12" fill="${pvOn ? '#ffd34d' : '#e8d9a0'}"/></g>`
+      : `<g transform="translate(340 24)"><path d="M5,-12 A13,13 0 1 0 5,12 A9,9 0 1 1 5,-12Z" fill="#f2ecd2"/></g>${[...Array(12)].map((_, i) => `<circle cx="${(i * 61) % 360}" cy="${(i * 23) % 50 + 6}" r="1.2" fill="#fff" style="animation:tw ${2 + i % 3}s ease-in-out ${i * .4}s infinite"/>`).join('')}`;
+    // Varta Element backup im HWR (durchs Fenster gesehen): Schrank mit grünem Streifen und Ladestand
+    const varta = `<rect x="232.8" y="160.4" width="20" height="30.6" fill="${isDay ? '#3b4250' : '#1c2029'}"/>
+      ${batAct ? `<rect x="232.8" y="160.4" width="20" height="30.6" fill="${batCol}" opacity=".18" style="animation:glow 1.6s ease-in-out infinite"/>` : ''}
+      <rect x="236.5" y="165" width="12.5" height="26" fill="#eef0f2"/><rect x="236" y="164" width="13.5" height="2" fill="#fafafa"/><rect x="236.5" y="166" width="12.5" height="1.2" fill="#2a2d33"/>
+      <path d="M237.5,169 l5,0 l-1,1.6 l-4,0Z M237.5,171 l4.4,0 l-1,1.6 l-3.4,0Z" fill="#3fae49"/>
+      <rect x="245.8" y="169" width="2.2" height="20" rx="1" fill="#c9ccd2"/><rect x="245.8" y="${169 + 20 - 20 * soc0 / 100}" width="2.2" height="${20 * soc0 / 100}" rx="1" fill="${batCol}"/>`;
+    const scene = `<svg viewBox="0 0 360 236"><defs><linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs>
+      <rect width="360" height="236" fill="url(#esk)"/>${sunG}
+      <path d="M0,206 Q120,200 200,205 T360,202 L360,236 L0,236Z" fill="${grass}"/>
+      <g stroke="#3a3530" stroke-width="3" stroke-linecap="round"><line x1="14" y1="106" x2="14" y2="214"/><line x1="4" y1="114" x2="24" y2="114"/><line x1="6" y1="124" x2="22" y2="124"/></g>
       <path d="${wire}" fill="none" stroke="#2a2622" stroke-width="1.5"/>${gridFlow}
-      <path d="M92,104 L176,96 L176,182 L92,176Z" fill="${red}"/><path d="M116,102 L128,101 L128,178 L116,177Z" fill="${grey}"/>
-      ${swin(98, 112, 12, 18)}${swin(136, 110, 13, 18)}${swin(156, 108, 12, 18)}${swin(98, 146, 12, 18)}${swin(136, 146, 13, 18)}
-      <path d="M176,96 L262,100 L262,186 L176,182Z" fill="${grey}"/><path d="M262,100 L320,103 L320,184 L262,186Z" fill="${red}"/><path d="M252,99.5 L262,100 L262,186 L252,185.5Z" fill="${redD}"/>
-      ${win(188, 112, 13, 18)}${win(209, 112, 16, 18)}${win(233, 113, 13, 18)}${win(274, 114, 14, 18)}${win(296, 115, 13, 18)}
-      ${win(186, 146, 13, 18)}${win(238, 147, 13, 18)}${win(296, 148, 13, 18)}
-      <rect x="208" y="144" width="18" height="38" fill="#e9edf3"/><rect x="211" y="148" width="12" height="32" fill="${isDay ? '#d6dbe3' : '#4a4f5c'}"/>${[0, 1, 2, 3].map(k => `<rect x="215" y="${151 + k * 7}" width="4" height="4" fill="${home > 150 ? '#ffd88a' : '#9aa3b2'}"/>`).join('')}
-      ${lamp(201)}${lamp(229)}
-      <path d="M84,105 L152,70 L250,66 L330,104 L262,99 L176,94Z" fill="${roof}"/><path d="M176,94 L250,66 L330,104 L262,99Z" fill="${isDay ? '#5a5e68' : '#33363e'}"/>
-      <path d="M84,105 L176,94 L262,99 L330,104" fill="none" stroke="${isDay ? '#2e3036' : '#1b1c21'}" stroke-width="3" stroke-linejoin="round"/>
-      ${panels}${rays}
-      <g transform="translate(334 150)"><rect x="0" y="0" width="16" height="32" rx="3" fill="#1d2230" stroke="${batCol}" stroke-width="1.5"/><rect x="5" y="-3" width="6" height="3" rx="1" fill="${batCol}"/>
-        <rect x="2" y="${2 + 28 - 28 * soc0 / 100}" width="12" height="${28 * soc0 / 100}" rx="1.5" fill="${batCol}" ${chg > 15 || dis > 15 ? 'style="animation:glow 1.6s ease-in-out infinite"' : ''}/></g>
-      ${lbl(122, 40, kw(pv), 'Solar', '#ffd65a', E.pv)}
-      ${lbl(350, 30, kw(home), 'Haus', '#5aa9ff', E.home, 'end')}
-      ${lbl(8, 160, exp > imp ? kw(exp) : kw(imp), exp > imp ? 'Einspeisung' : 'Netzbezug', exp > imp ? '#3ddc97' : '#ff7a6b', exp > imp ? E.grid_export : E.grid_import, 'start')}
-      ${lbl(354, 194, soc != null ? P_fmt(soc, 0) + ' %' : '–', chg > 15 ? 'lädt ' + kw(chg) : dis > 15 ? 'liefert ' + kw(dis) : 'Akku', batCol, E.battery_soc, 'end')}
+      <rect x="187" y="30" width="9" height="14" fill="${isDay ? '#6f737d' : '#3a3c44'}"/><rect x="273" y="34" width="4" height="10" fill="#2e3036"/>
+      <path d="M40,76 L70,42 L290,42 L319,76Z" fill="${roofC}"/>${panels}
+      <rect x="38" y="74" width="283" height="4" rx="1" fill="${isDay ? '#7b7f88' : '#3a3c44'}"/>
+      <rect x="60" y="78" width="240" height="129" fill="${greyL}"/><rect x="65.3" y="78" width="38.3" height="129" fill="${red}"/><rect x="207.4" y="78" width="81.3" height="129" fill="${red}"/>
+      <rect x="103.6" y="77" width="103.8" height="130" fill="${grey}"/>
+      ${win(113.4, 91.1, 129.4, 115.2)}${win(142.4, 90.2, 167.3, 120.5)}${win(180.2, 89, 197.1, 114.3)}${win(215.8, 88.5, 253.1, 120.5, true)}
+      ${win(112.5, 159.7, 129.1, 183.3)}${win(180.2, 159.7, 197.1, 183.3)}
+      <rect x="231.2" y="158.8" width="23.2" height="33.8" fill="${frame}"/>${varta}<rect x="231.2" y="192.6" width="25" height="1.8" fill="#d9d6d0"/>
+      <rect x="141.9" y="159.7" width="24.9" height="47.3" fill="${frame}"/><rect x="143.6" y="161.4" width="21.5" height="45.6" fill="${isDay ? '#b3b9c5' : '#4c5160'}"/>
+      ${[0, 1, 2, 3].map(k => `<rect x="151.5" y="${166 + k * 9.5}" width="6" height="6" fill="${home > 150 && !isDay ? '#ffd88a' : '#3a3f4a'}"/>`).join('')}<rect x="146.2" y="171" width="1.2" height="26" fill="#d0d4db"/>
+      ${lamp(133.9)}${lamp(173.6)}
+      <text x="279" y="157" text-anchor="middle" style="font-size:7px;font-weight:600;fill:${isDay ? '#e9e4dc' : '#a39f99'}">32c</text>
+      <rect x="58" y="205" width="244" height="3" fill="#5a3c38"/>
+      ${rays}
+      ${lbl(268, 20, kw(pv), 'Solar', '#ffd65a', E.pv)}
+      ${lbl(8, 217, exp > imp ? kw(exp) : kw(imp), exp > imp ? 'Einspeisung' : 'Netzbezug', exp > imp ? '#3ddc97' : '#ff7a6b', exp > imp ? E.grid_export : E.grid_import, 'start')}
+      ${lbl(158, 217, kw(home), 'Haus', '#5aa9ff', E.home)}
+      ${lbl(354, 217, soc != null ? `Varta ${P_fmt(soc, 0)} %` : 'Varta', chg > 15 ? 'lädt ' + kw(chg) : dis > 15 ? 'liefert ' + kw(dis) : `${P_fmt(E.battery_capacity || 6.5, 1)} kWh`, batCol, E.battery_soc, 'end')}
     </svg>`;
     return `<div class="t full en"><div style="position:relative">${scene}<div class="eh"><span>${P_icon('mdi:lightning-bolt', 14)}Energie</span></div></div>
       <div class="st3"><div class="sb"><div class="k">${P_icon('mdi:leaf', 13)}Autark</div><div class="v">${self} %</div><div class="ring"><i style="width:${self}%;background:#3ddc97"></i></div></div>
