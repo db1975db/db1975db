@@ -1,5 +1,6 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.2)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.3)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
+// Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const P_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const P_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -50,7 +51,8 @@ const P_CSS = `
 .ws{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding-top:6px}
 .wi{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:8px 2px 8px;border-radius:14px;background:rgba(255,255,255,.04);min-width:0;cursor:pointer;position:relative}
 .wi svg{width:46px;height:58px;display:block;margin-bottom:4px}
-.wi.soon svg{animation:wob 2.4s ease-in-out infinite;transform-origin:50% 100%}
+.wi .bi{width:52px;height:58px;object-fit:contain;display:block;margin-bottom:4px}
+.wi.soon svg,.wi.soon .bi{animation:wob 2.4s ease-in-out infinite;transform-origin:50% 100%}
 @keyframes wob{0%,80%,100%{transform:rotate(0)}85%{transform:rotate(-6deg)}90%{transform:rotate(5deg)}95%{transform:rotate(-3deg)}}
 .wi .bd{position:absolute;top:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--p-warn);color:#fff;font-size:10px;font-weight:700;border-radius:8px;padding:1px 6px}
 .wi .ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
@@ -177,7 +179,7 @@ class HandyCard extends HTMLElement {
       const when = w.days == null ? 'kein Termin' : w.days === 0 ? 'heute' : w.days === 1 ? 'morgen' : `in ${w.days} Tagen`;
       const dt = w.d ? w.d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' }) : '';
       const [col, lid] = w.color ? [w.color, w.lid || w.color] : COL[w.icon] || COL['mdi:trash-can'], soon = w.days != null && w.days <= this.c.waste_days;
-      return `<div class="wi ${soon ? 'soon' : ''}" data-act="more" data-e="${w.entity}">${soon ? `<span class="bd">${w.days === 0 ? 'heute' : 'morgen'}</span>` : ''}${this.bin(col, lid)}<div class="n">${P_esc(w.name)}</div><div class="s">${when}</div>${dt ? `<div class="s2">${dt}</div>` : ''}</div>`;
+      return `<div class="wi ${soon ? 'soon' : ''}" data-act="more" data-e="${w.entity}">${soon ? `<span class="bd">${w.days === 0 ? 'heute' : 'morgen'}</span>` : ''}${w.image ? `<img class="bi" src="${P_esc(this._hass.hassUrl ? this._hass.hassUrl(w.image) : w.image)}" alt="">` : this.bin(col, lid)}<div class="n">${P_esc(w.name)}</div><div class="s">${when}</div>${dt ? `<div class="s2">${dt}</div>` : ''}</div>`;
     }).join('')}</div></div>`;
   }
 }
