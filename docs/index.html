@@ -66,6 +66,7 @@ textarea{min-height:84px;resize:vertical}
 .measure input.target{border-color:var(--red);box-shadow:0 0 0 4px var(--red-soft)}
 .measure input.target+.unit::after{content:" ◀ DISTO";color:var(--red);font-weight:700;font-size:12px}
 /* DISTO-Statusleiste */
+#disto[hidden]{display:none}
 #disto{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:21;display:flex;gap:6px;align-items:center}
 #disto button{border:0;border-radius:999px;font:inherit;font-size:15px;font-weight:650;padding:12px 16px;
   background:var(--card);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.18);border:1.5px solid var(--line)}
@@ -209,6 +210,39 @@ const ARBEITEN = [
 ];
 
 /* =========================================================
+   Positionen: laufende Meter, Stück, Einzelflächen
+   ========================================================= */
+const POS_UNITS = {lfm:'lfm', stk:'Stk', m2:'m²'};
+const POS_VORLAGEN = [
+  ['Sockelleiste','lfm'], ['Heizkörper','stk'], ['Tür mit Zarge','stk'], ['Fenster','stk'],
+  ['Fensterbank','lfm'], ['Acrylfuge','lfm'], ['Treppengeländer','lfm'], ['Rohrleitung','lfm'],
+  ['Kantenschutz','lfm'], ['Steckdose/Schalter abkleben','stk'], ['Heizkörper (Fläche)','m2']
+];
+function migrateRoom(r){
+  if (!r.pos){
+    r.pos = (r.extra||[]).filter(x=>x.label||x.wert).map(x=>({id:uid(), label:x.label||'', art:'lfm', werte:[x.wert||'']}));
+    r.extra = [];
+  }
+  return r;
+}
+function posMenge(x){
+  if (x.art==='stk') return num(x.n) ?? 0;
+  if (x.art==='m2'){ const b=num(x.b), h=num(x.h); return (b!=null&&h!=null) ? b*h*(num(x.n) ?? 1) : 0; }
+  return (x.werte||[]).map(num).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+}
+const fmtMenge = (x, m=posMenge(x)) => x.art==='stk' ? fmt(m,0) : fmt(m);
+// Summe gleicher Positionen über mehrere Räume
+function posSumme(rooms){
+  const map = new Map();
+  for (const r of rooms) for (const x of migrateRoom(r).pos){
+    const key = (x.label||'Ohne Bezeichnung').trim()+'|'+x.art;
+    const e = map.get(key) || {label:(x.label||'Ohne Bezeichnung').trim(), art:x.art, menge:0};
+    e.menge += posMenge(x); map.set(key, e);
+  }
+  return [...map.values()];
+}
+
+/* =========================================================
    Berechnung eines Raums
    ========================================================= */
 function calc(r){
@@ -239,7 +273,7 @@ const Disto = {
   SVC:  '3ab10100-f831-4395-b29d-570977d5bf94',
   DIST: '3ab10101-f831-4395-b29d-570977d5bf94',
   supported: !!(navigator.bluetooth && navigator.bluetooth.requestDevice),
-  device: null, connected: false, target: null, onRaw: null,
+  device: null, connected: false, target: null, onRaw: null, onFilled: null,
 
   ui(state, text){
     const box = $('#disto'); box.className = state || '';
@@ -293,6 +327,8 @@ const Disto = {
     el.value = fmtM(meters);
     el.dispatchEvent(new Event('input', {bubbles:true}));
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    const hooked = this.onFilled ? this.onFilled(el) : undefined;
+    if (hooked !== undefined){ this.setTarget(hooked); return; }
     const fields = $$('[data-measure]'), next = fields[fields.indexOf(el)+1];
     this.setTarget(next || null);
   },
@@ -338,7 +374,7 @@ function fab(label, fn){ clearFab(); const b=document.createElement('button'); b
 
 async function route(){
   clearFab(); window.scrollTo(0,0);
-  Disto.target = null; Disto.onRaw = null;
+  Disto.target = null; Disto.onRaw = null; Disto.onFilled = null;
   Disto.show(/^#\/(r|hilfe)/.test(location.hash));
   const h = location.hash.replace(/^#\/?/, '').split('/');
   try{
@@ -417,6 +453,7 @@ async function viewProject(id){
       ${rooms.length ? `<div class="results" style="margin-top:6px">
         <div class="res main"><div class="k">Wandfläche gesamt</div><div class="v">${fmt(sumW)} m²</div></div>
         <div class="res main"><div class="k">Deckenfläche gesamt</div><div class="v">${fmt(sumD)} m²</div></div>
+        ${posSumme(rooms).map(e=>`<div class="res"><div class="k">${esc(e.label)}</div><div class="v">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</div></div>`).join('')}
       </div>`:''}
     </div>
 
@@ -442,7 +479,7 @@ async function viewProject(id){
   };
   fab('+ Raum', async ()=>{
     const r = {id:uid(), projectId:id, name:'', form:'rect', l:'', b:'', h:'', walls:[], deckeManuell:'',
-      abzuege:[], extra:[], arbeiten:[], notiz:'', order:Date.now()};
+      abzuege:[], pos:[], arbeiten:[], notiz:'', order:Date.now()};
     await put('rooms', r); p.updated=Date.now(); await put('projects', p);
     location.hash = '#/r/'+r.id;
   });
@@ -454,7 +491,7 @@ async function viewProject(id){
 async function viewRoom(id){
   const r = await get('rooms', id);
   if (!r){ location.hash='#/'; return; }
-  r.walls ||= []; r.abzuege ||= []; r.extra ||= []; r.arbeiten ||= []; r.form ||= 'rect';
+  r.walls ||= []; r.abzuege ||= []; r.arbeiten ||= []; r.form ||= 'rect'; migrateRoom(r);
   setHeader(r.name || 'Neuer Raum', {back:true});
 
   const persist = debounce(async ()=>{
@@ -520,13 +557,12 @@ async function viewRoom(id){
       </div>
 
       <div class="card">
-        <h2>Weitere Maße</h2>
-        <p class="muted" style="margin:0 0 10px;font-size:14px">Für alles andere: Sockelleisten, Heizkörper, Treppengeländer, Fensterbänke …</p>
-        ${r.extra.map((x,i)=>`<div class="row" style="align-items:flex-end">
-          <label class="f"><span>Bezeichnung</span><input data-extra-label="${i}" value="${esc(x.label)}" placeholder="z. B. Sockelleiste"></label>
-          ${mField('extra:'+i, 'Maß', x.wert)}
-          <button class="x" data-delextra="${i}" style="margin-bottom:10px" aria-label="Maß löschen">✕</button></div>`).join('')}
-        <button class="btn sec small" id="addExtra">+ Maß</button>
+        <h2>Positionen (lfm · Stück · m²)</h2>
+        ${r.pos.map((x,i)=>posHtml(x,i)).join('')}
+        <div class="chips" style="margin:4px 0 0">
+          ${POS_VORLAGEN.map(([l,a])=>`<button class="chip" data-addpos="${esc(l)}|${a}">+ ${esc(l)} <span class="muted">${POS_UNITS[a]}</span></button>`).join('')}
+          <button class="chip" data-addpos="|lfm">+ Eigene …</button>
+        </div>
       </div>
 
       <div class="card">
@@ -560,6 +596,34 @@ async function viewRoom(id){
     renderPhotos();
   }
 
+  function posHtml(x,i){
+    const head = `<div class="head">
+        <input data-pos-label="${i}" value="${esc(x.label)}" placeholder="Bezeichnung" style="flex:2">
+        <select data-pos-art="${i}" style="flex:1">${Object.entries(POS_UNITS).map(([k,v])=>`<option value="${k}" ${x.art===k?'selected':''}>${v}</option>`).join('')}</select>
+        <button class="x" data-delpos="${i}" aria-label="Position löschen">✕</button></div>`;
+    let body = '';
+    if (x.art==='lfm'){
+      x.werte ||= [''];
+      body = x.werte.map((w,j)=>`<div class="row" style="align-items:flex-end">
+          ${mField(`pos:${i}:w:${j}`, x.werte.length>1?`Teilstück ${j+1}`:'Länge', w)}
+          ${x.werte.length>1?`<button class="x" data-delw="${i}:${j}" style="margin-bottom:10px" aria-label="Teilstück löschen">✕</button>`:''}</div>`).join('')
+        + `<div class="actions" style="margin-bottom:8px">
+            <button class="btn sec small" data-addw="${i}">+ Teilstück</button>
+            <button class="btn sec small" data-umfang="${i}">Umfang − Türen</button></div>`;
+    } else if (x.art==='stk'){
+      body = `<div class="row" style="align-items:center;margin-bottom:8px">
+          <button class="btn sec" data-stk="${i}:-1" style="flex:none;width:64px;font-size:24px">−</button>
+          <input data-pos-n="${i}" inputmode="numeric" value="${esc(x.n ?? 0)}" style="text-align:center;font-size:26px;font-weight:700">
+          <button class="btn" data-stk="${i}:1" style="flex:none;width:64px;font-size:24px">+</button></div>`;
+    } else {
+      body = `<div class="row">${mField(`pos:${i}:b`,'Breite',x.b)}${mField(`pos:${i}:h`,'Höhe',x.h)}
+          <label class="f" style="max-width:80px"><span>Anzahl</span><input data-pos-n="${i}" inputmode="numeric" value="${esc(x.n ?? 1)}"></label></div>`;
+    }
+    return `<div class="sub">${head}${body}
+      <div style="text-align:right;font-weight:700">Summe: <span id="postot-${i}">${fmtMenge(x)}</span> ${POS_UNITS[x.art]}</div></div>`;
+  }
+  const refreshPos = () => r.pos.forEach((x,i)=>{ const el=$('#postot-'+i); if (el) el.textContent=fmtMenge(x); });
+
   function resultsHtml(c){
     return `
       <div class="res main"><div class="k">Wandfläche (netto)</div><div class="v">${fmt(c.wand)} m²</div></div>
@@ -569,13 +633,14 @@ async function viewRoom(id){
       <div class="res"><div class="k">Wand brutto</div><div class="v">${fmt(c.brutto)} m²</div></div>
       <div class="res"><div class="k">Abzüge</div><div class="v">${fmt(c.abzug)} m²</div></div>`;
   }
-  const refreshResults = () => { const el=$('#results'); if (el) el.innerHTML = resultsHtml(calc(r)); };
+  const refreshResults = () => { const el=$('#results'); if (el) el.innerHTML = resultsHtml(calc(r)); refreshPos(); };
 
   function setVal(key, v){
     const parts = key.split(':');
     if (parts[0]==='wall') r.walls[+parts[1]].len = v;
     else if (parts[0]==='abz') r.abzuege[+parts[1]][parts[2]] = v;
-    else if (parts[0]==='extra') r.extra[+parts[1]].wert = v;
+    else if (parts[0]==='pos' && parts[2]==='w') r.pos[+parts[1]].werte[+parts[3]] = v;
+    else if (parts[0]==='pos') r.pos[+parts[1]][parts[2]] = v;
     else r[key] = v;
   }
 
@@ -622,12 +687,50 @@ async function viewRoom(id){
     $$('[data-abz-art]').forEach(s=>s.onchange=()=>{ r.abzuege[+s.dataset.abzArt].art=s.value; persist(); });
     $$('[data-abz-n]').forEach(s=>s.oninput=()=>{ r.abzuege[+s.dataset.abzN].n=s.value; persist(); refreshResults(); });
 
-    $('#addExtra').onclick=()=>{ r.extra.push({label:'', wert:''}); persist(); render(); const l=$(`[data-extra-label="${r.extra.length-1}"]`); l&&l.focus(); };
-    $$('[data-delextra]').forEach(b=>b.onclick=()=>{ r.extra.splice(+b.dataset.delextra,1); persist(); render(); });
-    $$('[data-extra-label]').forEach(s=>{
-      s.oninput=()=>{ r.extra[+s.dataset.extraLabel].label=s.value; persist(); };
-      s.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); focusKey('extra:'+s.dataset.extraLabel); } };
+    // Positionen
+    const lastPos = () => r.pos.length-1;
+    $$('[data-addpos]').forEach(b=>b.onclick=()=>{
+      const [label, art] = b.dataset.addpos.split('|');
+      r.pos.push({id:uid(), label, art, werte:[''], n: art==='stk'?1:1, b:'', h:''});
+      persist(); render();
+      const i=lastPos();
+      if (!label) $(`[data-pos-label="${i}"]`).focus();
+      else if (art==='lfm') focusKey(`pos:${i}:w:0`);
+      else if (art==='m2') focusKey(`pos:${i}:b`);
+      $(`[data-delpos="${i}"]`).closest('.sub').scrollIntoView({block:'center'});
     });
+    $$('[data-delpos]').forEach(b=>b.onclick=()=>{
+      const x=r.pos[+b.dataset.delpos];
+      if ((x.label || posMenge(x)) && !confirm(`Position „${x.label||'ohne Namen'}“ löschen?`)) return;
+      r.pos.splice(+b.dataset.delpos,1); persist(); render(); });
+    $$('[data-pos-label]').forEach(s=>s.oninput=()=>{ r.pos[+s.dataset.posLabel].label=s.value; persist(); });
+    $$('[data-pos-art]').forEach(s=>s.onchange=()=>{ const x=r.pos[+s.dataset.posArt]; x.art=s.value; x.werte ||= ['']; if (x.n==null) x.n=1; persist(); render(); });
+    $$('[data-pos-n]').forEach(s=>s.oninput=()=>{ r.pos[+s.dataset.posN].n=s.value; persist(); refreshPos(); });
+    $$('[data-stk]').forEach(b=>b.onclick=()=>{
+      const [i,d]=b.dataset.stk.split(':').map(Number); const x=r.pos[i];
+      x.n = Math.max(0, (num(x.n)||0) + d); $(`[data-pos-n="${i}"]`).value = x.n; persist(); refreshPos();
+    });
+    $$('[data-addw]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.addw; r.pos[i].werte.push(''); persist(); render(); focusKey(`pos:${i}:w:${r.pos[i].werte.length-1}`); });
+    $$('[data-delw]').forEach(b=>b.onclick=()=>{ const [i,j]=b.dataset.delw.split(':').map(Number); r.pos[i].werte.splice(j,1); persist(); render(); });
+    $$('[data-umfang]').forEach(b=>b.onclick=()=>{
+      const i=+b.dataset.umfang, c=calc(r);
+      if (c.umfang==null){ toast('Erst Länge und Breite messen'); return; }
+      const tueren = r.abzuege.filter(a=>/Tür|Durchgang/.test(a.art))
+        .reduce((s,a)=>s + (num(a.b)||0)*(num(a.n)??1), 0);
+      const w = r.pos[i].werte, v = fmtM(Math.max(0, c.umfang - tueren));
+      if (w.length===1 && !w[0]) w[0]=v; else w.push(v);
+      persist(); render();
+      toast(tueren ? `Umfang ${fmt(c.umfang)} m − Türen ${fmt(tueren)} m` : 'Umfang übernommen (keine Türen bei Abzügen)');
+    });
+    // DISTO: nach letztem Teilstück automatisch ein neues anlegen
+    Disto.onFilled = el => {
+      const m = /^pos:(\d+):w:(\d+)$/.exec(el.dataset.key||'');
+      if (!m) return undefined;
+      const i=+m[1], j=+m[2];
+      if (j !== r.pos[i].werte.length-1) return undefined;
+      r.pos[i].werte.push(''); persist(); render();
+      return $(`[data-key="pos:${i}:w:${j+1}"]`);
+    };
 
     $$('[data-chip]').forEach(b=>b.onclick=()=>{
       const a=b.dataset.chip, i=r.arbeiten.indexOf(a);
@@ -645,7 +748,7 @@ async function viewRoom(id){
     $('#nextRoom').onclick=async ()=>{
       await put('rooms', r);
       const n={id:uid(), projectId:r.projectId, name:'', form:'rect', l:'', b:'', h:r.h, walls:[], deckeManuell:'',
-        abzuege:[], extra:[], arbeiten:[], notiz:'', order:Date.now()};
+        abzuege:[], pos:[], arbeiten:[], notiz:'', order:Date.now()};
       await put('rooms', n); location.hash='#/r/'+n.id; toast('Raumhöhe übernommen');
     };
     $('#delRoom').onclick=async ()=>{
@@ -731,8 +834,13 @@ async function viewReport(id){
       <h3 style="margin:0 0 4px">${esc(r.name||'Raum')}</h3>
       <table><tbody>${maße}<tr><td>Höhe</td><td class="n">${esc(r.h)} m</td></tr>
         ${(r.abzuege||[]).map(a=>`<tr><td>Abzug ${esc(a.art)} ${esc(a.n||1)}×</td><td class="n">${esc(a.b)} × ${esc(a.h)} m</td></tr>`).join('')}
-        ${(r.extra||[]).map(x=>`<tr><td>${esc(x.label||'Maß')}</td><td class="n">${esc(x.wert)} m</td></tr>`).join('')}
       </tbody></table>
+      ${migrateRoom(r).pos.length?`<table><thead><tr><th>Position</th><th>Maße</th><th class="n">Menge</th></tr></thead><tbody>
+        ${r.pos.map(x=>`<tr><td>${esc(x.label||'Position')}</td><td>${
+          x.art==='lfm' ? esc((x.werte||[]).filter(Boolean).join(' + ')) + ' m'
+          : x.art==='m2' ? `${esc(x.b)} × ${esc(x.h)} m × ${esc(x.n??1)}` : ''
+        }</td><td class="n">${fmtMenge(x)} ${POS_UNITS[x.art]}</td></tr>`).join('')}
+      </tbody></table>`:''}
       <table><tbody>
         <tr><td>Umfang</td><td class="n">${fmt(c.umfang)} m</td></tr>
         <tr><td><b>Wandfläche netto</b></td><td class="n"><b>${fmt(c.wand)} m²</b></td></tr>
@@ -753,6 +861,9 @@ async function viewReport(id){
       ${rooms.map(r=>{const c=calc(r); return `<tr><td>${esc(r.name||'Raum')}</td><td class="n">${fmt(c.wand)}</td><td class="n">${fmt(c.decke)}</td><td class="n">${fmt(c.boden)}</td></tr>`;}).join('')}
       <tr><td><b>Summe</b></td><td class="n"><b>${fmt(sW)}</b></td><td class="n"><b>${fmt(sD)}</b></td><td class="n"><b>${fmt(sB)}</b></td></tr>
     </tbody></table>
+    ${(()=>{ const ps=posSumme(rooms); return ps.length ? `<table><thead><tr><th>Positionen gesamt</th><th class="n">Menge</th></tr></thead><tbody>
+      ${ps.map(e=>`<tr><td>${esc(e.label)}</td><td class="n">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</td></tr>`).join('')}
+    </tbody></table>` : ''; })()}
     ${roomHtml}
   </div>
   <p class="muted noprint" style="font-size:14px">Tipp: „PDF / Drucken“ → im Druckmenü mit zwei Fingern auf die Vorschau auseinanderziehen → Teilen → „In Dateien sichern“ oder per Mail schicken.</p>`;
@@ -769,13 +880,14 @@ async function projectText(id){
     if (r.form==='walls') t+=`Wände: ${(r.walls||[]).map(w=>w.len).join(' + ')} m, Höhe ${r.h} m\n`;
     else t+=`L ${r.l} × B ${r.b} m, Höhe ${r.h} m\n`;
     for (const a of r.abzuege||[]) t+=`Abzug ${a.art} ${a.n||1}× ${a.b} × ${a.h} m\n`;
-    for (const x of r.extra||[]) t+=`${x.label||'Maß'}: ${x.wert} m\n`;
+    for (const x of migrateRoom(r).pos) t+=`${x.label||'Position'}: ${fmtMenge(x)} ${POS_UNITS[x.art]}${x.art==='lfm'&&(x.werte||[]).filter(Boolean).length>1?` (${x.werte.filter(Boolean).join(' + ')})`:''}\n`;
     t+=`Wandfläche netto: ${fmt(c.wand)} m² | Decke: ${fmt(c.decke)} m² | Umfang: ${fmt(c.umfang)} m\n`;
     if ((r.arbeiten||[]).length) t+=`Arbeiten: ${r.arbeiten.join(', ')}\n`;
     if (r.notiz) t+=`Notiz: ${r.notiz}\n`;
     t+='\n';
   }
   t+=`SUMME Wand: ${fmt(sW)} m² | Decke: ${fmt(sD)} m²\n`;
+  for (const e of posSumme(rooms)) t+=`SUMME ${e.label}: ${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}\n`;
   return t;
 }
 async function shareText(text){
