@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.7)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.8)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Energie, Müllkalender. Alle Bereiche sind optional.
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
 const P_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -55,6 +55,7 @@ const P_CSS = `
 @keyframes glow{0%,100%{opacity:.55}50%{opacity:1}}
 @keyframes dash{to{stroke-dashoffset:-24}}
 @keyframes dashr{to{stroke-dashoffset:24}}
+@keyframes sheen{0%{transform:translateX(0) skewX(-20deg)}100%{transform:translateX(170px) skewX(-20deg)}}
 .dr{display:flex;align-items:center;gap:10px}.dr .row{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
 .dr .lk{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
 .dr .st{font-size:15px;font-weight:700;line-height:1.2}.dr .sub{font-size:12px;color:var(--p-fg2);margin-top:2px}
@@ -223,17 +224,23 @@ class HandyCard extends HTMLElement {
     // Eigene Stadtvilla von vorne (nach Foto): symmetrisch – rote Flächen links (ohne Fenster) und rechts gleich breit, graue Mitte mit Haustür,
     // Walmdach mit Ziegelreihen, Graten, Überstand, Rinne und Fallrohr; Varta-Speicher hinter dem HWR-Fenster rechts unten
     const D = isDay, lit = home > 150 ? 1 : 0, soc0 = Math.max(0, Math.min(100, soc || 0)), batCol = soc0 < 15 ? '#e34948' : soc0 < 40 ? '#e2b400' : '#3ddc97', batAct = chg > 15 || dis > 15;
-    const C = D ? { red: ['#cf5c45', '#b44a36'], grey: ['#b6bcc8', '#a2a8b5'], edge: ['#c4c9d3', '#aeb3bf'], frame: '#8b919e', roof: ['#55585f', '#3f4248'], fascia: '#e6e8ec', sill: '#e2e0dc' }
-                : { red: ['#6c3428', '#57291f'], grey: ['#575b69', '#4a4e5b'], edge: ['#5f6372', '#50545f'], frame: '#424652', roof: ['#2d2f35', '#232429'], fascia: '#4a4d55', sill: '#6a6966' };
+    const C = D ? { red: ['#cf5c45', '#b44a36'], grey: ['#b6bcc8', '#a2a8b5'], edge: ['#c4c9d3', '#aeb3bf'], frame: '#8b919e', roof: ['#8a8d93', '#73767d'], fascia: '#e6e8ec', sill: '#e2e0dc' }
+                : { red: ['#6c3428', '#57291f'], grey: ['#575b69', '#4a4e5b'], edge: ['#5f6372', '#50545f'], frame: '#424652', roof: ['#3c3e44', '#303237'], fascia: '#4a4d55', sill: '#6a6966' };
     const glass = (id) => lit ? `url(#${id}l)` : `url(#${id}g)`;
     const win = (x, y, w, h, dbl) => `<rect x="${x - 1}" y="${y - 1}" width="${w + 2}" height="${h + 2}" fill="${C.frame}" opacity=".55"/><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${C.frame}"/>
       <rect x="${x + 1.8}" y="${y + 1.8}" width="${w - 3.6}" height="${h - 3.6}" fill="${glass('ewin')}"/>${!lit && D ? `<path d="M${x + 2.5},${y + h - 4} L${x + w * .55},${y + 2.5} L${x + w * .75},${y + 2.5} L${x + 2.5},${y + h * .9}Z" fill="#fff" opacity=".22"/>` : ''}
       ${dbl ? `<rect x="${x + w / 2 - .9}" y="${y}" width="1.8" height="${h}" fill="${C.frame}"/>` : ''}<rect x="${x - 2}" y="${y + h}" width="${w + 4}" height="2.2" rx=".6" fill="${C.sill}"/>`;
     const roofL = (y) => 36 + (80 - y) * 2.8, roofR = (y) => 324 - (80 - y) * 2.8;
-    const tiles = [54, 58, 62, 66, 70, 74, 78].map(y => `<line x1="${roofL(y)}" y1="${y}" x2="${roofR(y)}" y2="${y}" stroke="#000" stroke-opacity=".22" stroke-width=".7"/>`).join('');
-    const panel = (x, y) => `<g ${pvOn ? `style="animation:glow ${2 + (x % 7) * .25}s ease-in-out infinite"` : ''}><rect x="${x}" y="${y}" width="12.5" height="7.4" fill="${pvOn ? 'url(#epv)' : '#1b2640'}" stroke="#a9bde6" stroke-width=".45"/><line x1="${x + 6.25}" y1="${y}" x2="${x + 6.25}" y2="${y + 7.4}" stroke="#a9bde6" stroke-width=".25"/></g>`;
-    const panels = [0, 1, 2, 3, 4, 5].map(c => panel(176 + c * 13, 59)).join('') + [0, 1, 2, 3, 4, 5, 6].map(c => panel(170 + c * 13, 68)).join('');
-    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="330" y1="30" x2="${200 + k * 28}" y2="62" stroke="#ffd65a" stroke-width="${flowW(pv)}" stroke-dasharray="6 6" stroke-linecap="round" opacity=".7" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
+    // Graue Betondachsteine: Reihen mit Schattenkante und versetzten Fugen
+    const tiles = [52, 55.5, 59, 62.5, 66, 69.5, 73, 76.5].map((y, r) => { const l = roofL(y), rr = roofR(y);
+      let j = ''; for (let x = l + (r % 2 ? 3 : 0); x < rr - 2; x += 6) j += `M${x.toFixed(1)},${y - 3.5} L${x.toFixed(1)},${y}`;
+      return `<line x1="${l}" y1="${y}" x2="${rr}" y2="${y}" stroke="#000" stroke-opacity=".28" stroke-width=".9"/><line x1="${l}" y1="${y + .8}" x2="${rr}" y2="${y + .8}" stroke="#fff" stroke-opacity=".08" stroke-width=".6"/><path d="${j}" stroke="#000" stroke-opacity=".14" stroke-width=".5"/>`; }).join('');
+    // Monokristalline Module: schwarze Zellen im Raster, silberner Alurahmen, Spiegelung; bei Ertrag wandert ein Lichtschimmer darüber
+    const panel = (x, y) => `<rect x="${x}" y="${y}" width="13" height="7.8" rx=".3" fill="#c3c8d0"/><rect x="${x + .5}" y="${y + .5}" width="12" height="6.8" fill="url(#epv)"/><rect x="${x + .5}" y="${y + .5}" width="12" height="6.8" fill="url(#ecell)"/>`;
+    const PX = [[178, 58.5], [191.5, 58.5], [205, 58.5], [218.5, 58.5], [232, 58.5], [245.5, 58.5], [171, 67.6], [184.5, 67.6], [198, 67.6], [211.5, 67.6], [225, 67.6], [238.5, 67.6], [252, 67.6]];
+    const panels = `<g>${PX.map(([x, y]) => panel(x, y)).join('')}</g><g clip-path="url(#epvc)"><rect x="160" y="50" width="110" height="30" fill="url(#eglr)"/>${pvOn ? `<rect x="120" y="50" width="26" height="30" fill="url(#eshn)" style="animation:sheen ${Math.max(2.5, 7 - pv / 800)}s linear infinite"/>` : ''}</g>`;
+    const pvClip = `<clipPath id="epvc">${PX.map(([x, y]) => `<rect x="${x + .5}" y="${y + .5}" width="12" height="6.8"/>`).join('')}</clipPath>`;
+    const rays = pvOn ? [0, 1, 2].map(k => `<line x1="330" y1="30" x2="${204 + k * 24}" y2="${60 + k * 4}" stroke="#ffe48a" stroke-width="${Math.min(3, flowW(pv))}" stroke-dasharray="3 7" stroke-linecap="round" opacity=".45" style="animation:dash ${sp(pv)}s linear infinite"/>`).join('') : '';
     const lamp = (x) => `${!D ? `<ellipse cx="${x}" cy="166" rx="9" ry="13" fill="#ffd88a" opacity=".3"/>` : ''}<rect x="${x - 1.6}" y="162" width="3.2" height="5.5" rx="1" fill="${!D ? '#fff1c4' : '#eef1f5'}"/><rect x="${x - 1.6}" y="167" width="3.2" height="1" fill="#8b919e"/>`;
     const wire = 'M18,112 Q36,126 50,136';
     const gridFlow = imp > 15 || exp > 15 ? `<path d="${wire}" fill="none" stroke="${exp > imp ? '#3ddc97' : '#ff7a6b'}" stroke-width="${flowW(Math.max(imp, exp))}" stroke-dasharray="5 7" stroke-linecap="round" style="animation:${exp > imp ? 'dashr' : 'dash'} ${sp(Math.max(imp, exp))}s linear infinite"/>` : '';
@@ -254,7 +261,10 @@ class HandyCard extends HTMLElement {
       <linearGradient id="eeave" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
       <linearGradient id="ewing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${D ? '#cfe0f2' : '#26304a'}"/><stop offset="1" stop-color="${D ? '#7f98b8' : '#1a2032'}"/></linearGradient>
       <linearGradient id="ewinl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#f5b45a"/></linearGradient>
-      <linearGradient id="epv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5d8ef0"/><stop offset="1" stop-color="#2a4fae"/></linearGradient></defs>
+      <linearGradient id="epv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${D ? '#1d2636' : '#11161f'}"/><stop offset="1" stop-color="${D ? '#0b0f17' : '#07090d'}"/></linearGradient>
+      <pattern id="ecell" width="2" height="1.7" patternUnits="userSpaceOnUse"><rect width="2" height="1.7" fill="none" stroke="#3a4a66" stroke-width=".22"/></pattern>
+      <linearGradient id="eglr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${D ? .22 : .06}"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset=".7" stop-color="#9ec3ff" stop-opacity="${D ? .12 : .03}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      <linearGradient id="eshn" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>${pvClip}</defs>
       <rect width="360" height="236" fill="url(#esk)"/>${sunG}
       <path d="M0,205 Q120,199 200,204 T360,201 L360,236 L0,236Z" fill="${grass}"/><path d="M168,206 L186,206 L194,236 L160,236Z" fill="${D ? '#8d9099' : '#3b3e46'}"/>
       <g stroke="#3a3530" stroke-width="3" stroke-linecap="round"><line x1="14" y1="106" x2="14" y2="214"/><line x1="4" y1="114" x2="24" y2="114"/><line x1="6" y1="124" x2="22" y2="124"/></g>
