@@ -1,4 +1,4 @@
-// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.21.2)
+// Raum-Karte – eigene Lovelace-Karte im Stil der Wetterstation (v1.22)
 const R_fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : Number(v).toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
 const R_icon = (i, s = 18) => `<ha-icon icon="${i}" style="--mdc-icon-size:${s}px;width:${s}px;height:${s}px"></ha-icon>`;
 const R_esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -158,6 +158,26 @@ const R_CSS = `
 .msg{color:var(--r-fg2);font-size:13px}
 @media (max-width:900px){.half{grid-column:1/-1}}
 @media (max-width:640px){.hin{grid-template-columns:1fr;padding:20px 18px}.dial svg{width:170px;height:170px}.blk{padding:16px 14px}.lights{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* iPhone (schmal): kompaktere Kacheln, damit ein Raum nicht zu lang wird */
+@media (max-width:500px){.wrap{gap:10px;padding-bottom:16px}.wrap.pad{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+.hero{min-height:0;border-radius:22px}.hin{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:14px 14px 14px}.back{margin-bottom:6px;font-size:12.5px;padding:3px 10px 3px 4px}.loc{font-size:12.5px}
+.title{font-size:24px;margin:2px 0 0}.big{font-size:46px}.sub{font-size:13px;gap:2px 10px;margin-top:4px}.chips{gap:4px;margin-top:8px}.chip{font-size:11px;padding:3px 8px}
+.dial{align-self:center;gap:4px}.dial svg{width:118px;height:118px}.dial .row{gap:4px}.dial .rb{min-width:32px;height:32px;padding:0 10px;font-size:13px}
+.blk{padding:12px;border-radius:20px}.bh{margin-bottom:10px;gap:8px}.bh h2{font-size:16px}.bh p{font-size:12px}.btn{font-size:12px;padding:5px 11px}
+.lights{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.lt{min-height:94px;padding:10px;border-radius:16px;gap:4px}.lt .ic{width:30px;height:30px}.lt .n{font-size:13px}.lt .s{font-size:11px}
+.fx{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}.fxi{border-radius:18px}.fxs{height:96px;padding:0 4px}
+.fxb{grid-template-columns:minmax(0,1fr) auto;gap:6px 8px;padding:6px 10px 8px}.fxb input[type=range]{grid-column:1/-1;grid-row:2}.fxt .n{font-size:13px}.fxt .s{font-size:11px;white-space:normal}.fxp{width:32px;height:32px}
+.sw{gap:4px;padding:0 10px 10px}.swb{width:19px;height:19px}.swd{display:none}
+.scenes{gap:6px}.sc{font-size:12px;padding:4px 10px 4px 4px;gap:6px}.sc i{width:18px;height:18px}
+.covers.scene,.covers{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cvs{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px;border-radius:18px}.cvw{grid-column:1/-1}.cvw svg{max-height:104px;margin:0 auto}.cvi .n{font-size:13px}.cvi .s{font-size:11px;margin-bottom:6px}.cvq{gap:4px}.chq{font-size:11px;padding:4px 7px}.cvb{flex-direction:row;grid-column:1/-1;justify-content:space-between}.ib2{width:34px;height:34px}
+.media{gap:8px}.tvc,.ply{border-radius:18px}.tvi{max-height:170px}.tvb .pti{font-size:18px}.pti{font-size:17px}.par{font-size:12.5px}
+.pin{grid-template-columns:76px minmax(0,1fr);gap:12px;padding:12px 12px 6px}.pcv{width:76px;height:76px;border-radius:14px}.pst b{font-size:13px}.pct{gap:6px;margin-top:8px}.pb{width:34px;height:34px}.pb.big{width:46px;height:46px}
+.rmt{gap:8px;padding:4px 8px 2px}.rpad{grid-template-columns:repeat(3,34px);grid-template-rows:repeat(3,34px);gap:2px;padding:6px}.rk{width:34px;height:34px}.rcol{grid-template-columns:repeat(2,34px);gap:6px}
+.pvo{padding:2px 12px 6px}.pfv{padding:2px 12px 12px;gap:6px}.pfc{font-size:12px;padding:5px 10px}
+.aq{grid-template-columns:84px minmax(0,1fr);padding:12px;gap:6px 10px;border-radius:18px}.aqs{width:84px}.aqb{font-size:12px;padding:5px 9px}
+.md{grid-template-columns:36px minmax(0,1fr) auto;gap:8px;padding:8px 10px;border-radius:16px}.md .ic{width:36px;height:36px;border-radius:12px}.ib{width:34px;height:34px}
+.lk .lki{width:56px;height:56px;border-radius:18px}.lk .v{font-size:18px}
+.pw .tot b{font-size:26px}.pl{font-size:12.5px}.pill{font-size:12px;padding:4px 10px}.st{gap:6px}}
 `;
 
 class RaumCard extends HTMLElement {
