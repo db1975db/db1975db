@@ -54,6 +54,13 @@
 - Nach jeder Karten-Änderung auf iPhone/iPad: Companion App → Debugging → Frontend-Cache zurücksetzen, App neu starten.
 - Später: Einzel-Dashboards (Wohnzimmer, Küche, Wetterstation, Mähroboter, Hunter-Bewässerung) erst löschen, wenn Dennis das will.
 
+### Dashboard „Zuhause (iPhone)“ (`/dashboard-handy`) – im Aufbau, seit 27.11.2026
+- Eigenes iPhone-Dashboard mit kleineren Kacheln (Dennis' Wunsch). Bisher nur die Startseite: `custom:handy-card` (`www/handy-card.js`, v0.9), Konfiguration `dashboards/handy.yaml`.
+- **Ressource:** inline, Resource-ID `661a62894e9e4e4381ed12b1ca498677` (Hash 65052ef4… = Repo).
+- Bereiche: Begrüßung, Personen mit Fotos (entity_picture), Wetter (Gartenstation + DWD `weather.lebus_3` stündlich per `weather/subscribe_forecast`, DWD-Warnung Märkisch-Oderland, animierte Szene), Energie als Szene mit der eigenen Stadtvilla von vorne (symmetrisch, graue Betondachsteine, 9 PV-Module mittig 4+5, Varta Element backup 6,5 kWh hinter dem HWR-Fenster rechts unten), Haustür (Aqara U200), Müll mit den Bildern `/local/muell/*.png`.
+- Das ältere Dashboard `dashboard-iphone` bleibt vorerst unverändert.
+- Nächste Schritte: Leiste unten (Start · EG · OG · Garten), Etagen-Seiten mit kleinen Raumkacheln, kompakte Raumansichten.
+
 ## Die Raum-Karte für weitere Räume
 `raum-card` ist allgemein gebaut. Alle Bereiche sind optional:
 `name`, `floor`, `icon`, `temperature`, `humidity`, `climate`, `lights[]` (`entity`, `name`, `icon`, optional `socket`),
