@@ -44,6 +44,11 @@ details.vor>summary{list-style:none;cursor:pointer;font-size:13px;color:var(--mu
 details.vor>summary::-webkit-details-marker{display:none}
 details.vor>summary::before{content:"▸ ";}
 details.vor[open]>summary::before{content:"▾ ";}
+.fabbar{position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:20;display:flex;gap:10px;max-width:728px;margin:0 auto}
+.fabbar .btn{flex:1;padding:16px 10px;font-size:18px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.wahl{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.wahl button{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:16px;padding:22px 10px;font:inherit;font-weight:700;font-size:18px}
+.wahl button span{display:block;font-size:40px;margin-bottom:4px}
 .fab.cam{left:auto;right:16px;width:62px;height:62px;padding:0;font-size:28px;border-radius:50%}
 header h1{font-size:20px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:10px;
@@ -249,7 +254,13 @@ const fmtDate = s => s ? new Date(s).toLocaleDateString('de-DE') : '';
 let toastT;
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1800); }
 
-function debounce(fn, ms=400){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+function debounce(fn, ms=400){
+  let t = null, args;
+  const d = (...a)=>{ args = a; clearTimeout(t); t = setTimeout(()=>{ t = null; fn(...args); }, ms); };
+  d.flush = ()=>{ if (t){ clearTimeout(t); t = null; return fn(...args); } };
+  return d;
+}
+let offenesSpeichern = null;   // wird vor jedem Seitenwechsel sofort ausgeführt
 
 /* =========================================================
    Arbeiten & Material (immer Brillux)
@@ -505,10 +516,11 @@ function setHeader(title, {back=false, action=null}={}){
   if (action){ b.hidden=false; b.textContent=action.label; b.onclick=action.fn; } else b.hidden=true;
   document.title = title;
 }
-function clearFab(){ $$('.fab').forEach(f=>f.remove()); }
+function clearFab(){ $$('.fab,.fabbar').forEach(f=>f.remove()); }
 function fab(label, fn){ clearFab(); const b=document.createElement('button'); b.className='btn fab'; b.textContent=label; b.onclick=fn; document.body.appendChild(b); }
 
 async function route(){
+  if (offenesSpeichern){ try{ await offenesSpeichern.flush(); }catch(e){ console.error(e); } offenesSpeichern = null; }
   clearFab(); window.scrollTo(0,0);
   Disto.target = null; Disto.onRaw = null; Disto.onFilled = null;
   Disto.show(/^#\/(r|hilfe)/.test(location.hash));
@@ -585,7 +597,7 @@ async function viewProject(id){
   const rooms = sortiert(await byIdx('rooms','projectId',id));
   const photos = await byIdx('photos','projectId',id);
   const ri = innen(rooms), rf = fassaden(rooms);
-  setHeader(p.kunde || 'Neue Baustelle', {back:true, action:{label:'Zusammenfassung', fn:()=>location.hash='#/zusammenfassung/'+id}});
+  setHeader(p.kunde || 'Neue Baustelle', {back:true, action:{label:'Übersicht', fn:()=>location.hash='#/zusammenfassung/'+id}});
 
   let sumW=0, sumD=0, sumF=0, sumS=0;
   ri.forEach(r=>{ const c=calc(r); sumW+=c.wand||0; sumD+=c.decke||0; });
@@ -606,8 +618,8 @@ async function viewProject(id){
 
   app.innerHTML = `
     ${p.fertig ? `<div class="hint" style="background:var(--green-soft)">✓ Aufmaß abgeschlossen am ${fmtDate(p.fertig)}. Du kannst trotzdem weiter ändern.</div>` : ''}
-    <div class="card">
-      <h2>Kunde</h2>
+    <details class="card sec" ${p.kunde?'':'open'}>
+      <summary><h2>Kunde</h2><span class="sum" id="sum-kunde">${esc([p.kunde, p.adresse].filter(Boolean).join(' · '))}</span></summary>
       <label class="f"><span>Name</span><input id="kunde" value="${esc(p.kunde)}" placeholder="z. B. Familie Müller" autocomplete="off"></label>
       <label class="f"><span>Adresse</span><input id="adresse" value="${esc(p.adresse)}" placeholder="Straße, Ort" autocomplete="off"></label>
       <div class="row">
@@ -615,30 +627,32 @@ async function viewProject(id){
         <label class="f"><span>Datum</span><input id="datum" type="date" value="${esc(p.datum)}"></label>
       </div>
       <label class="f" style="margin:0"><span>Notiz zur Baustelle</span><textarea id="notiz" placeholder="z. B. Schlüssel beim Nachbarn, Parken im Hof …">${esc(p.notiz)}</textarea></label>
-    </div>
+    </details>
 
-    <div class="card">
+    ${!ri.length && !rf.length ? `<p class="muted" style="text-align:center;font-size:16px;margin:6px 0 16px">👇 Unten wählen: <b>🏠 Raum</b> oder <b>🧱 Fassade</b></p>` : ''}
+
+    ${ri.length ? `<div class="card">
       <h2>Räume (innen)</h2>
-      ${ri.length ? ri.map(item).join('') : '<p class="muted" style="margin:0 0 10px">Noch keine Räume erfasst.</p>'}
+      ${ri.map(item).join('')}
       ${ri.length ? `<div class="results" style="margin-top:6px">
         <div class="res main"><div class="k">Wandfläche gesamt</div><div class="v">${fmt(sumW)} m²</div></div>
         <div class="res main"><div class="k">Deckenfläche gesamt</div><div class="v">${fmt(sumD)} m²</div></div>
         ${posSumme(ri).map(e=>`<div class="res"><div class="k">${esc(e.label)}</div><div class="v">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</div></div>`).join('')}
       </div>`:''}
-    </div>
+    </div>` : ''}
 
-    <div class="card">
+    ${rf.length ? `<div class="card">
       <h2>Fassade</h2>
-      ${rf.length ? rf.map(item).join('') : '<p class="muted" style="margin:0 0 10px">Keine Fassade erfasst.</p>'}
+      ${rf.map(item).join('')}
       ${rf.length ? `<div class="results" style="margin:6px 0 10px">
         <div class="res main"><div class="k">Fassade gesamt</div><div class="v">${fmt(sumF)} m²</div></div>
         <div class="res main"><div class="k">Sockel gesamt</div><div class="v">${fmt(sumS)} m²</div></div>
         ${posSumme(rf).map(e=>`<div class="res"><div class="k">${esc(e.label)}</div><div class="v">${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}</div></div>`).join('')}
       </div>`:''}
-      <button class="btn sec" id="addFassade">+ Fassadenseite</button>
-    </div>
+    </div>` : ''}
 
-    <button class="btn block" id="fertig" style="margin-bottom:10px;background:var(--green)">✓ Aufmaß fertig – Zusammenfassung</button>
+    ${ri.length || rf.length ? `<button class="btn block" id="fertig" style="margin-bottom:10px;background:var(--green)">✓ Aufmaß fertig – Zusammenfassung</button>
+    ` : ''}
     <div class="actions noprint">
       <button class="btn sec" id="offer">📄 Angebot erstellen</button>
       <button class="btn sec" id="share">Als Text teilen</button>
@@ -647,29 +661,36 @@ async function viewProject(id){
   `;
   const save = debounce(async ()=>{
     ['kunde','adresse','telefon','datum','notiz'].forEach(k=>p[k]=$('#'+k).value);
+    const ks = $('#sum-kunde'); if (ks) ks.textContent = [p.kunde, p.adresse].filter(Boolean).join(' · ');
     p.updated=Date.now(); await put('projects', p);
     $('#title').textContent = p.kunde || 'Neue Baustelle';
   }, 300);
   $$('#kunde,#adresse,#telefon,#datum,#notiz').forEach(el=>el.addEventListener('input', save));
+  offenesSpeichern = save;
   if (!p.kunde) $('#kunde').focus();
+  $('#kunde').addEventListener('keydown', e=>{ if (e.key==='Enter'){ e.preventDefault(); $('#adresse').focus(); } });
 
   $('#share').onclick = async ()=>{ await shareText(await projectText(id)); };
   $('#offer').onclick = ()=>{ location.hash = '#/angebot/'+id; };
-  $('#fertig').onclick = ()=> aufmassFertig(id);
+  $('#fertig') && ($('#fertig').onclick = ()=> aufmassFertig(id));
   $('#delP').onclick = async ()=>{
     if (!confirm(`Baustelle „${p.kunde||'ohne Namen'}“ mit allen Räumen, Fassaden und Fotos löschen?`)) return;
     for (const r of rooms) await del('rooms', r.id);
     for (const f of photos) await del('photos', f.id);
     await del('projects', id); location.hash='#/';
   };
-  $('#addFassade').onclick = async ()=>{
-    const r = neueFassade(id); await put('rooms', r); location.hash = '#/r/'+r.id;
-  };
-  fab('+ Raum', async ()=>{
-    const r = neuerRaum(id);
+  const neu = async fassade => {
+    const r = fassade ? neueFassade(id) : neuerRaum(id);
     await put('rooms', r); p.updated=Date.now(); await put('projects', p);
     location.hash = '#/r/'+r.id;
-  });
+  };
+  $('#wRaum') && ($('#wRaum').onclick = ()=>neu(false));
+  $('#wFassade') && ($('#wFassade').onclick = ()=>neu(true));
+  // Immer sichtbar: Raum oder Fassade hinzufügen
+  const bar = document.createElement('div'); bar.className = 'fabbar';
+  bar.innerHTML = `<button class="btn" id="bRaum">🏠 + Raum</button><button class="btn" id="bFassade">🧱 + Fassade</button>`;
+  document.body.appendChild(bar);
+  $('#bRaum').onclick = ()=>neu(false); $('#bFassade').onclick = ()=>neu(true);
 }
 async function aufmassFertig(projectId){
   const p = await get('projects', projectId);
@@ -699,6 +720,7 @@ async function viewRoom(id){
     await put('rooms', r);
     const p = await get('projects', r.projectId); if (p){ p.updated=Date.now(); await put('projects', p); }
   }, 250);
+  offenesSpeichern = persist;
 
   const mField = (key, label, val, extra='') =>
     `<label class="f measure"><span>${label}</span><input data-measure data-key="${key}" ${extra}
