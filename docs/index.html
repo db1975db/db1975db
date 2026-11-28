@@ -1516,6 +1516,10 @@ function mengeFuer(arbeit, r){
     default: return [null, 'psch'];
   }
 }
+// Ausführlicher Text im Angebot (die Auswahl im Raum bleibt kurz)
+const LEISTUNGS_TEXT = {
+  'Türen lackieren': 'Türblätter schleifen, grundieren, 2× lackieren (je Seite)',
+};
 async function leistungen(id){
   const rooms=sortiert(await byIdx('rooms','projectId',id));
   const map = new Map();
@@ -1530,7 +1534,7 @@ async function leistungen(id){
     const c = calc(r), name = r.name || (r.typ==='fassade'?'Fassade':'Raum');
     for (const [k,t] of flaechenVon(r))
       for (const [a,m,u,g,kz,art,meta] of flaechenLeistungen(t, r.flaechen[k], c.fl[k])) add(a, m, u, name, g, kz, art, meta);
-    for (const a of r.arbeiten||[]){ const [m,u] = mengeFuer(a, r); add(a, m, u, name); }
+    for (const a of r.arbeiten||[]){ const [m,u] = mengeFuer(a, r); add(a, m, u, name, 'Sonstiges', LEISTUNGS_TEXT[a] || a); }
   }
   const G = ['Decke','Wände','Fassade','Sockel','Sonstiges'];
   const liste = [...map.values()].map((e,i)=>({...e, i})).sort((a,b)=>(G.indexOf(a.gruppe)-G.indexOf(b.gruppe)) || (a.art-b.art) || (a.i-b.i));
@@ -1770,7 +1774,7 @@ async function viewOffer(id){
       : k.ep!=null ? `kalkuliert${k.schaetz?' ⚠️ Schätzwert':''}${k.fehlt?.length?` · ohne Preis: ${k.fehlt.join(', ')}`:''}`
       : (k.grund==='Stundensatz fehlt' ? '⚠️ Stundensatz fehlt (⚙︎ → Kalkulation)' : 'nach Aufwand – Preis eintragen');
     return `<div class="pos">
-      <div class="pkopf"><span class="muted">${i+1}</span><b>${esc(e.arbeit)}</b></div>
+      <div class="pkopf"><span class="muted">${i+1}</span><b>${esc(e.gruppe==="Sonstiges" ? e.kurz : e.arbeit)}</b></div>
       <div class="pzeile">
         <span class="pmenge">${e.einheit==='psch' ? '1 psch' : fmtE(e.menge, e.einheit)}</span>
         <label class="pep">× <input data-ep="${i}" inputmode="decimal" value="${x.eigen!=null?fmt(x.eigen):''}" placeholder="${k.ep!=null?fmt(k.ep):'EP'}"> €/${einh}</label>
@@ -1847,7 +1851,7 @@ function angebotText(p, rooms, pos, s, K){
   t += `POSITIONEN (Mengen aus dem Aufmaß, Flächen nach VOB):\n`;
   pos.forEach((x,i)=>{
     const e = x.e, einh = e.einheit==='psch' ? 'psch' : e.einheit;
-    t += `${i+1}. ${e.arbeit}: ${e.einheit==='psch' ? '1 psch' : fmtE(e.menge, e.einheit)}`;
+    t += `${i+1}. ${e.gruppe==='Sonstiges' ? e.kurz : e.arbeit}: ${e.einheit==='psch' ? '1 psch' : fmtE(e.menge, e.einheit)}`;
     t += x.ep!=null ? ` × ${fmt(x.ep)} €/${einh} = ${fmt(x.gp)} €` : ` – Preis nach Aufwand (bitte nachfragen)`;
     t += ` (${e.raeume.map(r=>r.name).join(', ')})\n`;
   });

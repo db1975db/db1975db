@@ -1,5 +1,5 @@
 // Offline-Cache für die Aufmaß-App. Bei Änderungen VERSION erhöhen.
-const VERSION = 'aufmass-v28';
+const VERSION = 'aufmass-v29';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
