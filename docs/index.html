@@ -45,6 +45,16 @@ details.vor>summary::-webkit-details-marker{display:none}
 details.vor>summary::before{content:"▸ ";}
 details.vor[open]>summary::before{content:"▾ ";}
 .seg.wrap{flex-wrap:wrap}.seg.wrap button{flex:1 1 45%;font-size:14px}
+.pos{border-bottom:1px solid var(--line);padding:10px 0}
+.pkopf{display:flex;gap:8px;align-items:baseline;font-size:15px}
+.pzeile{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.pmenge{flex:1;min-width:100px;font-variant-numeric:tabular-nums}
+.pep{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.pep input{width:92px;padding:8px;font-size:17px;text-align:right}
+.pgp{min-width:90px;margin-left:auto;text-align:right;font-variant-numeric:tabular-nums}
+.pinfo{font-size:12px;margin-top:4px}
+.sumrow{display:flex;justify-content:space-between;padding:6px 0;font-variant-numeric:tabular-nums}
+.sumrow.big{font-size:22px;border-top:2px solid var(--ink);margin-top:4px;padding-top:8px}
 .fabbar{position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:20;display:flex;gap:10px;max-width:728px;margin:0 auto}
 .fabbar .btn{flex:1;padding:16px 10px;font-size:18px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
 .wahl{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -616,7 +626,10 @@ $('#distoBtn').onclick = ()=>{
 /* =========================================================
    Router
    ========================================================= */
-window.addEventListener('hashchange', route);
+// Seitenwechsel nacheinander abarbeiten, damit keine ältere Seite eine neuere überschreibt
+let routeKette = Promise.resolve();
+const navigiere = () => { routeKette = routeKette.then(route, route); return routeKette; };
+window.addEventListener('hashchange', navigiere);
 $('#back').onclick = () => history.length > 1 ? history.back() : (location.hash = '#/');
 
 function setHeader(title, {back=false, action=null}={}){
@@ -643,6 +656,7 @@ async function route(){
     if (h[0]==='angebot' && h[1]) return await viewOffer(h[1]);
     if (h[0]==='hilfe') return viewHelp();
     if (h[0]==='daten') return viewData();
+    if (h[0]==='kalkulation') return viewKalk();
     return await viewHome();
   }catch(e){ console.error(e); app.innerHTML = `<div class="card">Fehler: ${esc(e.message)}</div>`; }
 }
@@ -1265,6 +1279,7 @@ async function viewRoom(id){
       await put('rooms', r);
       // Raumhöhe bzw. Fassadenhöhe und Arbeiten werden übernommen
       const kopie = JSON.parse(JSON.stringify(r.flaechen));
+      for (const f of Object.values(kopie)) if (f) f.manuell = false;   // im neuen Raum wieder automatisch passend zur Tapete
       const n = F ? neueFassade(r.projectId, {h:r.h, sockelH:r.sockelH, flaechen:kopie})
                   : neuerRaum(r.projectId, {h:r.h, flaechen:kopie});
       await put('rooms', n); location.hash='#/r/'+n.id;
@@ -1457,10 +1472,11 @@ async function viewReport(id){
 function flaechenLeistungen(titel, f, menge){
   if (!f) return [];
   const out = [];
-  for (const v of f.vor||[]) out.push([`${titel}: ${v}`, menge, 'm²', titel, v, 0]);
-  if (f.belag) out.push([`${titel} tapezieren: ${f.belag}`, menge, 'm²', titel, `Tapezieren: ${f.belag}`, 1]);
+  for (const v of f.vor||[]) out.push([`${titel}: ${v}`, menge, 'm²', titel, v, 0, {typ:'vor', gruppe:titel, v}]);
+  if (f.belag) out.push([`${titel} tapezieren: ${f.belag}`, menge, 'm²', titel, `Tapezieren: ${f.belag}`, 1, {typ:'tapezieren', gruppe:titel, belag:f.belag}]);
   if (f.anstrich) out.push([`${titel} streichen ${f.anzahl||2}×: ${f.anstrich}${f.farbton?`, Farbton ${f.farbton}`:''}`, menge, 'm²', titel,
-    `Streichen ${f.anzahl||2}× ${f.anstrich.replace('Brillux ','')}${f.farbton?` · ${f.farbton}`:''}`, 2]);
+    `Streichen ${f.anzahl||2}× ${f.anstrich.replace('Brillux ','')}${f.farbton?` · ${f.farbton}`:''}`, 2,
+    {typ:'streichen', gruppe:titel, n:+(f.anzahl||2), produkt:f.anstrich}]);
   return out;
 }
 // Mengen für sonstige Arbeiten
@@ -1494,9 +1510,9 @@ function mengeFuer(arbeit, r){
 async function leistungen(id){
   const rooms=sortiert(await byIdx('rooms','projectId',id));
   const map = new Map();
-  const add = (arbeit, menge, einheit, name, gruppe='Sonstiges', kurz=arbeit, art=3) => {
+  const add = (arbeit, menge, einheit, name, gruppe='Sonstiges', kurz=arbeit, art=3, meta=null) => {
     const key = arbeit+'|'+einheit;
-    const e = map.get(key) || {arbeit, einheit, menge:0, raeume:[], gruppe, kurz, art};
+    const e = map.get(key) || {arbeit, einheit, menge:0, raeume:[], gruppe, kurz, art, meta};
     if (menge) e.menge += menge;
     e.raeume.push({name, menge});
     map.set(key, e);
@@ -1504,7 +1520,7 @@ async function leistungen(id){
   for (const r of rooms){
     const c = calc(r), name = r.name || (r.typ==='fassade'?'Fassade':'Raum');
     for (const [k,t] of flaechenVon(r))
-      for (const [a,m,u,g,kz,art] of flaechenLeistungen(t, r.flaechen[k], c.fl[k])) add(a, m, u, name, g, kz, art);
+      for (const [a,m,u,g,kz,art,meta] of flaechenLeistungen(t, r.flaechen[k], c.fl[k])) add(a, m, u, name, g, kz, art, meta);
     for (const a of r.arbeiten||[]){ const [m,u] = mengeFuer(a, r); add(a, m, u, name); }
   }
   const G = ['Decke','Wände','Fassade','Sockel','Sonstiges'];
@@ -1513,49 +1529,323 @@ async function leistungen(id){
 }
 const fmtE = (m, einheit) => m ? (einheit==='Stk' ? fmt(m,0) : fmt(m)) + ' ' + einheit : (einheit==='psch' ? 'pauschal / nach Aufwand' : '– '+einheit);
 
+/* =========================================================
+   Kalkulation
+   Persönliche Werte (Stundensatz, Einkaufspreise) liegen NUR auf
+   diesem Gerät (localStorage + Sicherung), nie im Programmcode.
+   EP = (Std/Einheit × Stundensatz + Material × (1 + Aufschlag)) × (1 + W+G)
+   ========================================================= */
+const KALK_STANDARD = {
+  stundensatz: null, wg: 10, aufschlag: 25, mwst: 19,
+  anfahrt: [[10,15],[25,25],[50,40],[null,60]],
+  // Verbrauch je m² und Anstrich (Tapete/Vlies inkl. 10 % Verschnitt), Preis = Einkauf netto je Einheit
+  produkte: {
+    'Brillux Superlux':              {einheit:'l',  verbrauch:0.14,  preis:null},
+    'Brillux Intromatt':             {einheit:'l',  verbrauch:0.145, preis:null},
+    'Brillux Raulan':                {einheit:'l',  verbrauch:0.14,  preis:null},
+    'Brillux Silicon-Fassadenfarbe': {einheit:'l',  verbrauch:0.165, preis:null},
+    'Brillux Fassadenfarbe Acryl':   {einheit:'l',  verbrauch:0.155, preis:null},
+    'Brillux Fassadenfarbe Silikat': {einheit:'l',  verbrauch:0.18,  preis:null, s:true},
+    'Tiefgrund':                     {einheit:'l',  verbrauch:0.175, preis:null},
+    'Spachtelmasse':                 {einheit:'l',  verbrauch:1.0,   preis:null},
+    'Raufaser':                      {einheit:'m²', verbrauch:1.10,  preis:null},
+    'Lightvlies 130':                {einheit:'m²', verbrauch:1.10,  preis:null},
+    'Kleister (Raufaser)':           {einheit:'m²', verbrauch:1.0,   preis:null, s:true},
+    'Vlieskleber':                   {einheit:'kg', verbrauch:0.15,  preis:null},
+    'Lack':                          {einheit:'l',  verbrauch:0.09,  preis:null},
+    'Heizkörperlack':                {einheit:'l',  verbrauch:0.12,  preis:null},
+    'Abdeckvlies':                   {einheit:'m²', verbrauch:1.0,   preis:null, s:true},
+  },
+  // h = Stunden je Einheit; mat = [[Produkt, Faktor]] (Faktor × Verbrauch); s = Schätzwert, bitte prüfen
+  leistungen: {
+    'Decke streichen 1×':   {h:0.15}, 'Decke streichen 2×':   {h:0.20},
+    'Wände streichen 1×':   {h:0.10}, 'Wände streichen 2×':   {h:0.15},
+    'Fassade streichen 1×': {h:0.12}, 'Fassade streichen 2×': {h:0.23},
+    'Sockel streichen 1×':  {h:0.15, s:true}, 'Sockel streichen 2×': {h:0.28, s:true},
+    'Tapezieren Raufaser':        {h:0.25, mat:[['Raufaser',1],['Kleister (Raufaser)',1]]},
+    'Tapezieren Lightvlies 130':  {h:0.25, mat:[['Lightvlies 130',1],['Vlieskleber',1]], s:true},
+    'Tapezieren Vlies (andere)':  {h:0.30, mat:[['Vlieskleber',1]], s:true},
+    'Alte Tapete entfernen':      {h:0.10, s:true},
+    'Untergrund reinigen':        {h:0.05},
+    'Risse ausbessern':           {h:null},
+    'Spachteln Q2':               {h:0.25, mat:[['Spachtelmasse',0.3]], s:true},
+    'Spachteln Q3':               {h:0.30, mat:[['Spachtelmasse',0.5]], s:true},
+    'Spachteln Q4':               {h:0.40, mat:[['Spachtelmasse',1.0]]},
+    'Grundierung':                {h:0.02, mat:[['Tiefgrund',1]], s:true},
+    'Schimmelbehandlung':         {h:null},
+    'außen: Reinigen (Hochdruck)':    {h:0.05, s:true},
+    'außen: Algen-/Pilzbehandlung':   {h:0.05, s:true},
+    'außen: Risse sanieren':          {h:null},
+    'außen: Putz ausbessern':         {h:null},
+    'außen: Grundierung':             {h:0.12, mat:[['Tiefgrund',1]]},
+    'außen: Armierung mit Gewebe':    {h:0.35, s:true},
+    'Türen lackieren':        {h:1.75, einheit:'Stk', mat:[['Lack',8]], s:true},
+    'Zargen lackieren':       {h:0.75, einheit:'Stk', mat:[['Lack',3]], s:true},
+    'Fenster lackieren':      {h:1.75, einheit:'Stk', mat:[['Lack',5]], s:true},
+    'Heizkörper lackieren':   {h:1.50, einheit:'Stk', mat:[['Heizkörperlack',6]], s:true},
+    'Sockelleisten':          {h:0.08, einheit:'lfm', mat:[['Lack',0.3]], s:true},
+    'Abdecken / Abkleben':    {h:0.05, mat:[['Abdeckvlies',1]]},
+    'Möbel rücken':           {h:null},
+    'Untersichten streichen': {h:0.25, mat:[['Brillux Superlux',2]], s:true},
+    'Geländer lackieren':     {h:0.40, einheit:'lfm', mat:[['Lack',0.6]], s:true},
+    'Handlauf lackieren':     {h:0.15, einheit:'lfm', mat:[['Lack',0.3]], s:true},
+    'Wangen streichen':       {h:0.30, einheit:'lfm', mat:[['Lack',0.5]], s:true},
+    'Fensterbänke streichen':       {h:0.15, einheit:'lfm', s:true},
+    'Dachuntersicht streichen':     {h:0.30, s:true},
+    'Ortgang/Dachkasten streichen': {h:0.25, einheit:'lfm', s:true},
+    'Fensterläden lackieren':       {h:1.50, einheit:'Stk', s:true},
+    'Fallrohre lackieren':          {h:0.15, einheit:'lfm', s:true},
+    'Gerüst':                       {h:null},
+  }
+};
+function ladeKalk(){
+  let eigene = {};
+  try{ eigene = JSON.parse(localStorage.getItem('kalk') || '{}'); }catch{}
+  const K = JSON.parse(JSON.stringify(KALK_STANDARD));
+  for (const k of ['stundensatz','wg','aufschlag','mwst','anfahrt']) if (eigene[k] !== undefined) K[k] = eigene[k];
+  for (const [n,v] of Object.entries(eigene.produkte||{})) K.produkte[n] = {...(K.produkte[n]||{einheit:'l',verbrauch:0}), ...v};
+  for (const [n,v] of Object.entries(eigene.leistungen||{})) K.leistungen[n] = {...(K.leistungen[n]||{}), ...v};
+  return K;
+}
+// Nur Abweichungen vom Standard speichern
+function speichereKalk(K){
+  const diff = {produkte:{}, leistungen:{}};
+  for (const k of ['stundensatz','wg','aufschlag','mwst','anfahrt'])
+    if (JSON.stringify(K[k]) !== JSON.stringify(KALK_STANDARD[k])) diff[k] = K[k];
+  for (const [n,v] of Object.entries(K.produkte)){
+    const st = KALK_STANDARD.produkte[n] || {}; const d = {};
+    for (const f of ['einheit','verbrauch','preis','s']) if (v[f] !== st[f]) d[f] = v[f];
+    if (Object.keys(d).length) diff.produkte[n] = d;
+  }
+  for (const [n,v] of Object.entries(K.leistungen)){
+    const st = KALK_STANDARD.leistungen[n] || {}; const d = {};
+    for (const f of ['h','s','einheit','mat']) if (JSON.stringify(v[f]) !== JSON.stringify(st[f])) d[f] = v[f];
+    if (Object.keys(d).length) diff.leistungen[n] = d;
+  }
+  try{ localStorage.setItem('kalk', JSON.stringify(diff)); }catch{}
+}
+// Kalkulationsschlüssel einer Leistung
+function kalkSchluessel(e){
+  const m = e.meta || {};
+  if (m.typ==='streichen') return `${m.gruppe} streichen ${m.n}×`;
+  if (m.typ==='tapezieren') return `Tapezieren ${m.belag}`;
+  if (m.typ==='vor') return (m.gruppe==='Fassade'||m.gruppe==='Sockel' ? 'außen: ' : '') + m.v;
+  return e.arbeit;
+}
+// Einheitspreis berechnen
+function kalkuliere(e, K){
+  const key = kalkSchluessel(e), m = e.meta || {};
+  let L = K.leistungen[key];
+  // 3× Anstrich: aus 1× und 2× hochrechnen
+  if (!L && m.typ==='streichen' && m.n===3){
+    const a = K.leistungen[`${m.gruppe} streichen 1×`], b = K.leistungen[`${m.gruppe} streichen 2×`];
+    if (a && b && a.h!=null && b.h!=null) L = {h: b.h + (b.h - a.h), s:true};
+  }
+  if (!L || L.h==null) return {key, ep:null, grund:'nach Aufwand'};
+  if (!K.stundensatz) return {key, ep:null, grund:'Stundensatz fehlt'};
+  let mat = 0; const fehlt = [];
+  const add = (name, faktor) => { const P = K.produkte[name];
+    if (!P || P.preis==null){ fehlt.push(name); return; } mat += P.preis * P.verbrauch * faktor; };
+  for (const [name, f] of L.mat||[]) add(name, f);
+  if (m.typ==='streichen' && m.produkt) add(m.produkt, m.n);
+  const lohn = L.h * K.stundensatz;
+  const selbst = lohn + mat * (1 + K.aufschlag/100);
+  const ep = Math.round(selbst * (1 + K.wg/100) * 100) / 100;
+  return {key, ep, h:L.h, lohn, mat, fehlt, schaetz: !!L.s || fehlt.some(n=>K.produkte[n]?.s)};
+}
+const anfahrtPauschale = (km, K) => { if (km==null || km==='' || isNaN(km)) return null;
+  for (const [bis, euro] of K.anfahrt) if (bis==null || km <= bis) return euro; return null; };
+
+/* ---------- Einstellungen: Kalkulation ---------- */
+function viewKalk(){
+  setHeader('Kalkulation', {back:true});
+  const K = ladeKalk();
+  const zahl = (id, label, val, unit) => `<label class="f measure"><span>${label}</span>
+    <input id="${id}" inputmode="decimal" value="${val==null?'':fmt(val, 2).replace(/,00$/,'')}" placeholder="–"><span class="unit">${unit}</span></label>`;
+  const gruppen = [
+    ['Anstrich', k=>/streichen \d×$/.test(k) && !/Untersicht/.test(k)],
+    ['Tapezieren', k=>k.startsWith('Tapezieren')],
+    ['Vorarbeiten innen', k=>VORARBEITEN.includes(k)],
+    ['Vorarbeiten außen', k=>k.startsWith('außen:')],
+    ['Sonstiges', ()=>true],
+  ];
+  const vergeben = new Set();
+  const leistHtml = gruppen.map(([titel, test])=>{
+    const keys = Object.keys(K.leistungen).filter(k=>!vergeben.has(k) && test(k)); keys.forEach(k=>vergeben.add(k));
+    return `<details class="vor" style="margin-top:10px"><summary>${titel} (${keys.length})</summary>
+      ${keys.map(k=>{ const L=K.leistungen[k]; return `<div class="row" style="align-items:center;margin-bottom:6px">
+        <div style="flex:3;font-size:15px">${esc(k.replace('außen: ',''))}${L.s?' <span title="Schätzwert – bitte prüfen">⚠️</span>':''}</div>
+        <input data-lh="${esc(k)}" inputmode="decimal" value="${L.h==null?'':String(L.h).replace('.',',')}" placeholder="Aufwand" style="flex:1.4;font-size:16px;padding:8px">
+        <div class="muted" style="flex:none;font-size:13px;width:44px">h/${L.einheit||'m²'}</div></div>`; }).join('')}
+    </details>`;
+  }).join('');
+  const prodHtml = Object.entries(K.produkte).map(([n,P])=>`<div class="sub" style="padding:8px 10px;margin-bottom:8px">
+      <div style="font-weight:650;font-size:15px;margin-bottom:6px">${esc(n)}${P.s?' ⚠️':''}</div>
+      <div class="row">
+        <label class="f measure" style="margin:0"><span>Einkauf €/${P.einheit}</span><input data-pp="${esc(n)}" inputmode="decimal" value="${P.preis==null?'':String(P.preis).replace('.',',')}" placeholder="fehlt"><span class="unit">€</span></label>
+        <label class="f measure" style="margin:0"><span>Verbrauch ${P.einheit}/m²</span><input data-pv="${esc(n)}" inputmode="decimal" value="${String(P.verbrauch).replace('.',',')}"><span class="unit">${P.einheit}</span></label>
+      </div></div>`).join('');
+  app.innerHTML = `
+    <div class="hint">🔒 Stundensatz und Einkaufspreise werden <b>nur auf diesem iPhone</b> gespeichert (und in deiner Sicherung) – nicht im Internet.</div>
+    <div class="card">
+      <h2>Grundwerte</h2>
+      <div class="row">${zahl('k-satz','Stundensatz',K.stundensatz,'€/h')}${zahl('k-wg','Wagnis + Gewinn',K.wg,'%')}</div>
+      <div class="row">${zahl('k-auf','Materialaufschlag',K.aufschlag,'%')}${zahl('k-mwst','MwSt',K.mwst,'%')}</div>
+      <p class="muted" style="font-size:13px;margin:0">EP = (Aufwand × Stundensatz + Material × Aufschlag) × W+G</p>
+    </div>
+    <div class="card">
+      <h2>Aufwand je Leistung</h2>
+      <p class="muted" style="font-size:13px;margin:0">⚠️ = Schätzwert, bitte mit deinen Erfahrungswerten prüfen. Leer = nach Aufwand / pauschal.</p>
+      ${leistHtml}
+    </div>
+    <details class="card sec" data-sec="kalkprod" ${secOpen('kalkprod', false)?'open':''}>
+      <summary><h2>Material</h2><span class="sum">${Object.values(K.produkte).filter(P=>P.preis==null).length} ohne Preis</span></summary>
+      ${prodHtml}
+    </details>
+    <div class="card">
+      <h2>Daten einfügen / sichern</h2>
+      <textarea id="k-json" placeholder="Kalkulationsdaten hier einfügen (Code von Claude) …" style="min-height:70px;font-size:14px"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" id="k-imp">Einfügen</button><button class="btn sec" id="k-exp">Meine Werte kopieren</button></div>
+    </div>`;
+  bindSecs();
+  const neu = () => ladeKalk();
+  const set = (fn) => { const k = neu(); fn(k); speichereKalk(k); };
+  const nz = v => { const n = num(v); return n==null ? null : n; };
+  $('#k-satz').oninput = e => set(k=>k.stundensatz = nz(e.target.value));
+  $('#k-wg').oninput   = e => set(k=>k.wg = nz(e.target.value) ?? 0);
+  $('#k-auf').oninput  = e => set(k=>k.aufschlag = nz(e.target.value) ?? 0);
+  $('#k-mwst').oninput = e => set(k=>k.mwst = nz(e.target.value) ?? 19);
+  $$('[data-lh]').forEach(i=>i.oninput=()=>set(k=>{ const L=k.leistungen[i.dataset.lh]; L.h = nz(i.value); L.s = false; }));
+  $$('[data-pp]').forEach(i=>i.oninput=()=>set(k=>{ const P=k.produkte[i.dataset.pp]; P.preis = nz(i.value); P.s = false; }));
+  $$('[data-pv]').forEach(i=>i.oninput=()=>set(k=>{ const P=k.produkte[i.dataset.pv]; P.verbrauch = nz(i.value) ?? 0; }));
+  $('#k-imp').onclick = () => {
+    try{
+      const d = JSON.parse($('#k-json').value.trim());
+      const k = neu();
+      for (const f of ['stundensatz','wg','aufschlag','mwst','anfahrt']) if (d[f]!==undefined) k[f] = d[f];
+      for (const [n,v] of Object.entries(d.produkte||{})) k.produkte[n] = {...(k.produkte[n]||{einheit:'l',verbrauch:0}), ...v};
+      for (const [n,v] of Object.entries(d.leistungen||{})) k.leistungen[n] = {...(k.leistungen[n]||{}), ...v};
+      speichereKalk(k); toast('Kalkulationsdaten übernommen ✓'); viewKalk();
+    }catch(e){ alert('Der eingefügte Text ist kein gültiger Kalkulations-Code.'); }
+  };
+  $('#k-exp').onclick = async () => { const t = localStorage.getItem('kalk') || '{}';
+    try{ await navigator.clipboard.writeText(t); toast('Kopiert'); }catch{ prompt('Deine Werte:', t); } };
+}
+
 async function viewOffer(id){
   const p = await get('projects', id); if(!p){ location.hash='#/'; return; }
   setHeader('Angebot', {back:true});
   const {rooms, liste} = await leistungen(id);
-  p.angebotHinweis ||= '';
-  app.innerHTML = `
-    <div class="card">
-      <h2>Leistungen aus dem Aufmaß</h2>
-      ${liste.length ? liste.map(e=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
-          <div style="display:flex;justify-content:space-between;gap:10px"><b>${esc(e.arbeit)}</b><b style="white-space:nowrap">${fmtE(e.menge,e.einheit)}</b></div>
-          <div class="muted" style="font-size:13px">${e.raeume.map(x=>esc(x.name)+(x.menge?` ${e.einheit==='Stk'?fmt(x.menge,0):fmt(x.menge)}`:'')).join(' · ')}</div>
-        </div>`).join('')
-      : `<p class="muted" style="margin:0">Noch keine Arbeiten ausgewählt. Wähle in jedem Raum unter „Was soll gemacht werden?“ die Arbeiten aus.</p>`}
-      ${posSumme(rooms).length ? `<p class="muted" style="font-size:13px;margin:10px 0 0">Zusätzlich gemessen: ${posSumme(rooms).map(e=>`${esc(e.label)} ${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}`).join(' · ')}</p>`:''}
-    </div>
-    <div class="card">
-      <h2>Hinweise fürs Angebot</h2>
-      <label class="f" style="margin:0"><span>Farbton, Termin, Besonderheiten, Preise …</span>
-        <textarea id="hinweis" placeholder="z. B. Farbton weiß, Ausführung KW 12, Möbel räumt Kunde selbst">${esc(p.angebotHinweis)}</textarea></label>
-    </div>
-    <button class="btn block" id="send" style="margin-bottom:10px">An Claude senden</button>
-    <button class="btn sec block" id="copy">Text kopieren</button>
-    <p class="muted" style="font-size:14px">„An Claude senden“ öffnet das Teilen-Menü. Dort die <b>Claude-App</b> auswählen. Claude schreibt daraus das Angebot mit deinem Briefkopf als PDF.</p>`;
-  $('#hinweis').oninput = debounce(async e=>{ p.angebotHinweis=e.target.value; await put('projects', p); }, 300);
-  const text = async () => {
-    p.angebotHinweis = $('#hinweis').value; await put('projects', p);
-    return angebotText(p, rooms, liste) + '\n\n' + await projectText(id);
-  };
-  $('#send').onclick = async ()=> shareText(await text());
-  $('#copy').onclick = async ()=>{ const t=await text();
-    try{ await navigator.clipboard.writeText(t); toast('Kopiert – jetzt in Claude einfügen'); }catch{ prompt('Text kopieren:', t); } };
-}
-function angebotText(p, rooms, liste){
-  let t = `Bitte erstelle ein Angebot für meinen Malerbetrieb.\n\n`;
-  t += `KUNDE: ${p.kunde||''}\n${p.adresse?`ADRESSE: ${p.adresse}\n`:''}${p.telefon?`TELEFON: ${p.telefon}\n`:''}AUFMASS VOM: ${fmtDate(p.datum)}\n\n`;
-  t += `MATERIAL: ausschließlich Brillux. Raufaser mit Brillux Intromatt oder Raulan, glatte Flächen (Lightvlies 130) mit Brillux Superlux, Fassade mit Brillux Silicon-Fassadenfarbe.\n\n`;
-  t += `LEISTUNGEN (Mengen aus dem Aufmaß, Flächen nach VOB):\n`;
-  liste.forEach((e,i)=>{
-    t += `${i+1}. ${e.arbeit}: ${fmtE(e.menge,e.einheit)}`;
-    t += ` (${e.raeume.map(x=>x.name+(x.menge?` ${e.einheit==='Stk'?fmt(x.menge,0):fmt(x.menge)}`:'')).join(', ')})\n`;
+  const K = ladeKalk();
+  p.angebotHinweis ||= ''; p.preise ||= {};
+  const posKey = e => e.arbeit+'|'+e.einheit;
+
+  // Positionen mit EP (eigener Preis hat Vorrang vor Kalkulation)
+  const positionen = () => liste.map(e=>{
+    const k = kalkuliere(e, K), eigen = p.preise[posKey(e)];
+    const ep = eigen!=null ? eigen : k.ep;
+    const menge = e.menge || (e.einheit==='psch' ? 1 : 0);
+    const gp = ep!=null ? Math.round(ep * (e.einheit==='psch' ? 1 : menge) * 100)/100 : null;
+    return {e, k, ep, eigen, gp};
   });
-  const extra = posSumme(rooms);
-  if (extra.length) t += `\nWEITERE GEMESSENE POSITIONEN:\n` + extra.map(e=>`- ${e.label}: ${e.art==='stk'?fmt(e.menge,0):fmt(e.menge)} ${POS_UNITS[e.art]}`).join('\n') + '\n';
+  const summen = pos => {
+    const anf = anfahrtPauschale(num(p.km), K);
+    const netto = pos.reduce((s,x)=>s+(x.gp||0),0) + (anf||0);
+    const mwst = p.p13b ? 0 : Math.round(netto * K.mwst) / 100;
+    return {anf, netto, mwst, brutto: netto + mwst, offen: pos.filter(x=>x.gp==null).length};
+  };
+
+  const zeile = (x, i) => {
+    const {e, k} = x, einh = e.einheit==='psch' ? 'psch' : e.einheit;
+    const info = x.eigen!=null ? '✎ eigener Preis'
+      : k.ep!=null ? `kalkuliert${k.schaetz?' ⚠️ Schätzwert':''}${k.fehlt?.length?` · ohne Preis: ${k.fehlt.join(', ')}`:''}`
+      : (k.grund==='Stundensatz fehlt' ? '⚠️ Stundensatz fehlt (⚙︎ → Kalkulation)' : 'nach Aufwand – Preis eintragen');
+    return `<div class="pos">
+      <div class="pkopf"><span class="muted">${i+1}</span><b>${esc(e.arbeit)}</b></div>
+      <div class="pzeile">
+        <span class="pmenge">${e.einheit==='psch' ? '1 psch' : fmtE(e.menge, e.einheit)}</span>
+        <label class="pep">× <input data-ep="${i}" inputmode="decimal" value="${x.eigen!=null?fmt(x.eigen):''}" placeholder="${k.ep!=null?fmt(k.ep):'EP'}"> €/${einh}</label>
+        <b class="pgp" id="gp-${i}">${x.gp!=null?fmt(x.gp)+' €':'–'}</b>
+      </div>
+      <div class="muted pinfo" id="info-${i}">${info}${x.eigen!=null?` <a href="#" data-reset="${i}">zurück auf Kalkulation</a>`:''}</div>
+    </div>`;
+  };
+
+  function render(){
+    const pos = positionen(), s = summen(pos);
+    app.innerHTML = `
+      ${!K.stundensatz ? `<div class="hint">⚠️ Noch keine Kalkulationsdaten. <a href="#/kalkulation">⚙︎ Kalkulation einrichten</a></div>` : ''}
+      <div class="card">
+        <h2>Positionen</h2>
+        ${liste.length ? pos.map(zeile).join('') : `<p class="muted" style="margin:0">Noch keine Arbeiten ausgewählt.</p>`}
+        <div class="pos">
+          <div class="pkopf"><span class="muted">${liste.length+1}</span><b>Anfahrtspauschale</b></div>
+          <div class="pzeile"><label class="pep" style="flex:1">Entfernung <input id="km" inputmode="numeric" value="${esc(p.km||'')}" placeholder="km" style="width:70px"> km</label>
+            <b class="pgp" id="anf">${s.anf!=null?fmt(s.anf)+' €':'–'}</b></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sumrow"><span>Netto</span><b id="s-netto">${fmt(s.netto)} €</b></div>
+        <div class="sumrow"><span>${p.p13b?'§13b UStG (Steuerschuld Kunde)':`+ ${fmt(K.mwst,0)} % MwSt`}</span><b id="s-mwst">${p.p13b?'–':fmt(s.mwst)+' €'}</b></div>
+        <div class="sumrow big"><span>Brutto</span><b id="s-brutto">${fmt(s.brutto)} €</b></div>
+        <p class="muted" id="s-offen" style="font-size:13px;margin:6px 0 0" ${s.offen?'':'hidden'}>⚠️ ${s.offen} Position(en) ohne Preis sind nicht in der Summe.</p>
+        <label style="display:flex;gap:10px;align-items:center;margin-top:10px;font-size:15px"><input type="checkbox" id="p13b" ${p.p13b?'checked':''} style="width:22px;height:22px">
+          Bauleistung an Unternehmer (§13b, ohne MwSt)</label>
+      </div>
+      <div class="card">
+        <h2>Hinweise fürs Angebot</h2>
+        <textarea id="hinweis" placeholder="z. B. Ausführung KW 12, Möbel räumt Kunde selbst">${esc(p.angebotHinweis)}</textarea>
+      </div>
+      <button class="btn block" id="send" style="margin-bottom:10px">An Claude senden (Angebot als PDF)</button>
+      <button class="btn sec block" id="copy">Text kopieren</button>
+      <p class="muted" style="font-size:13px">EP leer lassen = kalkulierter Preis (grau). Eigenen Preis eintippen, um ihn zu überschreiben. <a href="#/kalkulation">Kalkulation anpassen</a></p>`;
+    bind();
+  }
+  const speichern = debounce(()=>put('projects', p), 300);
+  offenesSpeichern = speichern;
+  function aktualisieren(){
+    const pos = positionen(), s = summen(pos);
+    pos.forEach((x,i)=>{ const g=$('#gp-'+i); if (g) g.textContent = x.gp!=null ? fmt(x.gp)+' €' : '–';
+      const inf=$('#info-'+i); if (inf && x.eigen!=null) inf.textContent = '✎ eigener Preis'; });
+    $('#anf').textContent = s.anf!=null ? fmt(s.anf)+' €' : '–';
+    $('#s-netto').textContent = fmt(s.netto)+' €';
+    $('#s-mwst').textContent = p.p13b ? '–' : fmt(s.mwst)+' €';
+    $('#s-brutto').textContent = fmt(s.brutto)+' €';
+    const o=$('#s-offen'); o.hidden = !s.offen; o.textContent = `⚠️ ${s.offen} Position(en) ohne Preis sind nicht in der Summe.`;
+  }
+  function bind(){
+    $$('[data-ep]').forEach(inp=>inp.oninput=()=>{
+      const e = liste[+inp.dataset.ep], v = num(inp.value);
+      if (v==null) delete p.preise[posKey(e)]; else p.preise[posKey(e)] = v;
+      speichern(); aktualisieren();
+    });
+    $$('[data-reset]').forEach(a=>a.onclick=ev=>{ ev.preventDefault(); delete p.preise[posKey(liste[+a.dataset.reset])]; speichern(); render(); });
+    $('#km').oninput = e => { p.km = e.target.value; speichern(); aktualisieren(); };
+    $('#p13b').onchange = e => { p.p13b = e.target.checked; speichern(); render(); };
+    $('#hinweis').oninput = e => { p.angebotHinweis = e.target.value; speichern(); };
+    const text = async () => { await put('projects', p); return angebotText(p, rooms, positionen(), summen(positionen()), K) + '\n\n' + await projectText(id); };
+    $('#send').onclick = async ()=> shareText(await text());
+    $('#copy').onclick = async ()=>{ const t=await text();
+      try{ await navigator.clipboard.writeText(t); toast('Kopiert – jetzt in Claude einfügen'); }catch{ prompt('Text kopieren:', t); } };
+  }
+  render();
+}
+function angebotText(p, rooms, pos, s, K){
+  let t = `Bitte erstelle ein Angebot für meinen Malerbetrieb (Skill malermeister-angebot).\n`;
+  t += `Die Einheitspreise sind bereits fertig kalkuliert (inkl. Material und W+G) – bitte genau so übernehmen.\n\n`;
+  t += `KUNDE: ${p.kunde||''}\n${p.adresse?`ADRESSE: ${p.adresse}\n`:''}${p.telefon?`TELEFON: ${p.telefon}\n`:''}AUFMASS VOM: ${fmtDate(p.datum)}\n`;
+  t += `MATERIAL: ausschließlich Brillux.\n\n`;
+  t += `POSITIONEN (Mengen aus dem Aufmaß, Flächen nach VOB):\n`;
+  pos.forEach((x,i)=>{
+    const e = x.e, einh = e.einheit==='psch' ? 'psch' : e.einheit;
+    t += `${i+1}. ${e.arbeit}: ${e.einheit==='psch' ? '1 psch' : fmtE(e.menge, e.einheit)}`;
+    t += x.ep!=null ? ` × ${fmt(x.ep)} €/${einh} = ${fmt(x.gp)} €` : ` – Preis nach Aufwand (bitte nachfragen)`;
+    t += ` (${e.raeume.map(r=>r.name).join(', ')})\n`;
+  });
+  if (s.anf!=null) t += `${pos.length+1}. Anfahrtspauschale (${p.km} km): ${fmt(s.anf)} € psch\n`;
+  t += `\nNETTO: ${fmt(s.netto)} €\n`;
+  t += p.p13b ? `Steuerschuldnerschaft des Leistungsempfängers gem. §13b UStG\n` : `MwSt ${fmt(K.mwst,0)} %: ${fmt(s.mwst)} €\nBRUTTO: ${fmt(s.brutto)} €\n`;
+  if (s.offen) t += `(${s.offen} Position(en) ohne Preis sind nicht enthalten)\n`;
   if (p.angebotHinweis) t += `\nHINWEISE: ${p.angebotHinweis}\n`;
   t += `\n--- Aufmaß im Detail ---`;
   return t;
@@ -1844,6 +2134,8 @@ function viewData(){
       <label class="btn sec block"><input type="file" accept=".json,application/json" id="imp" hidden>Sicherung einspielen</label>
       <p class="muted" id="usage" style="font-size:14px;margin-bottom:0"></p>
     </div>
+    <div class="card"><h2>Kalkulation</h2><p style="margin-top:0">Stundensatz, Wagnis &amp; Gewinn, Aufwandswerte und Materialpreise.</p>
+      <a class="btn sec block" href="#/kalkulation">⚙︎ Kalkulation bearbeiten</a></div>
     <div class="card"><h2>Hilfe</h2><a href="#/hilfe">Leica DISTO verbinden & benutzen</a></div>`;
   if (navigator.storage?.estimate) navigator.storage.estimate().then(e=>{
     $('#usage').textContent=`Belegter Speicher: ${(e.usage/1048576).toFixed(1)} MB · Letzte Sicherung: ${letzteSicherung() ? new Date(letzteSicherung()).toLocaleDateString('de-DE')+' ('+vorTagen(letzteSicherung())+')' : 'noch keine'}`;
@@ -1884,7 +2176,7 @@ async function exportAll(){
   toast('Sicherung wird erstellt …');
   const photos = await Promise.all((await all('photos')).map(async p=>({...p, blob: await blobToB64(p.blob), annot: p.annot ? await blobToB64(p.annot) : undefined})));
   const data = {app:'aufmass', version:1, exported:new Date().toISOString(),
-    projects: await all('projects'), rooms: await all('rooms'), photos};
+    projects: await all('projects'), rooms: await all('rooms'), photos, kalk: ls.get('kalk')};
   const file = new File([JSON.stringify(data)], `Aufmass-Sicherung-${new Date().toISOString().slice(0,10)}.json`, {type:'application/json'});
   if (navigator.canShare && navigator.canShare({files:[file]})){
     try{ await navigator.share({files:[file], title:'Aufmaß-Sicherung'}); return gesichert(); }catch(e){ if(e.name==='AbortError') return false; }
@@ -1901,6 +2193,7 @@ async function importAll(file){
     if (!confirm(`${data.projects.length} Baustellen einspielen? Vorhandene Einträge mit gleicher ID werden überschrieben.`)) return;
     for (const p of data.projects) await put('projects', p);
     for (const r of data.rooms) await put('rooms', r);
+    if (data.kalk) ls.set('kalk', data.kalk);
     for (const ph of data.photos){ ph.blob = await (await fetch(ph.blob)).blob(); if (ph.annot) ph.annot = await (await fetch(ph.annot)).blob(); await put('photos', ph); }
     toast('Sicherung eingespielt'); location.hash='#/';
   }catch(e){ alert('Fehler beim Einspielen: '+e.message); }
@@ -1970,7 +2263,7 @@ function viewHelp(){
    ========================================================= */
 if ('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js');
 if (navigator.storage?.persist) navigator.storage.persist();
-route();
+navigiere();
 </script>
 </body>
 </html>
