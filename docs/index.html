@@ -280,7 +280,7 @@ let offenesSpeichern = null;   // wird vor jedem Seitenwechsel sofort ausgeführ
    ========================================================= */
 const SONSTIGES = ['Türen lackieren','Zargen lackieren','Fenster lackieren','Heizkörper lackieren','Sockelleisten',
   'Abdecken / Abkleben','Möbel rücken'];
-const SONSTIGES_FASSADE = ['Fensterbänke streichen','Dachuntersicht streichen','Ortgang/Dachkasten streichen',
+const SONSTIGES_FASSADE = ['Fenster/Türen lackieren','Tore lackieren','Fensterbänke streichen','Dachuntersicht streichen','Ortgang/Dachkasten streichen',
   'Fensterläden lackieren','Fallrohre lackieren','Abdecken / Abkleben','Gerüst'];
 const VORARBEITEN = ['Alte Tapete entfernen','Untergrund reinigen','Risse ausbessern','Spachteln Q2','Spachteln Q3',
   'Spachteln Q4','Grundierung','Schimmelbehandlung'];
@@ -1021,6 +1021,9 @@ async function viewRoom(id){
         <div class="chips">
           ${[...sonst, ...customChips].map(a=>`<button class="chip ${r.arbeiten.includes(a)?'on':''}" data-chip="${esc(a)}">${esc(a)}</button>`).join('')}
         </div>
+        ${!F && r.arbeiten.includes('Fenster lackieren') ? `<div class="seg" style="margin-bottom:10px">
+          <button data-fs="1" class="${+r.fensterSeiten===2?'':'on'}">Fenster nur innen</button>
+          <button data-fs="2" class="${+r.fensterSeiten===2?'on':''}">Fenster beidseitig</button></div>` : ''}
         <div class="row" style="margin-bottom:10px">
           <input id="newChip" placeholder="Eigene Arbeit hinzufügen …">
           <button class="btn small" id="addChip" style="flex:none">+</button>
@@ -1268,10 +1271,12 @@ async function viewRoom(id){
       return $(`[data-key="pos:${i}:w:${j+1}"]`);
     };
 
+    $$('[data-fs]').forEach(b=>b.onclick=()=>{ r.fensterSeiten=+b.dataset.fs; persist(); render(); });
     $$('[data-chip]').forEach(b=>b.onclick=()=>{
       const a=b.dataset.chip, i=r.arbeiten.indexOf(a);
       if (i>=0) r.arbeiten.splice(i,1); else r.arbeiten.push(a);
       b.classList.toggle('on'); persist(); refreshSums();
+      if (a==='Fenster lackieren') render();
     });
     const addChip=()=>{ const v=$('#newChip').value.trim(); if(!v) return; if(!r.arbeiten.includes(v)) r.arbeiten.push(v); persist(); render(); };
     $('#addChip').onclick=addChip;
@@ -1485,6 +1490,9 @@ function flaechenLeistungen(titel, f, menge){
     {typ:'streichen', gruppe:titel, n:+(f.anzahl||2), produkt:f.anstrich}]);
   return out;
 }
+// Fläche bestimmter Öffnungen aus den Abzügen: Breite × Höhe × Anzahl
+const flaecheAbz = (r, filter) => (r.abzuege||[]).filter(filter)
+  .reduce((s,a)=>{ const b=num(a.b), h=num(a.h); return s + (b!=null&&h!=null ? b*h*(num(a.n)??1) : 0); }, 0);
 // Mengen für sonstige Arbeiten
 function mengeFuer(arbeit, r){
   const treffer = re => migrateRoom(r).pos.filter(x=>re.test(x.label||''));
@@ -1500,7 +1508,11 @@ function mengeFuer(arbeit, r){
       const seiten = tp.length ? tp.reduce((s,x)=>s + (num(x.n)||0) * (+x.seiten===1 ? 1 : 2), 0) : tueren*2;
       return [seiten||null, 'Seite']; }
     case 'Zargen lackieren': return pos(/zarge/i,'stk') || pos(/tür/i,'stk') || [tueren||null, 'Stk'];
-    case 'Fenster lackieren': return pos(/fenster(?!bank)/i,'stk') || [fenster||null, 'Stk'];
+    case 'Fenster lackieren': {
+      const f = flaecheAbz(r, a=>/fenster|balkontür/i.test(a.art) && a.art!=='Dachfenster') * (+r.fensterSeiten===2 ? 2 : 1);
+      return [f||null, 'm²']; }
+    case 'Fenster/Türen lackieren': return [flaecheAbz(r, a=>/fenster|tür/i.test(a.art))||null, 'm²'];
+    case 'Tore lackieren': return [flaecheAbz(r, a=>/tor\b|garagentor/i.test(a.art))||null, 'm²'];
     case 'Heizkörper lackieren': return pos(/heizk/i,'stk') || pos(/heizk/i) || [null,'Stk'];
     case 'Sockelleisten': return pos(/sockel/i) || [null,'lfm'];
     case 'Fensterbänke streichen': return pos(/fensterbank/i) || [null,'lfm'];
@@ -1519,6 +1531,9 @@ function mengeFuer(arbeit, r){
 // Ausführlicher Text im Angebot (die Auswahl im Raum bleibt kurz)
 const LEISTUNGS_TEXT = {
   'Türen lackieren': 'Türblätter inkl. Zarge schleifen, grundieren, 2× lackieren (je Seite)',
+  'Fenster lackieren': 'Fenster anschleifen, Zwischen- und Schlussanstrich PU-Lack (Fläche je Seite)',
+  'Fenster/Türen lackieren': 'Fenster und Türen außen anschleifen, Zwischenanstrich Allgrund, Schlussanstrich PU-Lack',
+  'Tore lackieren': 'Tore anschleifen, Zwischenanstrich Allgrund, Schlussanstrich PU-Lack',
 };
 async function leistungen(id){
   const rooms=sortiert(await byIdx('rooms','projectId',id));
@@ -1567,6 +1582,8 @@ const KALK_STANDARD = {
     'Vlieskleber':                   {einheit:'kg', verbrauch:0.15,  preis:null},
     'Lack':                          {einheit:'l',  verbrauch:0.09,  preis:null},
     'Heizkörperlack':                {einheit:'l',  verbrauch:0.12,  preis:null},
+    'PU-Lack':                       {einheit:'l',  verbrauch:0.12,  preis:null},
+    'Allgrund':                      {einheit:'l',  verbrauch:0.105, preis:null},
     'Abdeckvlies':                   {einheit:'m²', verbrauch:1.0,   preis:null, s:true},
   },
   // h = Stunden je Einheit; mat = [[Produkt, Faktor]] (Faktor × Verbrauch); s = Schätzwert, bitte prüfen
@@ -1594,7 +1611,9 @@ const KALK_STANDARD = {
     'außen: Armierung mit Gewebe':    {h:0.35, s:true},
     'Türen lackieren':        {h:0.90, einheit:'Seite', mat:[['Lack',4]], s:true},
     'Zargen lackieren':       {h:0.75, einheit:'Stk', mat:[['Lack',3]], s:true},
-    'Fenster lackieren':      {h:1.75, einheit:'Stk', mat:[['Lack',5]], s:true},
+    'Fenster lackieren':      {h:0.45, einheit:'m²', mat:[['Allgrund',1],['PU-Lack',1]], s:true},
+    'Fenster/Türen lackieren':{h:0.45, einheit:'m²', mat:[['Allgrund',1],['PU-Lack',1]], s:true},
+    'Tore lackieren':         {h:0.72, einheit:'m²', mat:[['Allgrund',1],['PU-Lack',1]], s:true},
     'Heizkörper lackieren':   {h:0.90, einheit:'Stk', mat:[['Heizkörperlack',3]], s:true},
     'Sockelleisten':          {h:0.08, einheit:'lfm', mat:[['Lack',0.3]], s:true},
     'Abdecken / Abkleben':    {h:0.05, mat:[['Abdeckvlies',1]]},
