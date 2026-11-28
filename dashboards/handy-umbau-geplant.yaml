@@ -64,7 +64,8 @@ views:
     # Kameras oben in der Sicherheits-Kachel: Aqara G410 an der Haustür, Reolink an der Hausecke
     security_cams:
     - {entity: camera.192_168_178_113_2, name: Haustür}
-    - {entity: camera.kamera_auffahrt_ausgewogen, name: Auffahrt}
+    # Reolink läuft auf Akku: kein Standbild (weckt die Kamera), nur Akkustand + Live per Tippen
+    - {entity: camera.kamera_auffahrt_ausgewogen, name: Auffahrt, snapshot: false, battery: sensor.kamera_auffahrt_batterie}
     car:
       name: Cupra
       soc: sensor.carport_cupra_formentor_akkustand
