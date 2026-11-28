@@ -61,15 +61,16 @@ views:
     - {name: Alles aus, icon: mdi:lightbulb-group-off-outline, color: '#ffc23d', lights: all}
     - {name: Gute Nacht, icon: mdi:weather-night, color: '#8a7cf0', lights: all, lock: true, alarm: night}
     - {name: Verlassen, icon: mdi:exit-run, color: '#1baf7a', lights: all, lock: true, alarm: away}
-    camera:
-      entity: camera.kamera_auffahrt_ausgewogen
-      name: Auffahrt
+    # Kameras oben in der Sicherheits-Kachel: Aqara G410 an der Haustür, Reolink an der Hausecke
+    security_cams:
+    - {entity: camera.192_168_178_113_2, name: Haustür}
+    - {entity: camera.kamera_auffahrt_ausgewogen, name: Auffahrt}
     car:
       name: Cupra
       soc: sensor.carport_cupra_formentor_akkustand
       range_electric: sensor.carport_cupra_formentor_elektrische_reichweite
       range: sensor.carport_cupra_formentor_reichweite
-      charging: binary_sensor.carport_cupra_formentor_laden
+      charging: [binary_sensor.carport_cupra_formentor_laden, binary_sensor.evcc_carport_charging_2]
     garden_status:
     - {name: Pool, entity: sensor.pooltemperatur, icon: mdi:pool-thermometer}
     - {name: Wärmepumpe, entity: climate.pool_warmepumpe, icon: mdi:heat-pump-outline}
@@ -116,6 +117,7 @@ views:
       lock: lock.eingang_aqara_smart_lock_u200
       battery: sensor.eingang_aqara_smart_lock_u200_batterie
       contact: binary_sensor.multi_state_sensor_p100_tur
+      bell: binary_sensor.turklingel_belegung
     alarm:
       entity: alarm_control_panel.alarmo
       name: Alarmanlage

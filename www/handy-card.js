@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.18)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.19)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -85,6 +85,8 @@ const P_CSS = `
 .qk{display:flex;gap:8px}.qk button{flex:1;border:1px solid var(--p-line);background:var(--p-card);color:var(--p-fg);border-radius:16px;padding:10px 4px 8px;font:inherit;font-size:11.5px;font-weight:650;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer}
 .qk button i{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--qc) 20%,transparent);color:var(--qc)}
 .ppl.cp{gap:6px}.ppl.cp .pp{flex-direction:row;text-align:left;align-items:center;gap:7px;padding:7px 6px}.ppl.cp .pp .n{font-size:12.5px}.ppl.cp .pp .s{font-size:10.5px}.ppl.cp .av{width:34px;height:34px;font-size:15px;box-shadow:0 0 0 2px #5b6375}.ppl.cp .pp.home .av{box-shadow:0 0 0 2px var(--p-ok),0 0 10px rgba(27,175,122,.45)}.ppl.cp .av i{width:16px;height:16px;right:-4px;bottom:-4px}.ppl.cp .av i ha-icon{--mdc-icon-size:10px!important;width:10px!important;height:10px!important}
+.sec .cms{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:-2px -2px 10px}.sec .sc2{position:relative;border-radius:12px;overflow:hidden;background:#0b0d12;cursor:pointer;aspect-ratio:4/3}.sec .sc2 img{width:100%;height:100%;object-fit:cover;display:block}.sec .sc2 span{position:absolute;left:6px;bottom:6px;font-size:11px;font-weight:650;color:#fff;background:rgba(10,14,24,.6);border-radius:999px;padding:2px 8px}.sec .sc2 .na{height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--p-fg2)}
+.sec .sc2.rg{box-shadow:0 0 0 3px #ef8a3c;animation:cvpl 1s infinite}.sec .ring2{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;border-radius:10px;background:#ef8a3c;color:#fff;font-weight:700;font-size:14px}.sec .lb2{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:12px;color:var(--p-fg2)}
 .sec .sep{height:1px;background:var(--p-line);margin:10px -12px}.sec .al2{display:flex;align-items:center;gap:10px;cursor:pointer}.sec .al2 .sh{width:42px;height:42px}
 .cam{padding:0;overflow:hidden;cursor:pointer}.cam img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#0b0d12}.cam .cl{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:650;background:rgba(10,14,24,.6);backdrop-filter:blur(6px);border-radius:999px;padding:3px 10px;color:#fff}.cam .cl i{width:7px;height:7px;border-radius:50%;background:#ff5a5a;animation:cvpl 1.4s infinite}
 @keyframes cvpl{50%{opacity:.35}}
@@ -165,7 +167,7 @@ class HandyCard extends HTMLElement {
   keys() {
     const c = this.c, W = c.weather || {}, D = c.door || {}, E = c.energy || {};
     const ents = [W.entity, W.temperature, W.max, W.min, W.wind, W.wind_gust, W.wind_bearing, W.rain_rate, W.rain_day, W.humidity, W.warning, W.prewarning, W.sun || 'sun.sun', D.lock, D.battery, D.contact, W.pressure, W.pressure_trend, W.dew_point, W.uv, ...Object.values(E), ...c.persons.map(p => p.entity), ...c.waste.map(w => w.entity)];
-    const xs = [c.car && Object.values(c.car), c.garden_status && c.garden_status.map(g => g.entity), c.camera && c.camera.entity].flat().filter(e => typeof e === 'string' && e.includes('.'));
+    const xs = [c.car && Object.values(c.car), c.garden_status && c.garden_status.map(g => g.entity), c.camera && c.camera.entity, c.door && c.door.bell, (c.security_cams || []).map(x => x.entity)].flat(2).filter(e => typeof e === 'string' && e.includes('.'));
     const xk = xs.map(e => { const s = this.s(e); return s ? s.state + (s.attributes.entity_picture || '') : '-'; }).join('|') + (c.hints ? JSON.stringify(this.hintList()) : '');
     const al = this.s((c.alarm || {}).entity), ak = al ? al.state + JSON.stringify([al.attributes.open_sensors, al.attributes.delay, al.attributes.changed_by, al.last_changed]) : '-';
     return ents.map(e => { const s = this.s(e); return s ? s.state + (s.attributes.entity_picture || '') : '-'; }).join('|') + ak + xk + new Date().toDateString() + new Date().getHours();
@@ -380,19 +382,28 @@ class HandyCard extends HTMLElement {
   security() {
     const a = this.alarm(), trig = /class="t full al [^"]*trig/.test(a);
     const al = a.replace(/^<div class="t full al ([^"]*)" style="([^"]*)">/, '<div class="al al2b $1" style="$2">');
-    return `<div class="t full sec ${trig ? 'al trig' : ''}">${this.door(true)}<div class="sep"></div>${al}</div>`;
+    const D = this.c.door, bell = this.s(D.bell), ring = bell && bell.state === 'on';
+    // Klingel: „Es klingelt!“ solange aktiv, sonst wann zuletzt
+    let bl = '';
+    if (bell) { const t = new Date(bell.last_changed), today = t.toDateString() === new Date().toDateString(), y = new Date(Date.now() - 864e5).toDateString() === t.toDateString();
+      bl = ring ? `<div class="ring2">${P_icon('mdi:bell-ring', 16)}Es klingelt!</div>` : `<div class="lb2">${P_icon('mdi:bell-outline', 14)}Zuletzt geklingelt: ${today ? 'heute' : y ? 'gestern' : t.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</div>`; }
+    const cams = (this.c.security_cams || []).map((c, i) => { const st = this.s(c.entity), u = st && st.attributes.entity_picture, src = u ? (this._hass.hassUrl ? this._hass.hassUrl(u) : u) : '';
+      return `<div class="sc2 ${i === 0 && ring ? 'rg' : ''}" data-act="more" data-e="${c.entity}">${src ? `<img data-cam="${P_esc(src)}" src="${P_esc(src)}" alt="">` : '<div class="na">nicht erreichbar</div>'}<span>${P_esc(c.name || '')}</span></div>`; }).join('');
+    if (cams) this.camTimer();
+    return `<div class="t full sec ${trig ? 'al trig' : ''}">${cams ? `<div class="cms">${cams}</div>` : ''}${this.door(true)}${bl}<div class="sep"></div>${al}</div>`;
   }
+  camTimer() { if (!this._camT) this._camT = setInterval(() => { if (!this.root || document.visibilityState !== 'visible') return; this.root.querySelectorAll('img[data-cam]').forEach(i => { const b = i.dataset.cam; i.src = b + (b.includes('?') ? '&' : '?') + '_=' + Date.now(); }); }, 10000); }
   // Kamera-Standbild (alle 10 s neu), Tippen öffnet das Live-Bild
   camera() {
     const C = this.c.camera, s = this.s(C.entity), u = s && s.attributes.entity_picture;
-    if (!this._camT) this._camT = setInterval(() => { const i = this.root && this.root.querySelector('img[data-cam]'); if (i && document.visibilityState === 'visible') { const b = i.dataset.cam; i.src = b + (b.includes('?') ? '&' : '?') + '_=' + Date.now(); } }, (C.refresh || 10) * 1000);
+    this.camTimer();
     const src = u ? (this._hass.hassUrl ? this._hass.hassUrl(u) : u) : '';
     return `<div class="t full cam" data-act="more" data-e="${C.entity}">${src ? `<img data-cam="${P_esc(src)}" src="${P_esc(src)}" alt="">` : '<div style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:var(--p-fg2)">Kamera nicht erreichbar</div>'}<div class="cl"><i></i>${P_esc(C.name || 'Kamera')}</div></div>`;
   }
   // Auto und Garten nebeneinander
   carGarden() {
     const out = [], C = this.c.car;
-    if (C) { const soc = this.n(C.soc), re = this.n(C.range_electric), rt = this.n(C.range), chg = (this.s(C.charging) || {}).state === 'on', col = soc == null ? '#8a94a3' : soc < 20 ? '#e34948' : soc < 50 ? '#e2b400' : '#3ddc97';
+    if (C) { const soc = this.n(C.soc), re = this.n(C.range_electric), rt = this.n(C.range), chg = [].concat(C.charging || []).some(e => (this.s(e) || {}).state === 'on'), col = soc == null ? '#8a94a3' : soc < 20 ? '#e34948' : soc < 50 ? '#e2b400' : '#3ddc97';
       out.push(`<div class="t" data-act="more" data-e="${C.soc}"><div class="k">${P_icon('mdi:car-electric-outline', 15)}${P_esc(C.name || 'Auto')}${chg ? `<span class="bdg">${P_icon('mdi:lightning-bolt', 12)}lädt</span>` : ''}</div><div class="v">${soc != null ? P_fmt(soc, 0) + ' %' : '–'}${re != null ? ` <small>${P_fmt(re, 0)} km elektr.</small>` : ''}</div>${rt != null ? `<div class="s">Reichweite ${P_fmt(rt, 0)} km</div>` : ''}<div class="ring"><i style="width:${soc || 0}%;background:${col}"></i></div></div>`); }
     const G = (this.c.garden_status || []).map(g => ({ ...g, st: this.s(g.entity) })).filter(g => g.st && !['unavailable', 'unknown'].includes(g.st.state));
     if (G.length) out.push(`<div class="t" data-act="${this.c.garden_path ? 'nav' : 'more'}" ${this.c.garden_path ? `data-p="${P_esc(this.c.garden_path)}"` : `data-e="${G[0].entity}"`}><div class="k">${P_icon('mdi:flower', 15)}Garten</div>${G.map(g => `<div class="s" style="display:flex;align-items:center;gap:5px;color:var(--p-fg);font-size:13px;margin-top:3px">${P_icon(g.icon || 'mdi:circle-small', 15)}${P_esc(g.name)} <b style="margin-left:auto">${isNaN(parseFloat(g.st.state)) ? P_esc(g.st.state) : P_fmt(parseFloat(g.st.state), g.digits ?? 0)}${g.unit || g.st.attributes.unit_of_measurement ? ' ' + P_esc(g.unit || g.st.attributes.unit_of_measurement) : ''}</b></div>`).join('')}</div>`);
