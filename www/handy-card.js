@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.15.1)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.16)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.

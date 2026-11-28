@@ -35,6 +35,7 @@ views:
     - entity: person.carlo
       name: Carlo
     energy:
+      layout: ring
       pv: sensor.pv_produktion_aktuell
       home: sensor.hausverbrauch_aktuell
       grid_import: sensor.netzbezug_aktuell
