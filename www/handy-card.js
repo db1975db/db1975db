@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.16.3)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.16.4)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -270,7 +270,12 @@ class HandyCard extends HTMLElement {
     if (wc || pc) {
       const src = wc ? wa : pre.attributes, n = wc || pc, col = src.warning_1_color || '#ffeb3b';
       const ev = String(src.warning_1_name || (src.warning_1_headline || '').replace(/^.*vor\s+/i, '') || 'Wetterwarnung'), evt = ev.charAt(0) + ev.slice(1).toLowerCase();
-      warn = `<div class="warn" style="background:${col}" data-act="more" data-e="${wc ? W.warning : W.prewarning}">${P_icon('mdi:alert', 15)}${wc ? '' : 'Vorwarnung: '}${P_esc(evt)} bis ${tm(src.warning_1_end)}${n > 1 ? ` (+${n - 1})` : ''}</div>`;
+      // Gleiche Warnungen (z. B. zweimal Frost) zusammenfassen: spätestes Ende zeigen, „(+n)“ nur für andere Warnungen
+      const all = [...Array(n)].map((_, i) => ({ nm: src[`warning_${i + 1}_name`], end: src[`warning_${i + 1}_end`] })), same = all.filter(w => w.end && w.nm === src.warning_1_name);
+      const end = same.reduce((m, w) => !m || new Date(w.end) > new Date(m) ? w.end : m, src.warning_1_end), others = n - Math.max(1, same.length);
+      const dd = end ? Math.round((new Date(new Date(end).toDateString()) - new Date(new Date().toDateString())) / 864e5) : 0;
+      const bis = !end ? '' : ` bis ${dd === 1 ? 'morgen ' : dd > 1 ? new Date(end).toLocaleDateString('de-DE', { weekday: 'short' }) + ' ' : ''}${tm(end)}`;
+      warn = `<div class="warn" style="background:${col}" data-act="more" data-e="${wc ? W.warning : W.prewarning}">${P_icon('mdi:alert', 15)}${wc ? '' : 'Vorwarnung: '}${P_esc(evt)}${bis}${others > 0 ? ` (+${others})` : ''}</div>`;
     }
     // Regen: wann beginnt/endet er (stündliche Vorhersage, 12 Stunden)
     const fc = (this._fc || []).filter(f => new Date(f.datetime) > Date.now() - 36e5).slice(0, 12);
