@@ -1733,7 +1733,7 @@ function viewKalk(){
   $$('[data-pv]').forEach(i=>i.oninput=()=>set(k=>{ const P=k.produkte[i.dataset.pv]; P.verbrauch = nz(i.value) ?? 0; }));
   $('#k-imp').onclick = () => {
     try{
-      const d = JSON.parse($('#k-json').value.trim());
+      const d = JSON.parse($('#k-json').value.trim().replace(/[„“”″«»]/g,'"').replace(/[‚‘’]/g,"'"));
       const k = neu();
       for (const f of ['stundensatz','wg','aufschlag','mwst','anfahrt']) if (d[f]!==undefined) k[f] = d[f];
       for (const [n,v] of Object.entries(d.produkte||{})) k.produkte[n] = {...(k.produkte[n]||{einheit:'l',verbrauch:0}), ...v};
@@ -1787,7 +1787,9 @@ async function viewOffer(id){
   function render(){
     const pos = positionen(), s = summen(pos);
     app.innerHTML = `
-      ${!K.stundensatz ? `<div class="hint">⚠️ Noch keine Kalkulationsdaten. <a href="#/kalkulation">⚙︎ Kalkulation einrichten</a></div>` : ''}
+      ${!K.stundensatz ? `<div class="card" style="border:2px solid var(--yellow)"><b>⚠️ Noch keine Kalkulationsdaten in diesem Browser.</b>
+        <p class="muted" style="font-size:14px;margin:4px 0 10px">Ohne Stundensatz kann die App keine Preise rechnen. Einmal den Code von Claude einfügen.</p>
+        <a class="btn block" href="#/kalkulation">⚙︎ Kalkulation einrichten</a></div>` : ''}
       <div class="card">
         <h2>Positionen</h2>
         ${liste.length ? pos.map(zeile).join('') : `<p class="muted" style="margin:0">Noch keine Arbeiten ausgewählt.</p>`}
