@@ -63,7 +63,7 @@ views:
     - {name: Verlassen, icon: mdi:exit-run, color: '#1baf7a', lights: all, lock: true, alarm: away}
     # Kameras oben in der Sicherheits-Kachel: Aqara G410 an der Haustür, Reolink an der Hausecke
     security_cams:
-    - {entity: camera.192_168_178_113_2, name: Haustür}
+    - {entity: camera.192_168_178_113_2, name: Haustür, live: webrtc}
     # Reolink läuft auf Akku: kein Standbild (weckt die Kamera), nur Akkustand + Live per Tippen
     - {entity: camera.kamera_auffahrt_ausgewogen, name: Auffahrt, snapshot: false, battery: sensor.kamera_auffahrt_batterie}
     car:

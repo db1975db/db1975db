@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.19)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.20)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -86,6 +86,10 @@ const P_CSS = `
 .qk button i{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--qc) 20%,transparent);color:var(--qc)}
 .ppl.cp{gap:6px}.ppl.cp .pp{flex-direction:row;text-align:left;align-items:center;gap:7px;padding:7px 6px}.ppl.cp .pp .n{font-size:12.5px}.ppl.cp .pp .s{font-size:10.5px}.ppl.cp .av{width:34px;height:34px;font-size:15px;box-shadow:0 0 0 2px #5b6375}.ppl.cp .pp.home .av{box-shadow:0 0 0 2px var(--p-ok),0 0 10px rgba(27,175,122,.45)}.ppl.cp .av i{width:16px;height:16px;right:-4px;bottom:-4px}.ppl.cp .av i ha-icon{--mdc-icon-size:10px!important;width:10px!important;height:10px!important}
 .sec .cms{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:-2px -2px 10px}.sec .sc2{position:relative;border-radius:12px;overflow:hidden;background:#0b0d12;cursor:pointer;aspect-ratio:4/3}.sec .sc2 img{width:100%;height:100%;object-fit:cover;display:block}.sec .sc2 span{position:absolute;left:6px;bottom:6px;font-size:11px;font-weight:650;color:#fff;background:rgba(10,14,24,.6);border-radius:999px;padding:2px 8px}.sec .sc2 .na{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;color:var(--p-fg2);background:radial-gradient(120% 100% at 50% 0%,#232a3b,#11151f)}.sec .sc2 .na b{color:var(--p-fg);font-size:12.5px}.sec .sc2 .na em{font-style:normal;display:flex;align-items:center;gap:3px;font-weight:650;position:absolute;right:6px;top:6px}
+.sec .sc2 .lvb2{position:absolute;right:6px;bottom:6px;display:flex;align-items:center;gap:2px;font-style:normal;font-size:11px;font-weight:700;color:#fff;background:rgba(227,73,72,.85);border-radius:999px;padding:2px 8px 2px 5px}
+.lv{position:fixed;inset:0;z-index:20;background:rgba(5,7,12,.92);display:flex;flex-direction:column;justify-content:center;padding:max(12px,env(safe-area-inset-top)) 10px max(12px,env(safe-area-inset-bottom))}
+.lvh{display:flex;align-items:center;justify-content:space-between;color:#fff;padding:0 4px 10px;font-size:16px}.lvh button{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.lvc{border-radius:16px;overflow:hidden;background:#000}
 .sec .sc2.rg{box-shadow:0 0 0 3px #ef8a3c;animation:cvpl 1s infinite}.sec .ring2{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;border-radius:10px;background:#ef8a3c;color:#fff;font-weight:700;font-size:14px}.sec .lb2{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:12px;color:var(--p-fg2)}
 .sec .sep{height:1px;background:var(--p-line);margin:10px -12px}.sec .al2{display:flex;align-items:center;gap:10px;cursor:pointer}.sec .al2 .sh{width:42px;height:42px}
 .cam{padding:0;overflow:hidden;cursor:pointer}.cam img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#0b0d12}.cam .cl{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:650;background:rgba(10,14,24,.6);backdrop-filter:blur(6px);border-radius:999px;padding:3px 10px;color:#fff}.cam .cl i{width:7px;height:7px;border-radius:50%;background:#ff5a5a;animation:cvpl 1.4s infinite}
@@ -157,7 +161,7 @@ const P_nav = (items, base) => items && items.length ? `<nav class="nav">${items
 class HandyCard extends HTMLElement {
   setConfig(c) { this.c = { persons: [], waste: [], waste_days: 1, ...c }; this._k = null; if (this.root) this.build(); }
   set hass(h) {
-    this._hass = h; if (!this.root) { this.root = this.attachShadow({ mode: 'open' }); this.build(); }
+    this._hass = h; if (this._live) this._live.hass = h; if (!this.root) { this.root = this.attachShadow({ mode: 'open' }); this.build(); }
     if (this.c.weather && !this._unsub) this.subFc();
     const k = this.keys(); if (k === this._k) return; this._k = k; this.render();
   }
@@ -186,6 +190,8 @@ class HandyCard extends HTMLElement {
     else if (a === 'menu') this.dispatchEvent(new Event('hass-toggle-menu', { bubbles: true, composed: true }));
     else if (a === 'lock') { const sv = t.dataset.sv; if (sv !== 'lock' && !window.confirm(sv === 'open' ? 'Haustür wirklich öffnen?' : 'Haustür wirklich aufschließen?')) return; this.call('lock', sv, { entity_id: e }); }
     else if (a === 'quick') this.runQuick(+t.dataset.i);
+    else if (a === 'live') this.openLive((this.c.security_cams || [])[+t.dataset.i]);
+    else if (a === 'lvx') this.closeLive();
     else if (a === 'alarm') {
       const sv = t.dataset.sv, al = this.s(e), A = al ? al.attributes : {};
       if (sv === 'alarm_disarm' && !window.confirm(al && al.state === 'triggered' ? 'Alarm stoppen und Anlage ausschalten?' : 'Alarmanlage wirklich ausschalten?')) return;
@@ -235,7 +241,7 @@ class HandyCard extends HTMLElement {
   }
   // Vorhersage (z. B. DWD) stündlich abonnieren
   connectedCallback() { if (this._hass && this.c && this.c.weather) this.subFc(); }
-  disconnectedCallback() { if (this._camT) { clearInterval(this._camT); this._camT = null; } if (this._unsub) { this._unsub.then(u => u && u()).catch(() => {}); this._unsub = null; } }
+  disconnectedCallback() { this.closeLive(); if (this._camT) { clearInterval(this._camT); this._camT = null; } if (this._unsub) { this._unsub.then(u => u && u()).catch(() => {}); this._unsub = null; } }
   subFc() {
     const W = this.c.weather || {}, e = W.forecast || W.entity; if (this._unsub || !e || !this._hass || !this._hass.connection) return;
     this._unsub = this._hass.connection.subscribeMessage((m) => { this._fc = (m && m.forecast) || []; this._k = null; this.render(); }, { type: 'weather/subscribe_forecast', forecast_type: 'hourly', entity_id: e }).catch(() => null);
@@ -390,10 +396,23 @@ class HandyCard extends HTMLElement {
     // Akku-Kameras (snapshot: false) werden nicht abgefragt – jedes Standbild weckt sie auf und kostet Akku; Antippen öffnet das Live-Bild
     const cams = (this.c.security_cams || []).map((c, i) => { const st = this.s(c.entity), u = c.snapshot !== false && st && st.attributes.entity_picture, src = u ? (this._hass.hassUrl ? this._hass.hassUrl(u) : u) : '', bat = this.n(c.battery);
       const ph = `<div class="na">${P_icon('mdi:cctv', 30)}<b>Live ansehen</b>${bat != null ? `<em style="color:${bat < 20 ? '#e34948' : bat < 40 ? '#e2b400' : '#3ddc97'}">${P_icon(bat < 20 ? 'mdi:battery-alert-variant-outline' : 'mdi:battery-50', 13)}${P_fmt(bat, 0)} %</em>` : ''}</div>`;
-      return `<div class="sc2 ${i === 0 && ring ? 'rg' : ''}" data-act="more" data-e="${c.entity}">${src ? `<img data-cam="${P_esc(src)}" src="${P_esc(src)}" alt="">` : c.snapshot === false ? ph : '<div class="na">nicht erreichbar</div>'}<span>${P_esc(c.name || '')}</span></div>`; }).join('');
+      return `<div class="sc2 ${i === 0 && ring ? 'rg' : ''}" ${c.live === 'webrtc' ? `data-act="live" data-i="${i}"` : `data-act="more" data-e="${c.entity}"`}>${c.live === 'webrtc' ? `<i class="lvb2">${P_icon('mdi:play', 13)}Live</i>` : ''}${src ? `<img data-cam="${P_esc(src)}" src="${P_esc(src)}" alt="">` : c.snapshot === false ? ph : '<div class="na">nicht erreichbar</div>'}<span>${P_esc(c.name || '')}</span></div>`; }).join('');
     if (/data-cam=/.test(cams)) this.camTimer();
     return `<div class="t full sec ${trig ? 'al trig' : ''}">${cams ? `<div class="cms">${cams}</div>` : ''}${this.door(true)}${bl}<div class="sep"></div>${al}</div>`;
   }
+  openLive(c) {
+    if (!c) return;
+    if (!customElements.get('webrtc-camera')) { this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: c.entity } })); return; }
+    this.closeLive();
+    const ov = document.createElement('div'); ov.className = 'lv';
+    ov.innerHTML = `<div class="lvh"><b>${P_esc(c.name || 'Kamera')}</b><button data-act="lvx" aria-label="Schließen">${P_icon('mdi:close', 22)}</button></div><div class="lvc"></div>`;
+    const el = document.createElement('webrtc-camera');
+    el.setConfig({ type: 'custom:webrtc-camera', entity: c.entity, mode: c.mode || 'webrtc', muted: c.muted !== false, ui: true });
+    el.hass = this._hass; ov.querySelector('.lvc').appendChild(el);
+    ov.addEventListener('click', (ev) => { if (ev.target === ov) this.closeLive(); });
+    this.root.appendChild(ov); this._live = el; this._lvo = ov;
+  }
+  closeLive() { if (this._lvo) { this._lvo.remove(); this._lvo = null; this._live = null; } }
   camTimer() { if (!this._camT) this._camT = setInterval(() => { if (!this.root || document.visibilityState !== 'visible') return; this.root.querySelectorAll('img[data-cam]').forEach(i => { const b = i.dataset.cam; i.src = b + (b.includes('?') ? '&' : '?') + '_=' + Date.now(); }); }, 10000); }
   // Kamera-Standbild (alle 10 s neu), Tippen öffnet das Live-Bild
   camera() {
