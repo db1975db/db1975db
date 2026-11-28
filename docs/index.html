@@ -350,6 +350,7 @@ function posMenge(x){
   return (x.werte||[]).map(num).filter(v=>v!=null).reduce((a,b)=>a+b,0);
 }
 const fmtMenge = (x, m=posMenge(x)) => x.art==='stk' ? fmt(m,0) : fmt(m);
+const hkZusatz = x => x.art==='stk' && /heizk/i.test(x.label||'') ? ` (${+x.seiten===1?'nur vorne':'beidseitig'})` : '';
 // Summe gleicher Positionen über mehrere Räume
 function posSumme(rooms){
   const map = new Map();
@@ -959,7 +960,7 @@ async function viewRoom(id){
     arb: () => { const t = flaechenVon(r).map(([k,tt])=>{ const f=r.flaechen[k]; if (!f) return '';
         const x=[f.belag, f.anstrich?f.anstrich.replace('Brillux ','')+(f.farbton?` (${f.farbton})`:''):''].filter(Boolean).join(' + '); return x?`${tt}: ${x}`:''; })
         .filter(Boolean); if (r.arbeiten.length) t.push(`+${r.arbeiten.length}`); return t.join(' · ') || 'noch nichts gewählt'; },
-    pos: () => r.pos.length ? r.pos.map(x=>`${x.label||'Pos.'} ${fmtMenge(x)} ${POS_UNITS[x.art]}`).join(' · ') : 'keine',
+    pos: () => r.pos.length ? r.pos.map(x=>`${x.label||'Pos.'} ${fmtMenge(x)} ${POS_UNITS[x.art]}${hkZusatz(x)}`).join(' · ') : 'keine',
   };
   const refreshSums = () => { for (const k in kurz){ const el=$('#sum-'+k); if (el) el.textContent = kurz[k](); } liveBar(); };
   function liveBar(){
@@ -1074,14 +1075,17 @@ async function viewRoom(id){
       body = `<div class="row" style="align-items:center;margin-bottom:8px">
           <button class="btn sec" data-stk="${i}:-1" style="flex:none;width:64px;font-size:24px">−</button>
           <input data-pos-n="${i}" inputmode="numeric" value="${esc(x.n ?? 0)}" style="text-align:center;font-size:26px;font-weight:700">
-          <button class="btn" data-stk="${i}:1" style="flex:none;width:64px;font-size:24px">+</button></div>`;
+          <button class="btn" data-stk="${i}:1" style="flex:none;width:64px;font-size:24px">+</button></div>
+        ${/heizk/i.test(x.label||'') ? `<div class="seg" style="margin-bottom:8px">
+          <button data-hks="${i}:1" class="${+x.seiten===1?'on':''}">nur vorne</button>
+          <button data-hks="${i}:2" class="${+x.seiten===1?'':'on'}">beidseitig</button></div>` : ''}`;
     } else {
       const lb = /untersicht|podest|dach/i.test(x.label||'');
       body = `<div class="row">${mField(`pos:${i}:b`, lb?'Länge':'Breite', x.b)}${mField(`pos:${i}:h`, lb?'Breite':'Höhe', x.h)}
           <label class="f" style="max-width:80px"><span>Anzahl</span><input data-pos-n="${i}" inputmode="numeric" value="${esc(x.n ?? 1)}"></label></div>`;
     }
     return `<div class="sub">${head}${body}
-      <div style="text-align:right;font-weight:700">Summe: <span id="postot-${i}">${fmtMenge(x)}</span> ${POS_UNITS[x.art]}</div></div>`;
+      <div style="text-align:right;font-weight:700">Summe: <span id="postot-${i}">${fmtMenge(x)}</span> ${POS_UNITS[x.art]}${hkZusatz(x)}</div></div>`;
   }
   const refreshPos = () => r.pos.forEach((x,i)=>{ const el=$('#postot-'+i); if (el) el.textContent=fmtMenge(x); });
 
@@ -1225,10 +1229,11 @@ async function viewRoom(id){
       r.pos.splice(+b.dataset.delpos,1); persist(); render(); });
     $$('[data-pos-label]').forEach(s=>s.oninput=()=>{ r.pos[+s.dataset.posLabel].label=s.value; persist(); });
     $$('[data-pos-art]').forEach(s=>s.onchange=()=>{ const x=r.pos[+s.dataset.posArt]; x.art=s.value; x.werte ||= ['']; if (x.n==null) x.n=1; persist(); render(); });
+    $$('[data-hks]').forEach(b=>b.onclick=()=>{ const [i,n]=b.dataset.hks.split(':').map(Number); r.pos[i].seiten=n; persist(); render(); });
     $$('[data-pos-n]').forEach(s=>s.oninput=()=>{ r.pos[+s.dataset.posN].n=s.value; persist(); refreshPos(); });
     $$('[data-stk]').forEach(b=>b.onclick=()=>{
       const [i,d]=b.dataset.stk.split(':').map(Number); const x=r.pos[i];
-      x.n = Math.max(0, (num(x.n)||0) + d); $(`[data-pos-n="${i}"]`).value = x.n; persist(); refreshPos();
+      x.n = Math.max(0, (num(x.n)||0) + d); $(`[data-pos-n="${i}"]`).value = x.n; persist(); refreshPos(); refreshSums();
     });
     $$('[data-addw]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.addw; r.pos[i].werte.push(''); persist(); render(); focusKey(`pos:${i}:w:${r.pos[i].werte.length-1}`); });
     $$('[data-delw]').forEach(b=>b.onclick=()=>{ const [i,j]=b.dataset.delw.split(':').map(Number); r.pos[i].werte.splice(j,1); persist(); render(); });
@@ -1405,7 +1410,7 @@ async function viewReport(id){
       : r.form==='treppe' ? `Treppenhaus · ${esc(r.l)} × ${esc(r.b)} m · Gesamthöhe ${esc(r.h)} m${r.geschosse?` · ${esc(r.geschosse)} Geschosse`:''}`
       : `${esc(r.l)} × ${esc(r.b)} m · H ${esc(r.h)} m`;
     const arb = flaechenVon(r).map(([k,t])=>{ const x=flaecheText(r.flaechen[k]); return x?`<b>${t}:</b> ${esc(x.replace(/Brillux /g,''))}`:''; }).filter(Boolean)
-      .concat((r.arbeiten||[]).length?[`<b>Sonstiges:</b> ${esc(r.arbeiten.join(', '))}`]:[]).concat(r.pos.map(x=>`${esc(x.label||'Position')} ${fmtMenge(x)} ${POS_UNITS[x.art]}`));
+      .concat((r.arbeiten||[]).length?[`<b>Sonstiges:</b> ${esc(r.arbeiten.join(', '))}`]:[]).concat(r.pos.map(x=>`${esc(x.label||'Position')} ${fmtMenge(x)} ${POS_UNITS[x.art]}${hkZusatz(x)}`));
     return `<div class="room">
       <div class="rhead"><b>${esc(r.name||(r.typ==='fassade'?'Fassade':'Raum'))}</b><span>${masse}</span></div>
       ${(r.abzuege||[]).length || (r.fotoFlaechen||[]).length ? `<table class="small"><tbody>${abzRows(r)}</tbody></table>` : ''}
@@ -1492,7 +1497,10 @@ function mengeFuer(arbeit, r){
     case 'Türen lackieren': return pos(/tür/i,'stk') || [tueren||null, 'Stk'];
     case 'Zargen lackieren': return pos(/zarge/i,'stk') || pos(/tür/i,'stk') || [tueren||null, 'Stk'];
     case 'Fenster lackieren': return pos(/fenster(?!bank)/i,'stk') || [fenster||null, 'Stk'];
-    case 'Heizkörper lackieren': return pos(/heizk/i,'stk') || pos(/heizk/i) || [null,'Stk'];
+    case 'Heizkörper lackieren': {
+      const hk = treffer(/heizk/i).filter(x=>x.art==='stk');
+      const seiten = hk.reduce((s,x)=>s + (num(x.n)||0) * (+x.seiten===1 ? 1 : 2), 0);
+      return seiten ? [seiten, 'Seite'] : [null, 'Seite']; }
     case 'Sockelleisten': return pos(/sockel/i) || [null,'lfm'];
     case 'Fensterbänke streichen': return pos(/fensterbank/i) || [null,'lfm'];
     case 'Dachuntersicht streichen': return pos(/dachunter/i) || [null,'m²'];
@@ -1527,7 +1535,7 @@ async function leistungen(id){
   const liste = [...map.values()].map((e,i)=>({...e, i})).sort((a,b)=>(G.indexOf(a.gruppe)-G.indexOf(b.gruppe)) || (a.art-b.art) || (a.i-b.i));
   return {rooms, liste};
 }
-const fmtE = (m, einheit) => m ? (einheit==='Stk' ? fmt(m,0) : fmt(m)) + ' ' + einheit : (einheit==='psch' ? 'pauschal / nach Aufwand' : '– '+einheit);
+const fmtE = (m, einheit) => m ? (einheit==='Stk' || einheit==='Seite' ? fmt(m,0) + ' ' + (einheit==='Seite' && m!==1 ? 'Seiten' : einheit) : fmt(m) + ' ' + einheit) : (einheit==='psch' ? 'pauschal / nach Aufwand' : '– '+einheit);
 
 /* =========================================================
    Kalkulation
@@ -1582,7 +1590,7 @@ const KALK_STANDARD = {
     'Türen lackieren':        {h:1.75, einheit:'Stk', mat:[['Lack',8]], s:true},
     'Zargen lackieren':       {h:0.75, einheit:'Stk', mat:[['Lack',3]], s:true},
     'Fenster lackieren':      {h:1.75, einheit:'Stk', mat:[['Lack',5]], s:true},
-    'Heizkörper lackieren':   {h:1.50, einheit:'Stk', mat:[['Heizkörperlack',6]], s:true},
+    'Heizkörper lackieren':   {h:0.75, einheit:'Seite', mat:[['Heizkörperlack',1.5]], s:true},
     'Sockelleisten':          {h:0.08, einheit:'lfm', mat:[['Lack',0.3]], s:true},
     'Abdecken / Abkleben':    {h:0.05, mat:[['Abdeckvlies',1]]},
     'Möbel rücken':           {h:null},
@@ -1876,7 +1884,7 @@ async function projectText(id){
     for (const a of r.abzuege||[]){ const o=oeffnung(a);
       t+=`${a.art} ${a.n||1}× ${a.b} × ${a.h} m: ${!o?'':!o.abziehen?'übermessen':`abgezogen −${fmt(o.gesamt)} m²${o.leibung?`, Leibung +${fmt(o.leibung)} m² (Tiefe ${a.t} m, ${o.seiten} Seiten)`:''}`}\n`; }
     for (const f of r.fotoFlaechen||[]) t+=`${f.label||'Fläche'} (aus Foto): ${f.typ==='minus'?'−':'+'}${f.m2} m²\n`;
-    for (const x of r.pos) t+=`${x.label||'Position'}: ${fmtMenge(x)} ${POS_UNITS[x.art]}${x.art==='lfm'&&(x.werte||[]).filter(Boolean).length>1?` (${x.werte.filter(Boolean).join(' + ')})`:''}\n`;
+    for (const x of r.pos) t+=`${x.label||'Position'}: ${fmtMenge(x)} ${POS_UNITS[x.art]}${hkZusatz(x)}${x.art==='lfm'&&(x.werte||[]).filter(Boolean).length>1?` (${x.werte.filter(Boolean).join(' + ')})`:''}\n`;
     if (r.typ==='fassade') t+=`Fassadenfläche (VOB): ${fmt(c.fassade)} m²${c.sockel?` | Sockel: ${fmt(c.sockel)} m²`:''}\n`;
     else t+=`Wandfläche (VOB): ${fmt(c.wand)} m² | Decke: ${fmt(c.decke)} m² | Umfang: ${fmt(c.umfang)} m\n`;
     for (const [k,tt] of flaechenVon(r)){ const s=flaecheText(r.flaechen[k]); if (s) t+=`${tt}: ${s}\n`; }
