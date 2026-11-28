@@ -40,8 +40,8 @@ const P_CSS = `
 .wx .cmp text{fill:#fff}
 .wx .wl{display:flex;gap:3px;align-items:flex-start;font-size:11.5px;line-height:1.3;opacity:.9;margin-top:4px}.wx .wl ha-icon,.wx .wl svg{flex:none;margin-top:1px}
 .wx .rain{margin-top:8px;border-radius:12px;background:rgba(0,0,0,.16);padding:7px 10px 6px}.wx .rain.dry{padding:6px 10px;opacity:.9}
-.wx .ms{display:grid;gap:6px;margin-top:10px}.wx .m{background:rgba(0,0,0,.16);border-radius:12px;padding:6px 4px 5px;text-align:center;cursor:pointer;min-width:0}
-.wx .m .mi{opacity:.75;display:flex;justify-content:center}.wx .m span ha-icon,.wx .m span svg{vertical-align:-2px;--mdc-icon-size:12px}.wx .m b{display:block;font-size:16px;font-weight:650;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}.wx .m b small{font-size:10.5px;font-weight:500;opacity:.8;margin-left:1px}.wx .m span{display:block;font-size:10.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wx .ms{display:grid;gap:6px;margin-top:10px}.wx .m{background:rgba(0,0,0,.16);border-radius:12px;padding:7px 8px 7px;cursor:pointer;min-width:0}
+.wx .m .mi{display:flex;align-items:center;gap:4px;font-size:10.5px;opacity:.8;white-space:nowrap;overflow:hidden;margin-bottom:4px}.wx .m .mi ha-icon{flex:none}.wx .m span ha-icon,.wx .m span svg{vertical-align:-2px;--mdc-icon-size:12px}.wx .m b{display:block;font-size:17px;font-weight:650;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}.wx .m b small{font-size:10.5px;font-weight:500;opacity:.8;margin-left:1px}.wx .m span{display:block;font-size:10.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wx .rt2{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:650}
 .wx .bars{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;align-items:end;height:26px;margin-top:6px}
 .wx .bars i{display:block;border-radius:3px 3px 1px 1px;background:#7cc4ff;min-height:2px}
@@ -86,6 +86,13 @@ const P_CSS = `
 .en .eh span{display:flex;align-items:center;gap:5px}
 .en text{font-weight:700;font-size:13px;fill:#fff}.en text.lb{font-weight:500;font-size:10px;fill:rgba(255,255,255,.8)}
 .en .lbl{cursor:pointer}
+.en .fl3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 10px 0;background:#151922}
+.en .fx{border-radius:12px;padding:8px;background:color-mix(in srgb,var(--fc) 12%,transparent);border:1px solid color-mix(in srgb,var(--fc) 35%,transparent);min-width:0;cursor:pointer}
+.en .fx .k{font-size:11px;color:var(--fc);display:flex;align-items:center;gap:4px;font-weight:650;margin-bottom:4px}.en .fx .v{font-size:18px;font-weight:750;white-space:nowrap}.en .fx .s{font-size:11px;color:var(--p-fg2);display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;margin-top:1px}
+.en .flw{padding:10px 12px 2px;background:#151922}.en .fh{display:flex;justify-content:space-between;align-items:baseline}.en .fh span{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--p-fg2)}.en .fh b{font-size:20px;cursor:pointer}
+.en .fb{display:flex;gap:2px;height:12px;border-radius:6px;overflow:hidden;background:rgba(255,255,255,.08);margin:7px 0 7px}.en .fb i{display:block;min-width:4px}
+.en .fg{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;color:var(--p-fg2)}.en .fg span{display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap}.en .fg em{width:8px;height:8px;border-radius:2px;display:inline-block}.en .fg b{color:var(--p-fg);font-weight:700}
+.en .fbt{display:grid;grid-template-columns:auto minmax(0,1fr) 70px;align-items:center;gap:7px;margin-top:9px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.05);font-size:12px;color:var(--p-fg2);cursor:pointer}.en .fbt b{color:var(--p-fg)}.en .fbt .ring{margin:0}
 .en .st3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 10px 10px;background:#151922}
 .en .sb{border-radius:12px;padding:7px 8px;background:rgba(255,255,255,.05);min-width:0}
 .en .sb .k{font-size:11px;color:var(--p-fg2);display:flex;align-items:center;gap:4px;white-space:nowrap}.en .sb .v{font-size:15px;font-weight:700;margin-top:2px;white-space:nowrap}
@@ -279,9 +286,9 @@ class HandyCard extends HTMLElement {
       [W.pressure, 'mdi:gauge', pt == null ? 'Luftdruck' : `Druck ${P_icon(pt > .5 ? 'mdi:trending-up' : pt < -.5 ? 'mdi:trending-down' : 'mdi:trending-neutral', 12)}`, (v) => `${P_fmt(v, 0)}<small>hPa</small>`],
       [W.dew_point, 'mdi:thermometer-water', 'Taupunkt', (v) => `${P_fmt(v, 1)}<small>°</small>`],
       [W.uv, 'mdi:white-balance-sunny', 'UV-Index', (v) => P_fmt(v, 0)],
-      [W.rain_day, 'mdi:weather-rainy', 'Regen heute', (v) => `${P_fmt(v, 1)}<small>mm</small>`],
+      [W.rain_day, 'mdi:weather-rainy', 'Regen', (v) => `${P_fmt(v, 1)}<small>mm</small>`],
     ].filter(([e]) => e && this.n(e) != null).slice(0, 4);
-    const meas = ms.length ? `<div class="ms" style="grid-template-columns:repeat(${ms.length},minmax(0,1fr))">${ms.map(([e, ic, l, f]) => `<div class="m" data-act="more" data-e="${e}"><div class="mi">${P_icon(ic, 14)}</div><b>${f(this.n(e))}</b><span>${l}</span></div>`).join('')}</div>` : '';
+    const meas = ms.length ? `<div class="ms" style="grid-template-columns:repeat(${ms.length},minmax(0,1fr))">${ms.map(([e, ic, l, f]) => `<div class="m" data-act="more" data-e="${e}"><div class="mi">${P_icon(ic, 13)}${l}</div><b>${f(this.n(e))}</b></div>`).join('')}</div>` : '';
     const rain = !fc.length ? '' : dry ? `<div class="rain dry"><div class="rt2">${P_icon(ric, 15)}${rtxt}</div></div>` : `<div class="rain"><div class="rt2">${P_icon(ric, 15)}${rtxt}</div>
       <div class="bars">${fc.map(f => { const v = Math.max((f.precipitation_probability || 0) / 100, Math.min(1, (f.precipitation || 0) / 2)); return `<i class="${v < .05 ? 'z' : ''}" style="height:${Math.max(8, v * 100)}%;${snowy(f) && v >= .05 ? 'background:#e8f1ff' : ''}"></i>`; }).join('')}</div>
       <div class="tk">${fc.map((f, i) => `<span>${i % 3 === 0 ? new Date(f.datetime).getHours() : ''}</span>`).join('')}</div></div>`;
@@ -364,7 +371,7 @@ class HandyCard extends HTMLElement {
       <rect x="259" y="165" width="14" height="26.2" fill="#eef0f2"/><rect x="258.4" y="164" width="15.2" height="2" fill="#fafafa"/><rect x="259" y="166" width="14" height="1.2" fill="#2a2d33"/>
       <path d="M260,169.5 l5.5,0 l-1,1.6 l-4.5,0Z M260,171.6 l4.8,0 l-1,1.6 l-3.8,0Z" fill="#3fae49"/>
       <rect x="269.6" y="169" width="2.2" height="20" rx="1" fill="#c9ccd2"/><rect x="269.6" y="${169 + 20 - 20 * soc0 / 100}" width="2.2" height="${20 * soc0 / 100}" rx="1" fill="${batCol}"/>`;
-    const scene = `<svg viewBox="0 0 360 236"><defs>
+    const LY = E.layout || 'scene', scene = `<svg viewBox="0 0 360 ${LY === 'scene' ? 236 : 214}"><defs>
       <linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient>
       <linearGradient id="ered" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${C.red[0]}"/><stop offset="1" stop-color="${C.red[1]}"/></linearGradient>
       <linearGradient id="egry" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${C.grey[0]}"/><stop offset="1" stop-color="${C.grey[1]}"/></linearGradient>
@@ -402,11 +409,27 @@ class HandyCard extends HTMLElement {
       <rect x="48" y="204" width="264" height="3.5" fill="${D ? '#5d3e39' : '#3a2723'}"/><rect x="156" y="205" width="40" height="3" fill="${D ? '#c9ccd2' : '#4a4d55'}"/>
       ${rays}
       ${lbl(268, 20, kw(pv), 'Solar', '#ffd65a', E.pv)}
-      ${lbl(8, 217, exp > imp ? kw(exp) : kw(imp), exp > imp ? 'Einspeisung' : 'Netzbezug', exp > imp ? '#3ddc97' : '#ff7a6b', exp > imp ? E.grid_export : E.grid_import, 'start')}
+      ${LY === 'scene' ? `${lbl(8, 217, exp > imp ? kw(exp) : kw(imp), exp > imp ? 'Einspeisung' : 'Netzbezug', exp > imp ? '#3ddc97' : '#ff7a6b', exp > imp ? E.grid_export : E.grid_import, 'start')}
       ${lbl(118, 217, kw(home), 'Haus', '#5aa9ff', E.home)}
-      ${lbl(354, 217, soc != null ? `Varta ${P_fmt(soc, 0)} %` : 'Varta', chg > 15 ? 'lädt ' + kw(chg) : dis > 15 ? 'liefert ' + kw(dis) : `${P_fmt(E.battery_capacity || 6.5, 1)} kWh`, batCol, E.battery_soc, 'end')}
+      ${lbl(354, 217, soc != null ? `Varta ${P_fmt(soc, 0)} %` : 'Varta', chg > 15 ? 'lädt ' + kw(chg) : dis > 15 ? 'liefert ' + kw(dis) : `${P_fmt(E.battery_capacity || 6.5, 1)} kWh`, batCol, E.battery_soc, 'end')}` : ''}
     </svg>`;
-    return `<div class="t full en"><div style="position:relative">${scene}<div class="eh"><span>${P_icon('mdi:lightning-bolt', 14)}Energie</span></div></div>
+    // Netz, Haus, Akku unter dem Bild – als Kacheln (layout: tiles) oder als Herkunfts-Balken (layout: flow)
+    const gCol = exp > imp ? '#3ddc97' : imp > 15 ? '#ff7a6b' : '#8a94a3', bIc = chg > 15 ? 'mdi:battery-charging' : soc0 >= 95 ? 'mdi:battery' : `mdi:battery-${Math.max(10, Math.round(soc0 / 10) * 10)}`.replace('battery-100', 'battery');
+    const bSub = chg > 15 ? `lädt ${kw(chg)}` : dis > 15 ? `entlädt ${kw(dis)}` : `ruht · ${P_fmt(E.battery_capacity || 6.5, 1)} kWh`;
+    const fx = (ic, t, v, sub, col, ent, bar) => `<div class="fx" data-act="more" data-e="${ent}" style="--fc:${col}"><div class="k">${P_icon(ic, 14)}${t}</div><div class="v">${v}</div><div class="s">${sub}</div>${bar != null ? `<div class="ring"><i style="width:${bar}%;background:${col}"></i></div>` : ''}</div>`;
+    let mid = '';
+    if (LY === 'tiles') mid = `<div class="fl3">
+        ${fx('mdi:transmission-tower', 'Netz', kw(Math.max(imp, exp)), exp > imp ? `${P_icon('mdi:arrow-up', 12)}Einspeisung` : imp > 15 ? `${P_icon('mdi:arrow-down', 12)}Bezug` : 'kein Austausch', gCol, exp > imp ? E.grid_export : E.grid_import)}
+        ${fx('mdi:home-lightning-bolt-outline', 'Haus', kw(home), 'Verbrauch jetzt', '#5aa9ff', E.home)}
+        ${fx(bIc, 'Varta', soc != null ? `${P_fmt(soc, 0)} %` : '–', bSub, batCol, E.battery_soc, soc0)}</div>`;
+    if (LY === 'flow') { const fromBat = dis, fromGrid = imp, fromSun = Math.max(0, home - fromBat - fromGrid), tot = Math.max(1, fromSun + fromBat + fromGrid);
+      const seg = [[fromSun, '#ffc23d', 'mdi:white-balance-sunny', 'Solar', E.pv], [fromBat, '#3ddc97', 'mdi:home-battery-outline', 'Akku', E.battery_power || E.battery_soc], [fromGrid, '#ff7a6b', 'mdi:transmission-tower', 'Netz', E.grid_import]];
+      mid = `<div class="flw"><div class="fh"><span>${P_icon('mdi:home-lightning-bolt-outline', 14)}Haus braucht</span><b data-act="more" data-e="${E.home}">${kw(home)}</b></div>
+        <div class="fb">${seg.filter(x => x[0] > 0).map(([w, c]) => `<i style="flex:${w};background:${c}"></i>`).join('')}</div>
+        <div class="fg">${seg.map(([w, c, ic, l, e]) => `<span data-act="more" data-e="${e}" style="opacity:${w > 0 ? 1 : .45}">${P_icon(ic, 13)}<em style="background:${c}"></em>${l} <b>${kw(w)}</b></span>`).join('')}</div>
+        <div class="fbt" data-act="more" data-e="${E.battery_soc}">${P_icon(bIc, 16)}<span>Varta <b>${soc != null ? P_fmt(soc, 0) + ' %' : '–'}</b> · ${bSub}</span><div class="ring"><i style="width:${soc0}%;background:${batCol}"></i></div></div>
+        ${exp > 15 ? `<div class="fbt" data-act="more" data-e="${E.grid_export}">${P_icon('mdi:transmission-tower-export', 16)}<span>Einspeisung <b>${kw(exp)}</b></span></div>` : ''}</div>`; }
+    return `<div class="t full en"><div style="position:relative">${scene}<div class="eh"><span>${P_icon('mdi:lightning-bolt', 14)}Energie</span></div></div>${mid}
       <div class="st3"><div class="sb"><div class="k">${P_icon('mdi:leaf', 13)}Autark</div><div class="v">${self} %</div><div class="ring"><i style="width:${self}%;background:#3ddc97"></i></div></div>
         <div class="sb"><div class="k">${P_icon('mdi:solar-power-variant', 13)}Heute</div><div class="v">${day != null ? P_fmt(day, 1) + ' kWh' : '–'}</div><div class="ring"><i style="width:${Math.min(100, (day || 0) / (E.pv_day_max || 30) * 100)}%;background:#ffc23d"></i></div></div>
         <div class="sb" ${E.price ? `data-act="more" data-e="${E.price}"` : ''}><div class="k">${P_icon('mdi:currency-eur', 13)}Strompreis</div><div class="v" style="color:${prc}">${pr != null ? P_fmt(pr, 1) + ' ct' : '–'}</div><div class="ring"><i style="width:${pr != null ? Math.min(100, pr / 70 * 100) : 0}%;background:${prc}"></i></div></div></div></div>`;
