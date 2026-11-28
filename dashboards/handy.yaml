@@ -10,6 +10,11 @@ views:
   - type: custom:handy-card
     base_path: /dashboard-handy
     persons_style: compact
+    security: true
+    # Kameras oben in der Sicherheits-Kachel: Aqara G410 (Kabel) mit Standbild, Reolink (Akku) ohne Standbild
+    security_cams:
+    - {entity: camera.192_168_178_113_2, name: Haustür}
+    - {entity: camera.kamera_auffahrt_ausgewogen, name: Auffahrt, snapshot: false, battery: sensor.kamera_auffahrt_batterie}
     weather:
       entity: weather.lebus_3
       name: Lebus
@@ -51,6 +56,7 @@ views:
       lock: lock.eingang_aqara_smart_lock_u200
       battery: sensor.eingang_aqara_smart_lock_u200_batterie
       contact: binary_sensor.multi_state_sensor_p100_tur
+      bell: binary_sensor.turklingel_belegung
     alarm:
       entity: alarm_control_panel.alarmo
       name: Alarmanlage
