@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.22)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.23)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -237,7 +237,7 @@ class HandyCard extends HTMLElement {
     if (this._wr) { if (!box.contains(this._wr)) { box.innerHTML = ''; box.appendChild(this._wr); } this._wr.hass = this._hass; return; }
     if (!customElements.get('webrtc-camera')) { box.innerHTML = '<div class="na">WebRTC-Karte nicht geladen</div>'; return; }
     const el = document.createElement('webrtc-camera');
-    el.setConfig({ type: 'custom:webrtc-camera', entity: L.entity, mode: L.mode || 'webrtc', muted: L.muted !== false, ui: L.ui !== false });
+    el.setConfig({ type: 'custom:webrtc-camera', entity: L.entity, mode: L.mode || 'webrtc', muted: L.muted !== false, ui: !!L.ui, style: L.style || '.header,.mode,.controls,.status,.screenshot,.pictureinpicture,.fullscreen,.volume,.stream,.ptz{display:none!important}' });
     el.hass = this._hass; box.innerHTML = ''; box.appendChild(el); this._wr = el;
   }
   hello() {
@@ -416,7 +416,7 @@ class HandyCard extends HTMLElement {
       const ph = `<div class="na">${P_icon('mdi:cctv', 30)}<b>Live ansehen</b>${bat != null ? `<em style="color:${bat < 20 ? '#e34948' : bat < 40 ? '#e2b400' : '#3ddc97'}">${P_icon(bat < 20 ? 'mdi:battery-alert-variant-outline' : 'mdi:battery-50', 13)}${P_fmt(bat, 0)} %</em>` : ''}</div>`;
       return `<div class="sc2 ${i === 0 && ring ? 'rg' : ''}" ${c.live === 'webrtc' ? `data-act="live" data-i="${i}"` : `data-act="more" data-e="${c.entity}"`}>${c.live === 'webrtc' ? `<i class="lvb2">${P_icon('mdi:play', 13)}Live</i>` : ''}${src ? `<img data-cam="${P_esc(src)}" src="${P_esc(src)}" alt="">` : c.snapshot === false ? ph : '<div class="na">nicht erreichbar</div>'}<span>${P_esc(c.name || '')}</span></div>`; }).join('');
     if (/data-cam=/.test(cams)) this.camTimer();
-    if (this.c.live_cam) return `<div class="t full sec ${trig ? 'al trig' : ''}"><div class="cms"><div class="sc2 lvbox ${ring ? 'rg' : ''}"><div class="lvw" data-wr="1"></div><span>${P_esc(this.c.live_cam.name || 'Haustür')}</span></div>${this.door('panel')}</div>${bl}<div class="sep"></div>${al}</div>`;
+    if (this.c.live_cam) return `<div class="t full sec ${trig ? 'al trig' : ''}"><div class="cms"><div class="sc2 lvbox ${ring ? 'rg' : ''}"><div class="lvw" data-wr="1"></div></div>${this.door('panel')}</div>${bl}<div class="sep"></div>${al}</div>`;
     return `<div class="t full sec ${trig ? 'al trig' : ''}">${cams ? `<div class="cms">${cams}</div>` : ''}${this.door(true)}${bl}<div class="sep"></div>${al}</div>`;
   }
   openLive(c) {
