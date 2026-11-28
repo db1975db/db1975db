@@ -11,7 +11,7 @@ views:
     base_path: /dashboard-handy
     persons_style: compact
     security: true
-    # Haustür-Klingel (Aqara G410, Kabel) dauerhaft live per WebRTC-Karte über der Sicherheits-Kachel; Auffahrt (Reolink, Akku) entfernt
+    # Haustür-Klingel (Aqara G410, Kabel) live per WebRTC-Karte, klein oben links in der Sicherheits-Kachel, Schloss daneben; Auffahrt (Reolink, Akku) entfernt
     live_cam:
       entity: camera.192_168_178_113_2
       name: Haustür

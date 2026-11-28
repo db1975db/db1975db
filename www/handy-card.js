@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.21)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.22)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -90,6 +90,9 @@ const P_CSS = `
 .lv{position:fixed;inset:0;z-index:20;background:rgba(5,7,12,.92);display:flex;flex-direction:column;justify-content:center;padding:max(12px,env(safe-area-inset-top)) 10px max(12px,env(safe-area-inset-bottom))}
 .lvh{display:flex;align-items:center;justify-content:space-between;color:#fff;padding:0 4px 10px;font-size:16px}.lvh button{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .lvc{border-radius:16px;overflow:hidden;background:#000}
+.sec .lvbox{background:#000}.sec .lvbox .lvw{position:absolute;inset:0;display:flex;align-items:center}.sec .lvbox .lvw>*{width:100%}.sec .lvbox span{z-index:2;pointer-events:none;left:6px;top:6px;bottom:auto}
+.sec .lkp{display:flex;flex-direction:column;justify-content:space-between;gap:4px;border-radius:12px;padding:8px;background:rgba(255,255,255,.04);min-width:0}.sec .lkh{display:flex;align-items:center;gap:8px;cursor:pointer}.sec .lkp .lk{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+.sec .lkp .st{font-size:15px;font-weight:700;line-height:1.15}.sec .lkp .sub{font-size:11.5px;color:var(--p-fg2)}.sec .lkb{display:flex;gap:5px}.sec .lkb .btn{padding:9px 4px;font-size:12.5px}.sec .lkb .btn.sm{padding:9px 9px}
 .lvt{padding:0;overflow:hidden;background:#000}.lvt .lvw{min-height:120px}.lvt .na{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:var(--p-fg2);font-size:12px}.lvt .cl{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:650;background:rgba(10,14,24,.6);border-radius:999px;padding:3px 10px;color:#fff;pointer-events:none;z-index:2}.lvt .cl i{width:7px;height:7px;border-radius:50%;background:#ff5a5a;animation:cvpl 1.4s infinite}
 .sec .sc2.rg{box-shadow:0 0 0 3px #ef8a3c;animation:cvpl 1s infinite}.sec .ring2{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;border-radius:10px;background:#ef8a3c;color:#fff;font-weight:700;font-size:14px}.sec .lb2{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:12px;color:var(--p-fg2)}
 .sec .sep{height:1px;background:var(--p-line);margin:10px -12px}.sec .al2{display:flex;align-items:center;gap:10px;cursor:pointer}.sec .al2 .sh{width:42px;height:42px}
@@ -208,7 +211,7 @@ class HandyCard extends HTMLElement {
     if (c.hints) out.push(this.hints());
     if (c.quick) out.push(this.quick());
     if (c.persons.length) out.push(this.persons());
-    if (c.live_cam) out.push(this.liveCam());
+    if (c.live_cam && !(c.security && c.door && c.alarm)) out.push(this.liveCam());
     if (c.security && c.door && c.alarm) out.push(this.security());
     if (c.weather) out.push(this.weather());
     if (c.energy) out.push(this.energy());
@@ -231,7 +234,7 @@ class HandyCard extends HTMLElement {
   liveCam() { const L = this.c.live_cam; return `<div class="t full lvt"><div class="lvw" data-wr="1"></div><div class="cl"><i></i>${P_esc(L.name || 'Live')}</div></div>`; }
   mountLive() {
     const L = this.c.live_cam, box = L && this.root.querySelector('[data-wr]'); if (!box) return;
-    if (this._wr && this._wr.isConnected && box.contains(this._wr)) { this._wr.hass = this._hass; return; }
+    if (this._wr) { if (!box.contains(this._wr)) { box.innerHTML = ''; box.appendChild(this._wr); } this._wr.hass = this._hass; return; }
     if (!customElements.get('webrtc-camera')) { box.innerHTML = '<div class="na">WebRTC-Karte nicht geladen</div>'; return; }
     const el = document.createElement('webrtc-camera');
     el.setConfig({ type: 'custom:webrtc-camera', entity: L.entity, mode: L.mode || 'webrtc', muted: L.muted !== false, ui: L.ui !== false });
@@ -355,6 +358,8 @@ class HandyCard extends HTMLElement {
     // Entriegelt tagsüber mit jemandem zu Hause ist normal → neutral; orange nur, wenn niemand da ist oder es Nacht ist
     if (st === 'unlocked' && this.c.security && !this.nobody() && !this.night()) col = '#9aa3b2';
     const sub = [ct ? (open ? 'Tür offen' : 'Tür zu') : '', b != null ? `${P_fmt(b, 0)} % Akku` : ''].filter(Boolean).join(' · ');
+    if (inner === 'panel') return `<div class="lkp" style="--lc:${col}"><div class="lkh" data-act="more" data-e="${D.lock}"><div class="lk" style="background:${col}26;color:${col}">${P_icon(ic, 22)}</div><div style="min-width:0"><div class="sub">${P_esc(D.name || 'Haustür')}</div><div class="st" style="color:${col}">${txt}</div></div></div><div class="sub">${P_esc(sub)}</div>
+      <div class="lkb">${st === 'locked' ? `<button class="btn" data-act="lock" data-sv="unlock" data-e="${D.lock}">${P_icon('mdi:lock-open-variant', 15)}Aufschließen</button>` : `<button class="btn pri" data-act="lock" data-sv="lock" data-e="${D.lock}">${P_icon('mdi:lock', 15)}Abschließen</button>`}${canOpen ? `<button class="btn sm" data-act="lock" data-sv="open" data-e="${D.lock}" aria-label="Öffnen">${P_icon('mdi:door-open', 16)}</button>` : ''}</div></div>`;
     return `<div class="${inner ? '' : 't full '}dr">
       <div class="row" data-act="more" data-e="${D.lock}"><div class="lk" style="background:${col}26;color:${col}">${P_icon(ic, 24)}</div><div style="min-width:0"><div class="sub" style="margin:0 0 1px">${P_esc(D.name || 'Haustür')}</div><div class="st" style="color:${col}">${txt}</div><div class="sub">${P_esc(sub)}</div></div></div>
       <div class="bt">${st === 'locked' ? `<button class="btn" data-act="lock" data-sv="unlock" data-e="${D.lock}">${P_icon('mdi:lock-open-variant', 15)}Aufschließen</button>` : `<button class="btn pri" data-act="lock" data-sv="lock" data-e="${D.lock}">${P_icon('mdi:lock', 15)}Abschließen</button>`}${canOpen ? `<button class="btn sm" data-act="lock" data-sv="open" data-e="${D.lock}" aria-label="Öffnen">${P_icon('mdi:door-open', 16)}</button>` : ''}</div></div>`;
@@ -411,6 +416,7 @@ class HandyCard extends HTMLElement {
       const ph = `<div class="na">${P_icon('mdi:cctv', 30)}<b>Live ansehen</b>${bat != null ? `<em style="color:${bat < 20 ? '#e34948' : bat < 40 ? '#e2b400' : '#3ddc97'}">${P_icon(bat < 20 ? 'mdi:battery-alert-variant-outline' : 'mdi:battery-50', 13)}${P_fmt(bat, 0)} %</em>` : ''}</div>`;
       return `<div class="sc2 ${i === 0 && ring ? 'rg' : ''}" ${c.live === 'webrtc' ? `data-act="live" data-i="${i}"` : `data-act="more" data-e="${c.entity}"`}>${c.live === 'webrtc' ? `<i class="lvb2">${P_icon('mdi:play', 13)}Live</i>` : ''}${src ? `<img data-cam="${P_esc(src)}" src="${P_esc(src)}" alt="">` : c.snapshot === false ? ph : '<div class="na">nicht erreichbar</div>'}<span>${P_esc(c.name || '')}</span></div>`; }).join('');
     if (/data-cam=/.test(cams)) this.camTimer();
+    if (this.c.live_cam) return `<div class="t full sec ${trig ? 'al trig' : ''}"><div class="cms"><div class="sc2 lvbox ${ring ? 'rg' : ''}"><div class="lvw" data-wr="1"></div><span>${P_esc(this.c.live_cam.name || 'Haustür')}</span></div>${this.door('panel')}</div>${bl}<div class="sep"></div>${al}</div>`;
     return `<div class="t full sec ${trig ? 'al trig' : ''}">${cams ? `<div class="cms">${cams}</div>` : ''}${this.door(true)}${bl}<div class="sep"></div>${al}</div>`;
   }
   openLive(c) {
