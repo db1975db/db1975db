@@ -1531,9 +1531,9 @@ function mengeFuer(arbeit, r){
 // Ausführlicher Text im Angebot (die Auswahl im Raum bleibt kurz)
 const LEISTUNGS_TEXT = {
   'Türen lackieren': 'Türblätter inkl. Zarge schleifen, grundieren, 2× lackieren (je Seite)',
-  'Fenster lackieren': 'Fenster anschleifen, Zwischen- und Schlussanstrich PU-Lack (Fläche je Seite)',
-  'Fenster/Türen lackieren': 'Fenster und Türen außen anschleifen, Zwischenanstrich Allgrund, Schlussanstrich PU-Lack',
-  'Tore lackieren': 'Tore anschleifen, Zwischenanstrich Allgrund, Schlussanstrich PU-Lack',
+  'Fenster lackieren': 'Fenster anschleifen, Grundanstrich Impredur Grund 835, Schlussanstrich PU-Lack (Fläche je Seite)',
+  'Fenster/Türen lackieren': 'Fenster und Türen anschleifen, Grundanstrich Impredur Grund 835, Schlussanstrich PU-Lack',
+  'Tore lackieren': 'Tore anschleifen, Grundanstrich Impredur Grund 835, Schlussanstrich PU-Lack',
 };
 async function leistungen(id){
   const rooms=sortiert(await byIdx('rooms','projectId',id));
@@ -1584,6 +1584,7 @@ const KALK_STANDARD = {
     'Heizkörperlack':                {einheit:'l',  verbrauch:0.12,  preis:null},
     'PU-Lack':                       {einheit:'l',  verbrauch:0.12,  preis:null},
     'Allgrund':                      {einheit:'l',  verbrauch:0.105, preis:null},
+    'Grund 835':                     {einheit:'l',  verbrauch:0.09,  preis:null},
     'Abdeckvlies':                   {einheit:'m²', verbrauch:1.0,   preis:null, s:true},
   },
   // h = Stunden je Einheit; mat = [[Produkt, Faktor]] (Faktor × Verbrauch); s = Schätzwert, bitte prüfen
@@ -1611,9 +1612,9 @@ const KALK_STANDARD = {
     'außen: Armierung mit Gewebe':    {h:0.35, s:true},
     'Türen lackieren':        {h:0.90, einheit:'Seite', mat:[['Lack',4]], s:true},
     'Zargen lackieren':       {h:0.75, einheit:'Stk', mat:[['Lack',3]], s:true},
-    'Fenster lackieren':      {h:0.45, einheit:'m²', mat:[['Allgrund',1],['PU-Lack',1]], s:true},
-    'Fenster/Türen lackieren':{h:0.45, einheit:'m²', mat:[['Allgrund',1],['PU-Lack',1]], s:true},
-    'Tore lackieren':         {h:0.72, einheit:'m²', mat:[['Allgrund',1],['PU-Lack',1]], s:true},
+    'Fenster lackieren':      {h:0.45, einheit:'m²', mat:[['Grund 835',1],['PU-Lack',1]], s:true},
+    'Fenster/Türen lackieren':{h:0.45, einheit:'m²', mat:[['Grund 835',1],['PU-Lack',1]], s:true},
+    'Tore lackieren':         {h:0.72, einheit:'m²', mat:[['Grund 835',1],['PU-Lack',1]], s:true},
     'Heizkörper lackieren':   {h:0.90, einheit:'Stk', mat:[['Heizkörperlack',3]], s:true},
     'Sockelleisten':          {h:0.08, einheit:'lfm', mat:[['Lack',0.3]], s:true},
     'Abdecken / Abkleben':    {h:0.05, mat:[['Abdeckvlies',1]]},
