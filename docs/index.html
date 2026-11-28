@@ -350,7 +350,8 @@ function posMenge(x){
   return (x.werte||[]).map(num).filter(v=>v!=null).reduce((a,b)=>a+b,0);
 }
 const fmtMenge = (x, m=posMenge(x)) => x.art==='stk' ? fmt(m,0) : fmt(m);
-const hkZusatz = x => x.art==='stk' && /heizk/i.test(x.label||'') ? ` (${+x.seiten===1?'nur vorne':'beidseitig'})` : '';
+const istTuer = x => x.art==='stk' && /tür/i.test(x.label||'');
+const hkZusatz = x => istTuer(x) ? ` (${+x.seiten===1?'eine Seite':'beidseitig'})` : '';
 // Summe gleicher Positionen über mehrere Räume
 function posSumme(rooms){
   const map = new Map();
@@ -1076,8 +1077,8 @@ async function viewRoom(id){
           <button class="btn sec" data-stk="${i}:-1" style="flex:none;width:64px;font-size:24px">−</button>
           <input data-pos-n="${i}" inputmode="numeric" value="${esc(x.n ?? 0)}" style="text-align:center;font-size:26px;font-weight:700">
           <button class="btn" data-stk="${i}:1" style="flex:none;width:64px;font-size:24px">+</button></div>
-        ${/heizk/i.test(x.label||'') ? `<div class="seg" style="margin-bottom:8px">
-          <button data-hks="${i}:1" class="${+x.seiten===1?'on':''}">nur vorne</button>
+        ${istTuer(x) ? `<div class="seg" style="margin-bottom:8px">
+          <button data-hks="${i}:1" class="${+x.seiten===1?'on':''}">Türblatt eine Seite</button>
           <button data-hks="${i}:2" class="${+x.seiten===1?'':'on'}">beidseitig</button></div>` : ''}`;
     } else {
       const lb = /untersicht|podest|dach/i.test(x.label||'');
@@ -1494,13 +1495,13 @@ function mengeFuer(arbeit, r){
   const c = calc(r);
   switch (arbeit){
     case 'Abdecken / Abkleben': return r.typ==='fassade' ? [null,'psch'] : [c.boden, 'm²'];
-    case 'Türen lackieren': return pos(/tür/i,'stk') || [tueren||null, 'Stk'];
+    case 'Türen lackieren': {
+      const tp = treffer(/tür/i).filter(x=>x.art==='stk');
+      const seiten = tp.length ? tp.reduce((s,x)=>s + (num(x.n)||0) * (+x.seiten===1 ? 1 : 2), 0) : tueren*2;
+      return [seiten||null, 'Seite']; }
     case 'Zargen lackieren': return pos(/zarge/i,'stk') || pos(/tür/i,'stk') || [tueren||null, 'Stk'];
     case 'Fenster lackieren': return pos(/fenster(?!bank)/i,'stk') || [fenster||null, 'Stk'];
-    case 'Heizkörper lackieren': {
-      const hk = treffer(/heizk/i).filter(x=>x.art==='stk');
-      const seiten = hk.reduce((s,x)=>s + (num(x.n)||0) * (+x.seiten===1 ? 1 : 2), 0);
-      return seiten ? [seiten, 'Seite'] : [null, 'Seite']; }
+    case 'Heizkörper lackieren': return pos(/heizk/i,'stk') || pos(/heizk/i) || [null,'Stk'];
     case 'Sockelleisten': return pos(/sockel/i) || [null,'lfm'];
     case 'Fensterbänke streichen': return pos(/fensterbank/i) || [null,'lfm'];
     case 'Dachuntersicht streichen': return pos(/dachunter/i) || [null,'m²'];
@@ -1587,10 +1588,10 @@ const KALK_STANDARD = {
     'außen: Putz ausbessern':         {h:null},
     'außen: Grundierung':             {h:0.12, mat:[['Tiefgrund',1]]},
     'außen: Armierung mit Gewebe':    {h:0.35, s:true},
-    'Türen lackieren':        {h:1.75, einheit:'Stk', mat:[['Lack',8]], s:true},
+    'Türen lackieren':        {h:0.90, einheit:'Seite', mat:[['Lack',4]], s:true},
     'Zargen lackieren':       {h:0.75, einheit:'Stk', mat:[['Lack',3]], s:true},
     'Fenster lackieren':      {h:1.75, einheit:'Stk', mat:[['Lack',5]], s:true},
-    'Heizkörper lackieren':   {h:0.75, einheit:'Seite', mat:[['Heizkörperlack',1.5]], s:true},
+    'Heizkörper lackieren':   {h:0.90, einheit:'Stk', mat:[['Heizkörperlack',3]], s:true},
     'Sockelleisten':          {h:0.08, einheit:'lfm', mat:[['Lack',0.3]], s:true},
     'Abdecken / Abkleben':    {h:0.05, mat:[['Abdeckvlies',1]]},
     'Möbel rücken':           {h:null},
