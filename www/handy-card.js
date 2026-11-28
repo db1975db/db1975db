@@ -392,8 +392,8 @@ class HandyCard extends HTMLElement {
       <linearGradient id="eshn" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>${pvClip}</defs>
       <rect width="360" height="236" fill="url(#esk)"/>${sunG}
       <path d="M0,205 Q120,199 200,204 T360,201 L360,236 L0,236Z" fill="${grass}"/><path d="M168,206 L186,206 L194,236 L160,236Z" fill="${D ? '#8d9099' : '#3b3e46'}"/>
-      <g stroke="#3a3530" stroke-width="3" stroke-linecap="round"><line x1="14" y1="106" x2="14" y2="214"/><line x1="4" y1="114" x2="24" y2="114"/><line x1="6" y1="124" x2="22" y2="124"/></g>
-      <path d="${wire}" fill="none" stroke="#2a2622" stroke-width="1.5"/>${gridFlow}
+      ${LY === 'scene' || LY === 'pins' ? `<g stroke="#3a3530" stroke-width="3" stroke-linecap="round"><line x1="14" y1="106" x2="14" y2="214"/><line x1="4" y1="114" x2="24" y2="114"/><line x1="6" y1="124" x2="22" y2="124"/></g>
+      <path d="${wire}" fill="none" stroke="#2a2622" stroke-width="1.5"/>${gridFlow}` : ''}
       <rect x="181" y="38" width="12" height="14" fill="${D ? '#7a7e88' : '#3a3c44'}"/><rect x="179.5" y="36" width="15" height="3" fill="${D ? '#5f636c' : '#2e3036'}"/><rect x="266" y="42" width="3.4" height="12" fill="#26282e"/>
       <path d="M36,80 L120,50 L240,50 L324,80Z" fill="url(#eroof)"/>${tiles}
       <line x1="36" y1="80" x2="120" y2="50" stroke="#2a2c31" stroke-width="1.6"/><line x1="324" y1="80" x2="240" y2="50" stroke="#2a2c31" stroke-width="1.6"/><line x1="120" y1="50" x2="240" y2="50" stroke="#2a2c31" stroke-width="2"/>
