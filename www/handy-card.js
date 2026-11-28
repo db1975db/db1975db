@@ -86,6 +86,8 @@ const P_CSS = `
 .en .eh span{display:flex;align-items:center;gap:5px}
 .en text{font-weight:700;font-size:13px;fill:#fff}.en text.lb{font-weight:500;font-size:10px;fill:rgba(255,255,255,.8)}
 .en .lbl{cursor:pointer}
+.en .frg{background:#151922;padding:8px 4px 0}.en .frg svg{width:100%;height:auto;display:block}
+.en .fln{display:flex;justify-content:space-around;gap:4px;padding:10px 8px 2px;background:#151922}.en .fln span{display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}.en .fln b{font-size:15px;color:var(--p-fg)}.en .fln small{font-size:11px;color:var(--p-fg2)}
 .en .fl3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 10px 0;background:#151922}
 .en .fx{border-radius:12px;padding:8px;background:color-mix(in srgb,var(--fc) 12%,transparent);border:1px solid color-mix(in srgb,var(--fc) 35%,transparent);min-width:0;cursor:pointer}
 .en .fx .k{font-size:11px;color:var(--fc);display:flex;align-items:center;gap:4px;font-weight:650;margin-bottom:4px}.en .fx .v{font-size:18px;font-weight:750;white-space:nowrap}.en .fx .s{font-size:11px;color:var(--p-fg2);display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;margin-top:1px}
@@ -371,7 +373,11 @@ class HandyCard extends HTMLElement {
       <rect x="259" y="165" width="14" height="26.2" fill="#eef0f2"/><rect x="258.4" y="164" width="15.2" height="2" fill="#fafafa"/><rect x="259" y="166" width="14" height="1.2" fill="#2a2d33"/>
       <path d="M260,169.5 l5.5,0 l-1,1.6 l-4.5,0Z M260,171.6 l4.8,0 l-1,1.6 l-3.8,0Z" fill="#3fae49"/>
       <rect x="269.6" y="169" width="2.2" height="20" rx="1" fill="#c9ccd2"/><rect x="269.6" y="${169 + 20 - 20 * soc0 / 100}" width="2.2" height="${20 * soc0 / 100}" rx="1" fill="${batCol}"/>`;
-    const LY = E.layout || 'scene', scene = `<svg viewBox="0 0 360 ${LY === 'scene' ? 236 : 214}"><defs>
+    const LY = E.layout || 'scene';
+    // Netz, Haus, Akku unter dem Bild – als Kacheln (layout: tiles) oder als Herkunfts-Balken (layout: flow)
+    const gCol = exp > imp ? '#3ddc97' : imp > 15 ? '#ff7a6b' : '#8a94a3', bIc = chg > 15 ? 'mdi:battery-charging' : soc0 >= 95 ? 'mdi:battery' : `mdi:battery-${Math.max(10, Math.round(soc0 / 10) * 10)}`.replace('battery-100', 'battery');
+    const bSub = chg > 15 ? `lädt ${kw(chg)}` : dis > 15 ? `entlädt ${kw(dis)}` : `ruht · ${P_fmt(E.battery_capacity || 6.5, 1)} kWh`;
+    const scene = `<svg viewBox="0 0 360 ${LY === 'scene' ? 236 : 214}"><defs>
       <linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient>
       <linearGradient id="ered" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${C.red[0]}"/><stop offset="1" stop-color="${C.red[1]}"/></linearGradient>
       <linearGradient id="egry" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${C.grey[0]}"/><stop offset="1" stop-color="${C.grey[1]}"/></linearGradient>
@@ -405,17 +411,18 @@ class HandyCard extends HTMLElement {
       <rect x="161" y="158" width="30" height="48" fill="${C.frame}"/><rect x="163" y="160" width="26" height="46" fill="${D ? '#b8bec9' : '#4c5160'}"/>
       ${[0, 1, 2, 3].map(k => `<rect x="173" y="${165 + k * 9.6}" width="6.4" height="6.4" fill="${lit && !D ? '#ffd88a' : '#363b46'}"/>`).join('')}<rect x="167" y="170" width="1.4" height="28" rx=".7" fill="#e3e6eb"/>
       ${lamp(154)}${lamp(198)}
-      <text x="294" y="155" text-anchor="middle" style="font-size:7px;font-weight:600;fill:${D ? '#ece7df' : '#a39f99'}">32c</text>
+      <text x="294" y="${LY === 'pins' ? 199 : 155}" text-anchor="middle" style="font-size:7px;font-weight:600;fill:${D ? '#ece7df' : '#a39f99'}">32c</text>
       <rect x="48" y="204" width="264" height="3.5" fill="${D ? '#5d3e39' : '#3a2723'}"/><rect x="156" y="205" width="40" height="3" fill="${D ? '#c9ccd2' : '#4a4d55'}"/>
       ${rays}
       ${lbl(268, 20, kw(pv), 'Solar', '#ffd65a', E.pv)}
       ${LY === 'scene' ? `${lbl(8, 217, exp > imp ? kw(exp) : kw(imp), exp > imp ? 'Einspeisung' : 'Netzbezug', exp > imp ? '#3ddc97' : '#ff7a6b', exp > imp ? E.grid_export : E.grid_import, 'start')}
       ${lbl(118, 217, kw(home), 'Haus', '#5aa9ff', E.home)}
       ${lbl(354, 217, soc != null ? `Varta ${P_fmt(soc, 0)} %` : 'Varta', chg > 15 ? 'lädt ' + kw(chg) : dis > 15 ? 'liefert ' + kw(dis) : `${P_fmt(E.battery_capacity || 6.5, 1)} kWh`, batCol, E.battery_soc, 'end')}` : ''}
+      ${LY === 'pins' ? `<path d="M22,70 L14,104" stroke="${gCol}" stroke-opacity=".8" stroke-width="1.2" stroke-dasharray="2 2"/>
+        ${lbl(6, 56, kw(Math.max(imp, exp)), exp > imp ? 'Einspeisung' : imp > 15 ? 'Netzbezug' : 'Netz', gCol, exp > imp ? E.grid_export : E.grid_import, 'start')}
+        ${lbl(180, 142, kw(home), 'Haus', '#5aa9ff', E.home)}
+        ${lbl(269.5, 142, soc != null ? `${P_fmt(soc, 0)} %` : '–', chg > 15 ? 'lädt' : dis > 15 ? 'entlädt' : 'Varta', batCol, E.battery_soc)}` : ''}
     </svg>`;
-    // Netz, Haus, Akku unter dem Bild – als Kacheln (layout: tiles) oder als Herkunfts-Balken (layout: flow)
-    const gCol = exp > imp ? '#3ddc97' : imp > 15 ? '#ff7a6b' : '#8a94a3', bIc = chg > 15 ? 'mdi:battery-charging' : soc0 >= 95 ? 'mdi:battery' : `mdi:battery-${Math.max(10, Math.round(soc0 / 10) * 10)}`.replace('battery-100', 'battery');
-    const bSub = chg > 15 ? `lädt ${kw(chg)}` : dis > 15 ? `entlädt ${kw(dis)}` : `ruht · ${P_fmt(E.battery_capacity || 6.5, 1)} kWh`;
     const fx = (ic, t, v, sub, col, ent, bar) => `<div class="fx" data-act="more" data-e="${ent}" style="--fc:${col}"><div class="k">${P_icon(ic, 14)}${t}</div><div class="v">${v}</div><div class="s">${sub}</div>${bar != null ? `<div class="ring"><i style="width:${bar}%;background:${col}"></i></div>` : ''}</div>`;
     let mid = '';
     if (LY === 'tiles') mid = `<div class="fl3">
@@ -429,6 +436,21 @@ class HandyCard extends HTMLElement {
         <div class="fg">${seg.map(([w, c, ic, l, e]) => `<span data-act="more" data-e="${e}" style="opacity:${w > 0 ? 1 : .45}">${P_icon(ic, 13)}<em style="background:${c}"></em>${l} <b>${kw(w)}</b></span>`).join('')}</div>
         <div class="fbt" data-act="more" data-e="${E.battery_soc}">${P_icon(bIc, 16)}<span>Varta <b>${soc != null ? P_fmt(soc, 0) + ' %' : '–'}</b> · ${bSub}</span><div class="ring"><i style="width:${soc0}%;background:${batCol}"></i></div></div>
         ${exp > 15 ? `<div class="fbt" data-act="more" data-e="${E.grid_export}">${P_icon('mdi:transmission-tower-export', 16)}<span>Einspeisung <b>${kw(exp)}</b></span></div>` : ''}</div>`; }
+    if (LY === 'ring') {
+      const node = (x, ic, v, l, col, ent, pct) => { const C2 = 2 * Math.PI * 23; return `<g class="lbl" data-act="more" data-e="${ent}" transform="translate(${x} 34)"><circle r="23" fill="#1b202b" stroke="rgba(255,255,255,.1)" stroke-width="4"/>${pct != null ? `<circle r="23" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(C2 * pct / 100).toFixed(1)} ${C2.toFixed(1)}" transform="rotate(-90)"/>` : `<circle r="23" fill="none" stroke="${col}" stroke-opacity=".6" stroke-width="2"/>`}
+        <foreignObject x="-11" y="-11" width="22" height="22"><div xmlns="http://www.w3.org/1999/xhtml" style="color:${col};display:flex">${P_icon(ic, 22)}</div></foreignObject>
+        <text y="44" text-anchor="middle" style="font-size:14px">${v}</text><text class="lb" y="57" text-anchor="middle" style="font-size:10.5px">${l}</text></g>`; };
+      const link = (x1, x2, w, col, rev) => `<line x1="${x1}" y1="34" x2="${x2}" y2="34" stroke="rgba(255,255,255,.12)" stroke-width="3" stroke-linecap="round"/>${w > 15 ? `<line x1="${x1}" y1="34" x2="${x2}" y2="34" stroke="${col}" stroke-width="${Math.min(5, flowW(w))}" stroke-dasharray="2 9" stroke-linecap="round" style="animation:${rev ? 'dashr' : 'dash'} ${sp(w)}s linear infinite"/>` : ''}`;
+      mid = `<div class="frg"><svg viewBox="0 0 360 96">${link(80, 152, Math.max(imp, exp), gCol, exp > imp)}${link(208, 280, Math.max(chg, dis), batCol, dis > chg)}
+        ${node(52, 'mdi:transmission-tower', kw(Math.max(imp, exp)), exp > imp ? 'Einspeisung' : imp > 15 ? 'Netzbezug' : 'Netz', gCol, exp > imp ? E.grid_export : E.grid_import)}
+        ${node(180, 'mdi:home-lightning-bolt-outline', kw(home), `Haus · ${self} % autark`, '#5aa9ff', E.home, self)}
+        ${node(308, bIc, soc != null ? `${P_fmt(soc, 0)} %` : '–', chg > 15 ? `lädt ${kw(chg)}` : dis > 15 ? `entlädt ${kw(dis)}` : 'Varta · ruht', batCol, E.battery_soc, soc0)}</svg></div>`;
+    }
+    // F: eine schlanke Zeile mit drei Werten
+    if (LY === 'line') mid = `<div class="fln">
+        <span data-act="more" data-e="${exp > imp ? E.grid_export : E.grid_import}" style="color:${gCol}">${P_icon('mdi:transmission-tower', 15)}<b>${kw(Math.max(imp, exp))}</b><small>${exp > imp ? 'Einspeisung' : imp > 15 ? 'Bezug' : 'Netz'}</small></span>
+        <span data-act="more" data-e="${E.home}" style="color:#5aa9ff">${P_icon('mdi:home-lightning-bolt-outline', 15)}<b>${kw(home)}</b><small>Haus</small></span>
+        <span data-act="more" data-e="${E.battery_soc}" style="color:${batCol}">${P_icon(bIc, 15)}<b>${soc != null ? P_fmt(soc, 0) + ' %' : '–'}</b><small>${chg > 15 ? 'lädt' : dis > 15 ? 'entlädt' : 'Varta'}</small></span></div>`;
     return `<div class="t full en"><div style="position:relative">${scene}<div class="eh"><span>${P_icon('mdi:lightning-bolt', 14)}Energie</span></div></div>${mid}
       <div class="st3"><div class="sb"><div class="k">${P_icon('mdi:leaf', 13)}Autark</div><div class="v">${self} %</div><div class="ring"><i style="width:${self}%;background:#3ddc97"></i></div></div>
         <div class="sb"><div class="k">${P_icon('mdi:solar-power-variant', 13)}Heute</div><div class="v">${day != null ? P_fmt(day, 1) + ' kWh' : '–'}</div><div class="ring"><i style="width:${Math.min(100, (day || 0) / (E.pv_day_max || 30) * 100)}%;background:#ffc23d"></i></div></div>
