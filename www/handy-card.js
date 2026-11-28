@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.16)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.16.1)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -442,8 +442,8 @@ class HandyCard extends HTMLElement {
         <text y="44" text-anchor="middle" style="font-size:14px">${v}</text><text class="lb" y="57" text-anchor="middle" style="font-size:10.5px">${l}</text></g>`; };
       const link = (x1, x2, w, col, rev) => `<line x1="${x1}" y1="34" x2="${x2}" y2="34" stroke="rgba(255,255,255,.12)" stroke-width="3" stroke-linecap="round"/>${w > 15 ? `<line x1="${x1}" y1="34" x2="${x2}" y2="34" stroke="${col}" stroke-width="${Math.min(5, flowW(w))}" stroke-dasharray="2 9" stroke-linecap="round" style="animation:${rev ? 'dashr' : 'dash'} ${sp(w)}s linear infinite"/>` : ''}`;
       mid = `<div class="frg"><svg viewBox="0 0 360 96">${link(80, 152, Math.max(imp, exp), gCol, exp > imp)}${link(208, 280, Math.max(chg, dis), batCol, dis > chg)}
-        ${node(52, 'mdi:transmission-tower', kw(Math.max(imp, exp)), exp > imp ? 'Einspeisung' : imp > 15 ? 'Netzbezug' : 'Netz', gCol, exp > imp ? E.grid_export : E.grid_import)}
-        ${node(180, 'mdi:home-lightning-bolt-outline', kw(home), `Haus · ${self} % autark`, '#5aa9ff', E.home, self)}
+        ${node(52, exp > imp ? 'mdi:arrow-up-bold' : imp > 15 ? 'mdi:arrow-down-bold' : 'mdi:minus', kw(Math.max(imp, exp)), exp > imp ? 'Einspeisung' : imp > 15 ? 'Netzbezug' : 'Netz', gCol, exp > imp ? E.grid_export : E.grid_import)}
+        ${node(180, 'mdi:home-lightning-bolt-outline', kw(home), 'Haus', '#5aa9ff', E.home)}
         ${node(308, bIc, soc != null ? `${P_fmt(soc, 0)} %` : '–', chg > 15 ? `lädt ${kw(chg)}` : dis > 15 ? `entlädt ${kw(dis)}` : 'Varta · ruht', batCol, E.battery_soc, soc0)}</svg></div>`;
     }
     // F: eine schlanke Zeile mit drei Werten
