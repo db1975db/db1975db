@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.16.4)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.17)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -372,9 +372,10 @@ class HandyCard extends HTMLElement {
     const gridFlow = imp > 15 || exp > 15 ? `<path d="${wire}" fill="none" stroke="${exp > imp ? '#3ddc97' : '#ff7a6b'}" stroke-width="${flowW(Math.max(imp, exp))}" stroke-dasharray="5 7" stroke-linecap="round" style="animation:${exp > imp ? 'dashr' : 'dash'} ${sp(Math.max(imp, exp))}s linear infinite"/>` : '';
     const sunG = D ? `<g transform="translate(340 24)"><circle r="${18 + Math.min(10, pv / 300)}" fill="#ffd65a" opacity="${pvOn ? .25 : .1}" style="animation:glow 3s ease-in-out infinite"/><g style="animation:spin ${pvOn ? Math.max(6, 40 - pv / 150) : 80}s linear infinite">${[...Array(10)].map((_, i) => `<rect x="-2" y="-${20 + Math.min(5, pv / 600)}" width="4" height="7" rx="2" fill="#ffe28a" transform="rotate(${i * 36})"/>`).join('')}</g><circle r="12" fill="${pvOn ? '#ffd34d' : '#e8d9a0'}"/></g>`
       : `<g transform="translate(340 24)"><path d="M5,-12 A13,13 0 1 0 5,12 A9,9 0 1 1 5,-12Z" fill="#f2ecd2"/></g>${[...Array(12)].map((_, i) => `<circle cx="${(i * 61) % 360}" cy="${(i * 23) % 40 + 6}" r="1.2" fill="#fff" style="animation:tw ${2 + i % 3}s ease-in-out ${i * .4}s infinite"/>`).join('')}`;
-    // Varta Element backup im HWR (durchs Fenster gesehen)
+    // Varta Element backup im HWR (durchs Fenster gesehen); Fenster leuchtet grün beim Laden, rot beim Entladen
+    const hwrCol = chg > 15 ? '#3ddc97' : '#ff3b30';
     const varta = `<rect x="254.8" y="159.8" width="22.4" height="31.4" fill="${D ? '#3b4250' : '#1c2029'}"/>
-      ${batAct ? `<rect x="254.8" y="159.8" width="22.4" height="31.4" fill="${batCol}" opacity=".2" style="animation:glow 1.6s ease-in-out infinite"/>` : ''}
+      ${batAct ? `<rect x="254.8" y="159.8" width="22.4" height="31.4" fill="${hwrCol}" opacity=".6" style="animation:glow 1.6s ease-in-out infinite"/>` : ''}
       <rect x="259" y="165" width="14" height="26.2" fill="#eef0f2"/><rect x="258.4" y="164" width="15.2" height="2" fill="#fafafa"/><rect x="259" y="166" width="14" height="1.2" fill="#2a2d33"/>
       <path d="M260,169.5 l5.5,0 l-1,1.6 l-4.5,0Z M260,171.6 l4.8,0 l-1,1.6 l-3.8,0Z" fill="#3fae49"/>
       <rect x="269.6" y="169" width="2.2" height="20" rx="1" fill="#c9ccd2"/><rect x="269.6" y="${169 + 20 - 20 * soc0 / 100}" width="2.2" height="${20 * soc0 / 100}" rx="1" fill="${batCol}"/>`;
@@ -383,7 +384,7 @@ class HandyCard extends HTMLElement {
     const gCol = exp > imp ? '#3ddc97' : imp > 15 ? '#ff7a6b' : '#8a94a3', bIc = chg > 15 ? 'mdi:battery-charging' : soc0 >= 95 ? 'mdi:battery' : `mdi:battery-${Math.max(10, Math.round(soc0 / 10) * 10)}`.replace('battery-100', 'battery');
     const bSub = chg > 15 ? `lädt ${kw(chg)}` : dis > 15 ? `entlädt ${kw(dis)}` : `ruht · ${P_fmt(E.battery_capacity || 6.5, 1)} kWh`;
     const scene = `<svg viewBox="0 0 360 ${LY === 'scene' ? 236 : 214}"><defs>
-      <linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient>
+      <filter id="ehwr" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter><linearGradient id="esk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient>
       <linearGradient id="ered" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${C.red[0]}"/><stop offset="1" stop-color="${C.red[1]}"/></linearGradient>
       <linearGradient id="egry" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${C.grey[0]}"/><stop offset="1" stop-color="${C.grey[1]}"/></linearGradient>
       <linearGradient id="eedg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${C.edge[0]}"/><stop offset="1" stop-color="${C.edge[1]}"/></linearGradient>
@@ -412,7 +413,7 @@ class HandyCard extends HTMLElement {
       <rect x="44" y="86" width="2.6" height="118" rx="1.3" fill="${D ? '#c3c7ce' : '#3d4048'}"/>
       ${win(131, 96, 16, 24)}${win(162, 95, 28, 32)}${win(212, 94, 16, 24)}${win(246, 95, 44, 32, true)}
       ${win(131, 161, 16, 23)}${win(212, 161, 16, 23)}
-      <rect x="253.2" y="158.2" width="25.6" height="34.6" fill="${C.frame}"/>${varta}<rect x="251.4" y="192.8" width="29.2" height="2.2" rx=".6" fill="${C.sill}"/>
+      ${batAct ? `<rect x="247" y="152" width="38" height="47" rx="6" fill="${hwrCol}" opacity=".35" filter="url(#ehwr)" style="animation:glow 1.6s ease-in-out infinite"/>` : ''}<rect x="253.2" y="158.2" width="25.6" height="34.6" fill="${C.frame}"/>${varta}<rect x="251.4" y="192.8" width="29.2" height="2.2" rx=".6" fill="${C.sill}"/>${batAct ? `<rect x="252.4" y="157.4" width="27.2" height="36.2" fill="none" stroke="${hwrCol}" stroke-width="1.8" style="animation:glow 1.6s ease-in-out infinite"/>` : ''}
       <rect x="161" y="158" width="30" height="48" fill="${C.frame}"/><rect x="163" y="160" width="26" height="46" fill="${D ? '#b8bec9' : '#4c5160'}"/>
       ${[0, 1, 2, 3].map(k => `<rect x="173" y="${165 + k * 9.6}" width="6.4" height="6.4" fill="${lit && !D ? '#ffd88a' : '#363b46'}"/>`).join('')}<rect x="167" y="170" width="1.4" height="28" rx=".7" fill="#e3e6eb"/>
       ${lamp(154)}${lamp(198)}
