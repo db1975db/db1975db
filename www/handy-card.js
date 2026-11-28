@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.16.1)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.16.2)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -86,7 +86,7 @@ const P_CSS = `
 .en .eh span{display:flex;align-items:center;gap:5px}
 .en text{font-weight:700;font-size:13px;fill:#fff}.en text.lb{font-weight:500;font-size:10px;fill:rgba(255,255,255,.8)}
 .en .lbl{cursor:pointer}
-.en .frg{background:#151922;padding:8px 4px 0}.en .frg svg{width:100%;height:auto;display:block}
+.en .frg{background:#151922;padding:8px 4px 0}.en .frg svg{width:100%;height:auto;display:block}.en .frw{position:relative}.en .fic{position:absolute;top:35.42%;transform:translate(-50%,-50%);display:flex;pointer-events:none}
 .en .fln{display:flex;justify-content:space-around;gap:4px;padding:10px 8px 2px;background:#151922}.en .fln span{display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}.en .fln b{font-size:15px;color:var(--p-fg)}.en .fln small{font-size:11px;color:var(--p-fg2)}
 .en .fl3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px 10px 0;background:#151922}
 .en .fx{border-radius:12px;padding:8px;background:color-mix(in srgb,var(--fc) 12%,transparent);border:1px solid color-mix(in srgb,var(--fc) 35%,transparent);min-width:0;cursor:pointer}
@@ -437,14 +437,14 @@ class HandyCard extends HTMLElement {
         <div class="fbt" data-act="more" data-e="${E.battery_soc}">${P_icon(bIc, 16)}<span>Varta <b>${soc != null ? P_fmt(soc, 0) + ' %' : '–'}</b> · ${bSub}</span><div class="ring"><i style="width:${soc0}%;background:${batCol}"></i></div></div>
         ${exp > 15 ? `<div class="fbt" data-act="more" data-e="${E.grid_export}">${P_icon('mdi:transmission-tower-export', 16)}<span>Einspeisung <b>${kw(exp)}</b></span></div>` : ''}</div>`; }
     if (LY === 'ring') {
-      const node = (x, ic, v, l, col, ent, pct) => { const C2 = 2 * Math.PI * 23; return `<g class="lbl" data-act="more" data-e="${ent}" transform="translate(${x} 34)"><circle r="23" fill="#1b202b" stroke="rgba(255,255,255,.1)" stroke-width="4"/>${pct != null ? `<circle r="23" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(C2 * pct / 100).toFixed(1)} ${C2.toFixed(1)}" transform="rotate(-90)"/>` : `<circle r="23" fill="none" stroke="${col}" stroke-opacity=".6" stroke-width="2"/>`}
-        <foreignObject x="-11" y="-11" width="22" height="22"><div xmlns="http://www.w3.org/1999/xhtml" style="color:${col};display:flex">${P_icon(ic, 22)}</div></foreignObject>
+      const icons = [];
+      const node = (x, ic, v, l, col, ent, pct) => { const C2 = 2 * Math.PI * 23; icons.push(`<div class="fic" style="left:${(x / 3.6).toFixed(2)}%;color:${col}">${P_icon(ic, 22)}</div>`); return `<g class="lbl" data-act="more" data-e="${ent}" transform="translate(${x} 34)"><circle r="23" fill="#1b202b" stroke="rgba(255,255,255,.1)" stroke-width="4"/>${pct != null ? `<circle r="23" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(C2 * pct / 100).toFixed(1)} ${C2.toFixed(1)}" transform="rotate(-90)"/>` : `<circle r="23" fill="none" stroke="${col}" stroke-opacity=".6" stroke-width="2"/>`}
         <text y="44" text-anchor="middle" style="font-size:14px">${v}</text><text class="lb" y="57" text-anchor="middle" style="font-size:10.5px">${l}</text></g>`; };
       const link = (x1, x2, w, col, rev) => `<line x1="${x1}" y1="34" x2="${x2}" y2="34" stroke="rgba(255,255,255,.12)" stroke-width="3" stroke-linecap="round"/>${w > 15 ? `<line x1="${x1}" y1="34" x2="${x2}" y2="34" stroke="${col}" stroke-width="${Math.min(5, flowW(w))}" stroke-dasharray="2 9" stroke-linecap="round" style="animation:${rev ? 'dashr' : 'dash'} ${sp(w)}s linear infinite"/>` : ''}`;
-      mid = `<div class="frg"><svg viewBox="0 0 360 96">${link(80, 152, Math.max(imp, exp), gCol, exp > imp)}${link(208, 280, Math.max(chg, dis), batCol, dis > chg)}
+      mid = `<div class="frg"><div class="frw"><svg viewBox="0 0 360 96">${link(80, 152, Math.max(imp, exp), gCol, exp > imp)}${link(208, 280, Math.max(chg, dis), batCol, dis > chg)}
         ${node(52, exp > imp ? 'mdi:arrow-up-bold' : imp > 15 ? 'mdi:arrow-down-bold' : 'mdi:minus', kw(Math.max(imp, exp)), exp > imp ? 'Einspeisung' : imp > 15 ? 'Netzbezug' : 'Netz', gCol, exp > imp ? E.grid_export : E.grid_import)}
         ${node(180, 'mdi:home-lightning-bolt-outline', kw(home), 'Haus', '#5aa9ff', E.home)}
-        ${node(308, bIc, soc != null ? `${P_fmt(soc, 0)} %` : '–', chg > 15 ? `lädt ${kw(chg)}` : dis > 15 ? `entlädt ${kw(dis)}` : 'Varta · ruht', batCol, E.battery_soc, soc0)}</svg></div>`;
+        ${node(308, bIc, soc != null ? `${P_fmt(soc, 0)} %` : '–', chg > 15 ? `lädt ${kw(chg)}` : dis > 15 ? `entlädt ${kw(dis)}` : 'Varta · ruht', batCol, E.battery_soc, soc0)}</svg>${icons.join('')}</div></div>`;
     }
     // F: eine schlanke Zeile mit drei Werten
     if (LY === 'line') mid = `<div class="fln">
