@@ -61,11 +61,10 @@ views:
     - {name: Alles aus, icon: mdi:lightbulb-group-off-outline, color: '#ffc23d', lights: all}
     - {name: Gute Nacht, icon: mdi:weather-night, color: '#8a7cf0', lights: all, lock: true, alarm: night}
     - {name: Verlassen, icon: mdi:exit-run, color: '#1baf7a', lights: all, lock: true, alarm: away}
-    # Kameras oben in der Sicherheits-Kachel: Aqara G410 an der Haustür, Reolink an der Hausecke
-    security_cams:
-    - {entity: camera.192_168_178_113_2, name: Haustür, live: webrtc}
-    # Reolink läuft auf Akku: kein Standbild (weckt die Kamera), nur Akkustand + Live per Tippen
-    - {entity: camera.kamera_auffahrt_ausgewogen, name: Auffahrt, snapshot: false, battery: sensor.kamera_auffahrt_batterie}
+    # Haustür-Klingel (Aqara G410, Kabel) dauerhaft live per WebRTC-Karte über der Sicherheits-Kachel; Auffahrt (Reolink, Akku) entfernt
+    live_cam:
+      entity: camera.192_168_178_113_2
+      name: Haustür
     car:
       name: Cupra
       soc: sensor.carport_cupra_formentor_akkustand

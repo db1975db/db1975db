@@ -1,4 +1,4 @@
-// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.20)
+// Handy-Karte – kompakte Startseite fürs iPhone im Stil der Haus- und Raum-Karte (v0.21)
 // Bereiche: Begrüßung, Personen, Wetter, Haustür, Alarmanlage, Energie, Müllkalender. Alle Bereiche sind optional.
 // Dazu: custom:handy-floor (Etagen-Seite mit kleinen Raumkacheln) und die Leiste unten (`nav: [{name, icon, path}]` an beiden Karten).
 // Müll: je Tonne optional `image` (z. B. /local/muell/blau.png), sonst wird die Tonne gezeichnet.
@@ -90,6 +90,7 @@ const P_CSS = `
 .lv{position:fixed;inset:0;z-index:20;background:rgba(5,7,12,.92);display:flex;flex-direction:column;justify-content:center;padding:max(12px,env(safe-area-inset-top)) 10px max(12px,env(safe-area-inset-bottom))}
 .lvh{display:flex;align-items:center;justify-content:space-between;color:#fff;padding:0 4px 10px;font-size:16px}.lvh button{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .lvc{border-radius:16px;overflow:hidden;background:#000}
+.lvt{padding:0;overflow:hidden;background:#000}.lvt .lvw{min-height:120px}.lvt .na{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:var(--p-fg2);font-size:12px}.lvt .cl{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:650;background:rgba(10,14,24,.6);border-radius:999px;padding:3px 10px;color:#fff;pointer-events:none;z-index:2}.lvt .cl i{width:7px;height:7px;border-radius:50%;background:#ff5a5a;animation:cvpl 1.4s infinite}
 .sec .sc2.rg{box-shadow:0 0 0 3px #ef8a3c;animation:cvpl 1s infinite}.sec .ring2{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;border-radius:10px;background:#ef8a3c;color:#fff;font-weight:700;font-size:14px}.sec .lb2{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:12px;color:var(--p-fg2)}
 .sec .sep{height:1px;background:var(--p-line);margin:10px -12px}.sec .al2{display:flex;align-items:center;gap:10px;cursor:pointer}.sec .al2 .sh{width:42px;height:42px}
 .cam{padding:0;overflow:hidden;cursor:pointer}.cam img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#0b0d12}.cam .cl{position:absolute;left:10px;top:10px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:650;background:rgba(10,14,24,.6);backdrop-filter:blur(6px);border-radius:999px;padding:3px 10px;color:#fff}.cam .cl i{width:7px;height:7px;border-radius:50%;background:#ff5a5a;animation:cvpl 1.4s infinite}
@@ -161,7 +162,7 @@ const P_nav = (items, base) => items && items.length ? `<nav class="nav">${items
 class HandyCard extends HTMLElement {
   setConfig(c) { this.c = { persons: [], waste: [], waste_days: 1, ...c }; this._k = null; if (this.root) this.build(); }
   set hass(h) {
-    this._hass = h; if (this._live) this._live.hass = h; if (!this.root) { this.root = this.attachShadow({ mode: 'open' }); this.build(); }
+    this._hass = h; if (this._live) this._live.hass = h; if (this._wr) this._wr.hass = h; if (!this.root) { this.root = this.attachShadow({ mode: 'open' }); this.build(); }
     if (this.c.weather && !this._unsub) this.subFc();
     const k = this.keys(); if (k === this._k) return; this._k = k; this.render();
   }
@@ -207,6 +208,7 @@ class HandyCard extends HTMLElement {
     if (c.hints) out.push(this.hints());
     if (c.quick) out.push(this.quick());
     if (c.persons.length) out.push(this.persons());
+    if (c.live_cam) out.push(this.liveCam());
     if (c.security && c.door && c.alarm) out.push(this.security());
     if (c.weather) out.push(this.weather());
     if (c.energy) out.push(this.energy());
@@ -223,6 +225,17 @@ class HandyCard extends HTMLElement {
       if (!el) { el = document.createElement('div'); el.style.display = 'contents'; w.appendChild(el); }
       if (el._h !== html) { el._h = html; el.innerHTML = html; }
     });
+    this.mountLive();
+  }
+  // Dauer-Livebild (WebRTC-Karte) über der Sicherheits-Kachel; eigener Bereich, damit der Stream bei Änderungen nicht neu startet
+  liveCam() { const L = this.c.live_cam; return `<div class="t full lvt"><div class="lvw" data-wr="1"></div><div class="cl"><i></i>${P_esc(L.name || 'Live')}</div></div>`; }
+  mountLive() {
+    const L = this.c.live_cam, box = L && this.root.querySelector('[data-wr]'); if (!box) return;
+    if (this._wr && this._wr.isConnected && box.contains(this._wr)) { this._wr.hass = this._hass; return; }
+    if (!customElements.get('webrtc-camera')) { box.innerHTML = '<div class="na">WebRTC-Karte nicht geladen</div>'; return; }
+    const el = document.createElement('webrtc-camera');
+    el.setConfig({ type: 'custom:webrtc-camera', entity: L.entity, mode: L.mode || 'webrtc', muted: L.muted !== false, ui: L.ui !== false });
+    el.hass = this._hass; box.innerHTML = ''; box.appendChild(el); this._wr = el;
   }
   hello() {
     const h = new Date().getHours(), g = h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : h < 22 ? 'Guten Abend' : 'Gute Nacht';

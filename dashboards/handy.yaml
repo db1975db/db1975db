@@ -11,10 +11,10 @@ views:
     base_path: /dashboard-handy
     persons_style: compact
     security: true
-    # Kameras oben in der Sicherheits-Kachel: Aqara G410 (Kabel) mit Standbild, Reolink (Akku) ohne Standbild
-    security_cams:
-    - {entity: camera.192_168_178_113_2, name: Haustür, live: webrtc}
-    - {entity: camera.kamera_auffahrt_ausgewogen, name: Auffahrt, snapshot: false, battery: sensor.kamera_auffahrt_batterie}
+    # Haustür-Klingel (Aqara G410, Kabel) dauerhaft live per WebRTC-Karte über der Sicherheits-Kachel; Auffahrt (Reolink, Akku) entfernt
+    live_cam:
+      entity: camera.192_168_178_113_2
+      name: Haustür
     weather:
       entity: weather.lebus_3
       name: Lebus
