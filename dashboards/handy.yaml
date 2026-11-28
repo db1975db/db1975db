@@ -9,69 +9,7 @@ views:
   cards:
   - type: custom:handy-card
     base_path: /dashboard-handy
-    # Neu (Umbau 28.11.): kompakte Personen/Müll, Sicherheit zusammengelegt, Hinweise, Schnellaktionen, Kamera, Auto, Garten
-    security: true
     persons_style: compact
-    waste_style: compact
-    # Innenlichter für „Alles aus“, „Gute Nacht“, „Verlassen“ und den Licht-Hinweis.
-    # NIE light/switch.hwr_steckdose (FRITZ!Box) – die Karte sperrt sie zusätzlich fest.
-    lights:
-    - light.sofa
-    - light.tisch_2
-    - light.tisch
-    - light.laterne
-    - light.aqara_led_deckenspots
-    - light.aqara_kuchentisch
-    - light.aqara_led_decke
-    - light.flur_unten_aqara_flur_led_1
-    - light.flur_unten_aqara_flur_led_2
-    - light.flur_unten_aqara_flur_led_3
-    - light.flur_unten_aqara_flur_led_4
-    - light.licht
-    - switch.shelly1pmmini_348518e06610
-    - light.nachtisch_links
-    - light.nachtisch_rechts
-    - light.hue_go_1
-    - switch.shellyplus1pm_90380c37bf1c_deckenlampe
-    - light.kinderzimmer_licht
-    - light.buro
-    - light.badezimmer
-    - light.hue_sauna
-    - light.wohnzimmer_aqara_sofa_1
-    - light.wohnzimmer_aqara_sofa_2
-    - light.wohnzimmer_aqara_sofa_3
-    hints:
-      battery_limit: 15
-      battery_exclude: [cupra, formentor, iphone, ipad, evcc, varta, _soc, ss_batterie]
-      windows:
-      - {entity: binary_sensor.multi_state_sensor_p100_tur_3, name: Terrassentür}
-      - {entity: binary_sensor.kuche_fensterkontakt_tur, name: Küchenfenster}
-      - {entity: binary_sensor.shelly_blu_door_window_45b9_window, name: WC-Fenster}
-      - {entity: binary_sensor.bthome_sensor_cc6a_window, name: HWR-Fenster}
-      - {entity: binary_sensor.hwr_aqara_door_and_window_sensor_p2_tur, name: HWR-Tür}
-      - {entity: binary_sensor.shelly_blu_door_window_3729_window, name: Schlafzimmer-Fenster}
-      - {entity: binary_sensor.bthome_sensor_bdbb_window, name: Schlafzimmer-Fenster 2}
-      - {entity: binary_sensor.shelly_blu_door_window_c931_window, name: Kinderzimmer-Fenster}
-      - {entity: binary_sensor.bthome_sensor_907e_window, name: Kinderzimmer-Fenster 2}
-      - {entity: binary_sensor.shelly_blu_door_window_ab1a_window, name: Büro-Fenster}
-      - {entity: binary_sensor.bthome_sensor_1ada_window, name: Bad-Fenster}
-    quick:
-    - {name: Alles aus, icon: mdi:lightbulb-group-off-outline, color: '#ffc23d', lights: all}
-    - {name: Gute Nacht, icon: mdi:weather-night, color: '#8a7cf0', lights: all, lock: true, alarm: night}
-    - {name: Verlassen, icon: mdi:exit-run, color: '#1baf7a', lights: all, lock: true, alarm: away}
-    camera:
-      entity: camera.kamera_auffahrt_ausgewogen
-      name: Auffahrt
-    car:
-      name: Cupra
-      soc: sensor.carport_cupra_formentor_akkustand
-      range_electric: sensor.carport_cupra_formentor_elektrische_reichweite
-      range: sensor.carport_cupra_formentor_reichweite
-      charging: binary_sensor.carport_cupra_formentor_laden
-    garden_status:
-    - {name: Pool, entity: sensor.pooltemperatur, icon: mdi:pool-thermometer}
-    - {name: Wärmepumpe, entity: climate.pool_warmepumpe, icon: mdi:heat-pump-outline}
-    garden_path: garten
     weather:
       entity: weather.lebus_3
       name: Lebus

@@ -318,14 +318,14 @@ class HandyCard extends HTMLElement {
       [W.rain_day, 'mdi:weather-rainy', 'Regen', (v) => `${P_fmt(v, 1)}<small>mm</small>`],
     ].filter(([e]) => e && this.n(e) != null).slice(0, 4);
     const meas = ms.length ? `<div class="ms" style="grid-template-columns:repeat(${ms.length},minmax(0,1fr))">${ms.map(([e, ic, l, f]) => `<div class="m" data-act="more" data-e="${e}"><div class="mi">${P_icon(ic, 13)}${l}</div><b>${f(this.n(e))}</b></div>`).join('')}</div>` : '';
-    const rain = !fc.length ? '' : dry ? `<div class="rain dry"><div class="rt2">${P_icon(ric, 15)}${warn ? `${fc.length} h kein Regen` : rtxt}</div></div>` : `<div class="rain"><div class="rt2">${P_icon(ric, 15)}${rtxt}</div>
+    const rain = !fc.length ? '' : dry ? `<div class="rain dry"><div class="rt2">${P_icon(ric, 15)}${warn && W.merge_rows ? `${fc.length} h kein Regen` : rtxt}</div></div>` : `<div class="rain"><div class="rt2">${P_icon(ric, 15)}${rtxt}</div>
       <div class="bars">${fc.map(f => { const v = Math.max((f.precipitation_probability || 0) / 100, Math.min(1, (f.precipitation || 0) / 2)); return `<i class="${v < .05 ? 'z' : ''}" style="height:${Math.max(8, v * 100)}%;${snowy(f) && v >= .05 ? 'background:#e8f1ff' : ''}"></i>`; }).join('')}</div>
       <div class="tk">${fc.map((f, i) => `<span>${i % 3 === 0 ? new Date(f.datetime).getHours() : ''}</span>`).join('')}</div></div>`;
     return `<div class="t full wx" style="background:linear-gradient(160deg,${bg[0]},${bg[1]})">
       <div class="row1"><div class="wic ${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-f="1" data-p="${P_esc(W.path)}"` : ''}>${this.wicon(key, day)}</div>
         <div class="${W.path ? 'lnk' : ''}" ${W.path ? `data-act="nav" data-f="1" data-p="${P_esc(W.path)}"` : ''}><div class="tp2">${P_fmt(t)}<small>°C</small></div><div class="cd2">${P_esc(txt)}</div><div class="mm2">${P_icon('mdi:arrow-up', 13)}${P_fmt(mx)}° ${P_icon('mdi:arrow-down', 13)}${P_fmt(mn)}°</div><div class="wl">${this.windText(ws, gust, deg)}</div></div>
         <div class="cmp" data-act="more" data-e="${W.wind || W.entity}">${this.compass(ws, gust, deg)}</div></div>
-      ${meas}${dry && warn ? `<div class="r2">${rain}${warn}</div>` : rain + warn}</div>`;
+      ${meas}${dry && warn && W.merge_rows ? `<div class="r2">${rain}${warn}</div>` : rain + warn}</div>`;
   }
   door(inner) {
     const D = this.c.door, l = this.s(D.lock), st = l ? l.state : 'unavailable', b = this.n(D.battery), ct = this.s(D.contact), open = ct && ct.state === 'on';
